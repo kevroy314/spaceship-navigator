@@ -19,7 +19,11 @@ messages carry their source: an arXiv/DOI link for literature, a script path and
 sample size for anything measured here. "RL does worse than an optimiser" is
 useless; "0.117 vs 0.129 m/s over 500 ICs (Bonasera et al., JGCD 2022)" is not.
 
-**3. Measure before believing, including your own ideas.** This project has
+**3. Measure before believing, including your own ideas — and check that the
+factor you are reasoning from actually bears on the mechanism.** Several errors
+here were not wrong numbers but wrong relevance: arguing from full observability
+about a channel whose content is a joint choice (0016), or from resonance overlap
+about episodes shorter than one orbit (0005). This project has
 produced several confident, elegant, wrong conclusions, each caught only by
 checking it against the physics. Recent examples, all recorded: the Wisdom
 resonance band was the wrong length scale (0005); a 40 s planning horizon against

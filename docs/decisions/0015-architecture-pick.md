@@ -62,6 +62,12 @@ H=1-2 "fails to achieve meaningful performance". Our episodes are 2250 steps.
   empirically, not just philosophically.
 
 ## The one thing to design against
+> **Corrected by [0016](0016-communication-is-equilibrium-selection.md).** The
+> argument below is scoped to the *single-agent* navigation phase and to messages
+> whose content is derivable from the observation. It does not apply to
+> coordinating messages ("you left, I'll right"), which carry a joint choice that
+> is not in the world state and that full observability cannot supply.
+
 Our environment is fully observed: `obs` already contains every body's state. A
 plan-conditioned policy will therefore probably learn to infer the right action
 from `obs` and **ignore the plan** — concept-bottleneck leakage, in the control

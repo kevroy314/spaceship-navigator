@@ -25,3 +25,4 @@ with no evidence behind it is a preference, and should say so.
 | [0013](0013-longer-episodes.md) | Longer episodes as the keystone |
 | [0014](0014-sampler-bugs.md) | Four measurement bugs the test suite found |
 | [0015](0015-architecture-pick.md) | Search the true simulator with mctx; reduce the horizon |
+| [0016](0016-communication-is-equilibrium-selection.md) | Communication is equilibrium selection (corrects 0015) |
