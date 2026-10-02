@@ -1,0 +1,591 @@
+[00:00:01] This... is a market simulator
+[00:00:03] that&nbsp;we're going to build in this video.
+[00:00:05] And we're using it to see and understand
+[00:00:08] trade-based manipulation in action.
+[00:00:11] Unlike fake news,
+[00:00:13] this manipulation exploits specific trading patterns
+[00:00:16] seeming legal at first glance&nbsp; as it involves no blatant lies.
+[00:00:20] And this isn't just a story about&nbsp; smaller, less-regulated markets.
+[00:00:25] The foreign exchange market, the&nbsp; largest financial market in the world,
+[00:00:29] was traditionally believed&nbsp; to be too big to manipulate,
+[00:00:32] which turned out to be a costly mistake.
+[00:00:35] Discovered in 2013,
+[00:00:37] a handful of traders orchestrated what became known as
+[00:00:40] 'The FOREX Case', siphoning away hundreds of millions for years.
+[00:00:45] Thankfully, we're not completely helpless.
+[00:00:48] With some math and financial forensic&nbsp; tools,
+[00:00:51] we can spot the manipulators.
+[00:00:54] And here is our protagonist, who&nbsp; wants to take a chance in the market
+[00:00:58] by trading shares of a rocket company.
+[00:01:01] And, just like many of us, they all have a hard time making good predictions.
+[00:01:06] So they buy and sell randomly.
+[00:01:09] And for now, our friend is lucky&nbsp; … winning most of the time.
+[00:01:13] Not every trader can be that lucky, though!
+[00:01:15] But they still believe in the fairness of the market,
+[00:01:18] trusting that everyone has an equal chance.
+[00:01:21] Then, out of nowhere, some new players show up.
+[00:01:25] And they're not just winning sometimes;
+[00:01:27] they're consistently beating the odds.
+[00:01:30] How are they doing it?
+[00:01:32] At first, it seems like these bad actors&nbsp; might just be
+[00:01:36] better at predicting the future.
+[00:01:38] But here's the twist:
+[00:01:40] in a&nbsp; market driven by randomness,
+[00:01:42] there shouldn't be a reliable&nbsp; way to predict the future.
+[00:01:45] So… how are they pulling it off?
+[00:01:48] And even more interesting,
+[00:01:50] the market still looks mostly random.
+[00:01:53] The bad actors blend in almost perfectly.
+[00:01:57] So, what I want to build with you today
+[00:02:00] is a way to measure and expose this manipulation.
+[00:02:03] Let's break this down and see how this fraud works
+[00:02:07] because market manipulation isn't just
+[00:02:09] about numbers moving on a screen.
+[00:02:12] This video is sponsored by Brilliant.
+[00:02:15] More at the end of the show.
+[00:02:17] Quick disclaimer:
+[00:02:18] I'm not a financial advisor, and this&nbsp; video is for educational purposes only.
+[00:02:23] Always do your own research.
+[00:02:25] The price movement we just saw, comes from a real simulation I built.
+[00:02:30] And here's how it works:
+[00:02:32] Every day, people come to&nbsp; the market to trade shares.
+[00:02:35] Not everyone is ready to trade, though some folks are just observing the market.
+[00:02:40] The others are placing orders.
+[00:02:43] Take this buyer, for example.
+[00:02:45] This person wants to buy 70 shares at 53&nbsp; dollars each
+[00:02:50] but wouldn't mind a lower price
+[00:02:52] that's the maximum price this&nbsp; person is willing to pay.
+[00:02:56] And, as I mentioned earlier,&nbsp; they trade completely randomly.
+[00:03:00] So, their order prices could be higher&nbsp; or lower yesterday's market price.
+[00:03:05] Think of these buy orders as coming&nbsp; from a probability distribution.
+[00:03:10] And this randomness in the simulation&nbsp; is a great proxy to mirror a fair market
+[00:03:15] one where everyone has an equal chance.
+[00:03:18] Here, no one knows what's going&nbsp; to happen, and that's fair.
+[00:03:22] Now, the shares must come from&nbsp; someone namely the sellers.
+[00:03:27] This person might want to sell 50 shares at 45&nbsp; dollars each,
+[00:03:31] but wouldn't mind a higher price
+[00:03:33] that's the minimum price at which&nbsp; this person is willing to sell.
+[00:03:37] And these sell orders also come from&nbsp; their own probability distribution.
+[00:03:42] Now, let's set a single market price for the day.
+[00:03:46] Some people are very satisfied with this price,
+[00:03:49] while others may skip trading altogether.
+[00:03:52] So, how is the price actually set?
+[00:03:54] One way is to maximize total satisfaction;
+[00:03:57] the extent to which orders are over-fulfilled.
+[00:04:01] To calculate it:
+[00:04:02] all the buy&nbsp; and sell orders are lined up.
+[00:04:05] And the ideal price,
+[00:04:06] the one that&nbsp; brings the most satisfaction, lies somewhere in this overlap.
+[00:04:11] Here, it's not a unique price.
+[00:04:13] Any price within this range achieves&nbsp; the same maximum satisfaction.
+[00:04:17] But picking the middle&nbsp; ground is a practical choice.
+[00:04:21] And this price range also&nbsp; determines the day's trading volume;
+[00:04:25] the number of shares that change hands.
+[00:04:27] So, if we set a different single price,
+[00:04:30] one side would be more willing to trade while the other would be less willing;
+[00:04:34] reducing overall agreement.
+[00:04:37] As a result, fewer shares are traded,
+[00:04:39] since both sides must be satisfied for a deal to happen.
+[00:04:43] This method is called auction pricing.
+[00:04:46] In real-world markets, it's often&nbsp; used at the start of the trading day
+[00:04:50] to match all the overnight orders&nbsp; to a single, opening price.
+[00:04:54] During a continuous trading day,
+[00:04:56] orders are&nbsp; often instantly matched against each other
+[00:04:59] leading to multiple prices&nbsp; in the short time frame.
+[00:05:02] But that's a story for another time.
+[00:05:04] Here, I assume a single trading moment at each day
+[00:05:08] using auction pricing.
+[00:05:10] And this is what the full market simulation looks like.
+[00:05:14] We start with setting up the order price distributions.
+[00:05:18] In reality, buyers and sellers might have different expectations,
+[00:05:22] leading to different distributions.
+[00:05:24] But for today's video, I don't&nbsp; really need this degree of freedom,
+[00:05:28] so I'll use the same bell curve for both,
+[00:05:30] centered around yesterday's market price.
+[00:05:33] This represents the idea that&nbsp; people expect their orders to be
+[00:05:37] filled within a familiar price range.
+[00:05:39] After all, it worked yesterday,
+[00:05:41] so they hope it will work again today.
+[00:05:44] From these order curves, the market determines the
+[00:05:46] current day's price and trading volume,
+[00:05:49] which we track over time in a graph.
+[00:05:52] And with that, the simulation loop is complete.
+[00:05:55] Today's market price becomes the starting point for tomorrow's price distribution
+[00:05:59] and the cycle continues.
+[00:06:01] New order curves generate new prices and volumes,
+[00:06:04] and the market evolves step by step.
+[00:06:07] As a result, the market moves randomly,
+[00:06:09] making it impossible to predict in a useful way.
+[00:06:13] Since each day's price distribution is centered&nbsp; around the previous day's market price,
+[00:06:17] there's no way to know if&nbsp; prices will rise or fall.
+[00:06:21] Now that we have the simulation&nbsp; running,
+[00:06:24] let's see what it tells us.
+[00:06:26] One obvious fact is that markets&nbsp; don't operate in isolation.
+[00:06:30] External events like breaking news
+[00:06:32] are constantly reshaping expectations.
+[00:06:35] So, these distributions shift&nbsp; as people's expectations evolve.
+[00:06:40] For example, when good news arrives,
+[00:06:42] a company's true value may be higher than
+[00:06:45] what's reflected in its current stock price.
+[00:06:47] And as more and more traders&nbsp; become aware of the news,
+[00:06:51] they anticipate that competition&nbsp; will eventually drive prices higher.
+[00:06:55] To simplify our simulation, these&nbsp; random traders skip
+[00:06:59] the waiting game and instantly adjust their&nbsp; expectations to the new price level.
+[00:07:04] And just like that, the market&nbsp; price adjusts almost immediately.
+[00:07:08] And as rational beings, we tend to think ahead.
+[00:07:11] If we believe a company will continue delivering good news,
+[00:07:15] we might anticipate future price jumps.
+[00:07:18] And to benefit from these future&nbsp; price jumps,
+[00:07:21] buyers must act quickly, before others bid the price up&nbsp; further,
+[00:07:24] or they risk missing out.
+[00:07:26] This again creates competition,
+[00:07:29] driving&nbsp; prices even higher almost instantly.
+[00:07:32] In other words, it's not just today's&nbsp; news that drives stock prices,
+[00:07:36] but expectations about all future news&nbsp; also get baked into the price immediately.
+[00:07:42] But here comes the next twist:
+[00:07:44] to make&nbsp; this market really hard to manipulate,
+[00:07:47] we feed no additional information to the traders.
+[00:07:50] They ignore all news and rumors about the future.
+[00:07:54] So, really, no one can manipulate
+[00:07:56] these traders with faulty information.
+[00:07:59] They're as unpredictable as it gets.
+[00:08:02] Ok, so far, we've created a fair market where randomness rules.
+[00:08:06] Buyers and sellers act unpredictably,
+[00:08:09] and prices reflect their&nbsp; combined random expectations.
+[00:08:12] But what if there are there&nbsp; invisible forces subtly
+[00:08:15] influencing the direction of these random movements?
+[00:08:18] And could this cause certain price levels to be avoided,
+[00:08:21] creating soft barriers in the market?
+[00:08:24] Well, let's see what the simulation says.
+[00:08:27] Imagine running simulations for 500 days.
+[00:08:31] It's surprisingly easy to spot&nbsp; patterns
+[00:08:34] that look like order.
+[00:08:35] But of course: in this scenario, it's all random.
+[00:08:39] Yet, not all patterns are meaningless.
+[00:08:41] And recognizing these patterns helps&nbsp; us understand
+[00:08:44] how markets function and where limits emerge naturally.
+[00:08:48] For example, running the simulation a million times
+[00:08:51] shows which price levels are rare.
+[00:08:54] This symmetry won't tell you exactly how to trade,
+[00:08:57] but it does offer insights into&nbsp; the overall shape of the market.
+[00:09:01] Let's do this for two hypothetical markets:
+[00:09:04] In the first market, traders place orders
+[00:09:07] based on the price distribution and a uniform volume distribution.
+[00:09:11] So, the volumes could range anywhere&nbsp; from 0 to the maximum trade volume,
+[00:09:15] each with an equal probability.
+[00:09:18] Most importantly, they have unlimited wealth to back all their trades.
+[00:09:23] This means they can always afford whatever volume they want to order at any price,
+[00:09:28] buying and selling completely randomly.
+[00:09:31] As a result, the orders the traders can offer
+[00:09:34] are independent of the absolute price level.
+[00:09:36] And this means that the typical daily price&nbsp; changes,
+[00:09:40] derived from the order curves,
+[00:09:42] are also essentially independent&nbsp; of the absolute price level.
+[00:09:45] Each day acts like an independent&nbsp; experiment,
+[00:09:48] detached from the past, and then stacked on top of the previous days.
+[00:09:53] The prices in this market follow what's known as a "Gaussian random walk,"
+[00:09:57] with an expected price change of zero.
+[00:10:00] And even if the real market price suddenly spikes,
+[00:10:03] we've learned that each trading day operates
+[00:10:06] independently from the previous ones.
+[00:10:08] And so the forecast shape remains unchanged.
+[00:10:11] There's no external force pulling&nbsp; the price back down again.
+[00:10:15] You're essentially running the same&nbsp; prediction again,
+[00:10:18] just at a new price level.
+[00:10:20] In such a random walk, it's likely&nbsp; for prices
+[00:10:23] to eventually reach arbitrarily high or low values over&nbsp; time;
+[00:10:27] here on a logarithmic price scale.
+[00:10:30] Now, contrast this with the second market,
+[00:10:33] where traders are limited by their wealth.
+[00:10:36] Here, the forecast shape differs significantly.
+[00:10:39] Why?
+[00:10:40] It comes down to the trading rules.
+[00:10:43] In this market, traders can't&nbsp; borrow money to buy shares,
+[00:10:46] so their buy volumes are&nbsp; limited by what they can afford.
+[00:10:50] When prices get too high,
+[00:10:52] their&nbsp; ability to buy decreases sharply.
+[00:10:55] They simply get fewer shares for&nbsp; the money they're willing to spend.
+[00:10:58] Selling, however, is less restricted.
+[00:11:01] They can place sell orders for any portion of their holdings at virtually any price,
+[00:11:06] regardless of whether anyone buys.
+[00:11:09] These sell orders could be wishful thinking.
+[00:11:12] This introduces an asymmetry:
+[00:11:15] as prices rise, the volume of buy&nbsp; orders shrinks due to the lack of money,
+[00:11:20] while sell orders remain here unaffected.
+[00:11:23] If prices drift too far from the center,
+[00:11:25] this asymmetry creates a natural pull, nudging them back.
+[00:11:30] We can see this more clearly when&nbsp; we examine the theoretical limit.
+[00:11:34] Here, we assume an infinite number of&nbsp; traders
+[00:11:36] placing buy and sell orders.
+[00:11:38] This blends individual actions&nbsp; seamlessly into the overall system,
+[00:11:42] which gives smoother curves and&nbsp; reveals the market dynamics better.
+[00:11:47] Now, comparing this to the Gaussian&nbsp; random walk of the first market,
+[00:11:51] where the shape of the order curves remained&nbsp; independent of the absolute price level,
+[00:11:55] we clearly see the additional&nbsp; price nudge in the second market.
+[00:11:59] Prices still fluctuate randomly,
+[00:12:02] but now&nbsp; they orbit a sort of gravitational center.
+[00:12:05] Over time, these fluctuations settle into a band.
+[00:12:09] In theory, prices could rise indefinitely.
+[00:12:12] But it becomes increasingly&nbsp; unlikely, given the order asymmetry.
+[00:12:16] This is a fascinating observation!
+[00:12:18] The rules governing how our people can trade
+[00:12:22] effectively create practical, soft limits on price movements.
+[00:12:26] At least when no one is talking about it.
+[00:12:29] In reality, any publicly known price limit is quickly exploited and disappears.
+[00:12:34] But assuming for a moment this limit holds,
+[00:12:36] then this it, what it means:
+[00:12:38] When our traders keep adding new money to their trades,
+[00:12:42] they are injecting new funds into the market,
+[00:12:44] and a statistically significant&nbsp; trend channel forms.
+[00:12:48] And think about this:
+[00:12:50] At no point does the simulation instruct the market to form channels.
+[00:12:54] This pattern emerges naturally as a result
+[00:12:57] of the market rules and the traders' order behavior.
+[00:13:00] And this trend is different from the&nbsp; trends in a Gaussian random walk.
+[00:13:04] Those trends were just coincidental&nbsp; and lacked real significance.
+[00:13:09] Even if we add a drift to a Gaussian random walk,
+[00:13:12] it won't produce this kind of band channel.
+[00:13:15] That's worth investigating.
+[00:13:16] But not today.
+[00:13:18] Because there are some more useful price&nbsp; movement patterns I want to show you.
+[00:13:22] For example, increasing the number of traded&nbsp; shares, the volume,
+[00:13:26] makes prices less volatile.
+[00:13:28] Why?
+[00:13:29] Well, few orders make choppy order curves
+[00:13:32] which generate on average bigger price jumps.
+[00:13:35] More orders make smoother curves&nbsp; and average out to smaller jumps.
+[00:13:39] Here, I've rescaled the volume in the diagram
+[00:13:42] to better fit the order curves within the screen.
+[00:13:45] So, with a lot of orders,
+[00:13:46] say, a&nbsp; million, the price barely wobbles.
+[00:13:49] Sure, prices can still shift&nbsp; if expectations surge suddenly,
+[00:13:53] but they don't fluctuate wildly.
+[00:13:56] Here's what this means in real life:
+[00:13:58] When you see a massive price jump,
+[00:14:00] it&nbsp; doesn't necessarily signify major news.
+[00:14:03] It could be fewer people trading.
+[00:14:06] Fewer trades make bigger jumps.
+[00:14:09] And if you want to put these jumps into context,
+[00:14:11] you can draw a band showing what's "normal" at various volume levels.
+[00:14:15] I share the code in my tutorials so you can see how these factors influence market movements.
+[00:14:21] So, these patterns highlight how trading behavior shapes randomness.
+[00:14:25] And in the toughest market imaginable,
+[00:14:28] the Gaussian random walk,
+[00:14:29] you cannot make predictions that can be exploited
+[00:14:32] which ties back to our initial question.
+[00:14:35] How can you reliably win in a market where everyone else acts completely at random?
+[00:14:41] Imagine yourself in that situation.
+[00:14:43] To win every single time, you'd need&nbsp; to know something about the future.
+[00:14:48] But there's our problem:
+[00:14:50] you can't predict&nbsp; what everyone else will do.
+[00:14:52] It's all random.
+[00:14:54] So, if predicting others&nbsp; isn't an option, what's left?
+[00:14:59] The only variable that can shape&nbsp; the future to your advantage...
+[00:15:03] is you …
+[00:15:04] Winning isn't about predicting the market anymore,
+[00:15:08] it's about taking control.
+[00:15:10] And control means more than just reacting faster,
+[00:15:14] it's about dictating prices and shaping&nbsp; how others perceive market trends.
+[00:15:18] And this hints at the level of&nbsp; influence required to make it happen.
+[00:15:23] It might seem like an obvious realization,
+[00:15:26] but I wanted to point it out because it's so important.
+[00:15:30] In the next section, we'll explore the mechanics of this control
+[00:15:34] and see how deliberate actions can distort a random market.
+[00:15:40] So, what would it take to nudge a market's price in your favor?
+[00:15:44] For instance, let's say you bought some shares,
+[00:15:47] and now you want to artificially&nbsp; increase the market price.
+[00:15:49] The first step is simple:
+[00:15:51] I enter the market and say,
+[00:15:53] "I'm buying 600 shares at 55 dollars each!"
+[00:15:57] Remember, the buyer curve shows how much people are willing to pay at various prices.
+[00:16:02] So, when we slot my order into this buyer curve,
+[00:16:05] the market price takes a step up.
+[00:16:07] In other words, my order adds more demand at a higher price point,
+[00:16:11] justifying a higher market price.
+[00:16:13] By adjusting my order, tweaking the price or&nbsp; the volume,
+[00:16:17] I can influence the market price.
+[00:16:19] All it takes is placing enough&nbsp; volume at higher price levels.
+[00:16:23] But there's a catch: this&nbsp; 'strategy' comes with a cost.
+[00:16:27] I can't just talk about buying these shares.
+[00:16:30] I actually have to buy them to cause a price shift.
+[00:16:33] And that's incredibly expensive.
+[00:16:35] My action moved the price, but at full cost.
+[00:16:39] Still, I shouldn't expect anyone's sympathy.
+[00:16:42] This tactic is usually considered illegal
+[00:16:45] since&nbsp; my intention was to mislead other traders.
+[00:16:48] And if the goal is to&nbsp; exploit other traders anyway,
+[00:16:51] there are ways to achieve&nbsp; more impact for the cost,
+[00:16:53] and we don't even need to&nbsp; spread faulty news for that.
+[00:16:57] So, how can we manipulate the market&nbsp; price without footing the bill?
+[00:17:02] At first glance, if we place a big buy order,
+[00:17:05] we'd end up paying the seller
+[00:17:07] 600 shares times whatever the market price will be.
+[00:17:10] To break even, we need to get that money back somehow.
+[00:17:14] The trick is to sell the same number of shares
+[00:17:17] right back, to ourselves.
+[00:17:19] This practice is called self-trading.
+[00:17:22] But here's the interesting part:
+[00:17:24] we're not just moving shares from&nbsp; one pocket to another in secret.
+[00:17:27] Instead, we're doing it publicly:
+[00:17:30] From the left pocket, through the exchange, into the right pocket,
+[00:17:34] making it look like legitimate market activity.
+[00:17:37] By itself, self-trading doesn't&nbsp; magically change the market price.
+[00:17:41] It simply shifts supply and demand.
+[00:17:44] The point is perception.
+[00:17:46] Faking higher volume creates&nbsp; the illusion of a liquid market.
+[00:17:50] Which is great because, in real markets,
+[00:17:52] traders often see high volume as a signal that
+[00:17:55] something big is happening, like breaking news.
+[00:17:58] But remember our catch:
+[00:18:00] in our simulation, this fake volume doesn't influence anyone.
+[00:18:04] Our traders act randomly,&nbsp; ignoring these signals entirely.
+[00:18:08] And that's what makes this problem so challenging.
+[00:18:12] If perception alone won't work,
+[00:18:14] we need to directly influence the market price;
+[00:18:17] a strange concept when most traders take prices as given.
+[00:18:21] These are price takers.
+[00:18:24] To manipulate the market,
+[00:18:25] we&nbsp; have to think like price setters.
+[00:18:28] And here's how it works:
+[00:18:31] Imagine a small stock where daily volume is usually low.
+[00:18:35] Placing a buy order of 600 shares at $55
+[00:18:39] and a sell order of 600 shares at $55
+[00:18:42] creates the illusion of high activity.
+[00:18:45] As we increase the volume,
+[00:18:47] we pay&nbsp; more but still lack full control.
+[00:18:51] But when the buy and sell orders&nbsp; overlap,
+[00:18:53] we reach a tipping point.
+[00:18:55] Every trade within that range is effectively
+[00:18:58] self-ordering at a zero price difference.
+[00:19:01] This enforces the intersection of the curves
+[00:19:04] which gives us control of the market price.
+[00:19:07] And once we have control, we can&nbsp; set any price and volume we want,
+[00:19:11] pushing it high enough to&nbsp; overcompensate for any initial costs.
+[00:19:16] We've successfully hijacked&nbsp; the market's pricing mechanism.
+[00:19:20] This is called monopoly power in a stock market,
+[00:19:23] where 'buying the whole market' lets you dictate prices.
+[00:19:26] It's similar to how a company with a product monopoly
+[00:19:29] can manipulate supply to raise costs.
+[00:19:32] In real markets, this tactic&nbsp; doesn't just distort the price.
+[00:19:36] It can also trick traders into&nbsp; believing it's genuine activity.
+[00:19:40] It's particularly easy in smaller, less regulated&nbsp; markets,
+[00:19:44] where the initial cost is lower.
+[00:19:46] So, as you can see:
+[00:19:48] With trade-based manipulation, one can distort signals like price and volume
+[00:19:53] and trick traders into making poor decisions.
+[00:19:56] So, our friend should watch for one unusually&nbsp; large buy and sell order at nearly the same price.
+[00:20:02] That could be an attempt at manipulation.
+[00:20:06] Alright, so our friend here is running low on funds,
+[00:20:09] just like the rest of the 'good' traders.
+[00:20:11] It's time to step in and help them out
+[00:20:14] by cracking their opponent's moves.
+[00:20:16] We're going to walk through one&nbsp; complete manipulation cycle,
+[00:20:20] to really understand it.
+[00:20:22] And then we'll figure out how to blend these moves
+[00:20:24] seamlessly into the noise of the crowd.
+[00:20:29] Let's take a closer look at&nbsp; how the whole scheme works,
+[00:20:32] here in a market that follows&nbsp; a Gaussian random walk.
+[00:20:35] And to better see what's happening,
+[00:20:37] we track the manipulator's money, shares, and the relative wealth
+[00:20:41] compared to the rest of the market.
+[00:20:43] That's the total money you hold,&nbsp; plus the market value of your shares,
+[00:20:47] compared to what the other traders have.
+[00:20:50] So, first, the scheme starts with buying as many shares as possible
+[00:20:54] without drawing too much attention.
+[00:20:56] The goal is to stay under the radar
+[00:20:58] while&nbsp; gradually building up your position.
+[00:21:01] So, in the graphs, we see
+[00:21:03] money&nbsp; slowly being converted into shares.
+[00:21:06] Then comes the price manipulation.
+[00:21:09] This involves using self-trading, where you
+[00:21:11] partly buy and sell shares to yourself,
+[00:21:14] to gain control and nudge the price upward.
+[00:21:17] Here, I took a rather obvious&nbsp; approach to demonstrate the mechanics.
+[00:21:20] But you can make it less noticeable,
+[00:21:23] nudging the price up by a small percentage.
+[00:21:25] It won't work every day.
+[00:21:27] Some days, you might not have full control, or the market could move unpredictably.
+[00:21:32] Well, that's part of the gamble.
+[00:21:33] As a manipulator, I wouldn't say&nbsp; you are in a position to complain.
+[00:21:37] During this phase, you're also buying&nbsp; more shares to maintain control.
+[00:21:42] Finally, once the price has been&nbsp; inflated enough, it's time to sell.
+[00:21:46] The goal here is to offload your shares quietly,
+[00:21:49] cashing in on the inflated price&nbsp; without causing too much disruption.
+[00:21:54] By the end of the cycle, you've gone from&nbsp; having no shares and a million dollars,
+[00:21:58] to holding no shares again, but now with&nbsp; a larger amount of
+[00:22:02] 1.7 million dollars.
+[00:22:05] You can see in the relative&nbsp; wealth graph
+[00:22:07] that we've managed to take a significant slice&nbsp; from the other random traders.
+[00:22:12] This is a form of the classic&nbsp; "pump-and-dump" scheme.
+[00:22:15] What makes the method here stand out&nbsp; is that it's entirely trade-based.
+[00:22:20] We don't issue fake news.
+[00:22:21] We just&nbsp; control the price with self-trading.
+[00:22:25] To show it works on average,
+[00:22:27] let's imagine the same situation without manipulation.
+[00:22:31] You buy shares for the same amount of money over the same period
+[00:22:35] but don't artificially inflate the price.
+[00:22:37] Many simulations show that the non-manipulated&nbsp; version
+[00:22:41] consistently underperforms compared to the manipulated one,
+[00:22:44] proving the scheme's effectiveness.
+[00:22:47] What's particularly troubling is that&nbsp; even when people aren't trading randomly,
+[00:22:51] like in the final phase when&nbsp; they start selling alongside you,
+[00:22:54] it's still possible to predict their&nbsp; behavior and factor it into your plan.
+[00:22:59] In fact, if the scheme works&nbsp; in a completely random market,
+[00:23:03] it works even better when traders&nbsp; follow predictable patterns.
+[00:23:07] Now, where does the manipulator's&nbsp; profit actually come from?
+[00:23:11] There's one driving factor that&nbsp; makes this whole scheme possible:
+[00:23:15] the assumption that tomorrow's price&nbsp; is likely to be close to today's price.
+[00:23:21] If traders didn't rely so&nbsp; much on recent price trends,
+[00:23:24] meaning they wouldn't simply&nbsp; accept the inflated price level,
+[00:23:27] this kind of manipulation wouldn't be possible.
+[00:23:31] You might think that basing trades&nbsp; more on fundamental factors,
+[00:23:35] like a company's performance,&nbsp; sounds like the rational approach,
+[00:23:38] and you'd be right.
+[00:23:39] But it only works if everyone does it.
+[00:23:42] Markets are inherently driven by&nbsp; participants outbidding one another,
+[00:23:46] fully aware that they are&nbsp; trading at irrational prices.
+[00:23:50] This, in itself, is also a&nbsp; fundamental factor:
+[00:23:53] the human factor.
+[00:23:55] That said, our self-trades&nbsp; here are still easy to spot.
+[00:23:59] And exchanges could simply ignore these&nbsp; orders,
+[00:24:02] or regulators might investigate them.
+[00:24:04] So, let's figure out how manipulators&nbsp; manage to blend into the crowd.
+[00:24:08] Because, you can't investigate,&nbsp; what you don't know about.
+[00:24:13] By now, you've probably spotted the trick:
+[00:24:15] it's not a crowd of people moving the market.
+[00:24:18] It's one person pulling the&nbsp; strings behind the scenes.
+[00:24:21] The idea is to scatter coordinated&nbsp; self-trading orders across the market,
+[00:24:26] making them look like harmless activity,
+[00:24:29] except they're not.
+[00:24:30] These trades still carry enough weight
+[00:24:33] to&nbsp; nudge the price where the manipulator wants it.
+[00:24:36] If we spread these orders out more smoothly,
+[00:24:39] the manipulation becomes much harder to detect.
+[00:24:42] There are still some unusual&nbsp; dents in the order curves,
+[00:24:45] but now they're more subtle&nbsp; and could go undetected.
+[00:24:49] Now, how could manipulation&nbsp; be concealed even better?
+[00:24:52] First, we need to learn how to quantify it.
+[00:24:55] There are several ways to go about it:
+[00:24:57] The idea is to identify irregularities&nbsp; in the order curve shape.
+[00:25:02] To achieve this, we can&nbsp; exemplarily standardize the curves
+[00:25:05] to fit a 0–100% volume range
+[00:25:08] and the&nbsp; expected un-manipulated price range.
+[00:25:12] Then we run multiple&nbsp; simulations without manipulation
+[00:25:15] to establish a reference&nbsp; for normal market behavior.
+[00:25:18] This creates a band of order curves, helping quantify
+[00:25:22] what counts as "unusual" behavior.
+[00:25:24] And as we have seen for price setting,
+[00:25:27] manipulation has a tell.
+[00:25:29] You'd expect unusual behavior in both order curves.
+[00:25:33] There are several ways to assign numbers to this unusual behavior
+[00:25:37] to estimate how much manipulation is happening.
+[00:25:40] If you're interested,
+[00:25:41] my&nbsp; coding tutorials dive into building the simulation and running these tests.
+[00:25:46] Also, on a related note,
+[00:25:48] we are looking into an intriguing connection&nbsp; between
+[00:25:51] wealth distribution in markets and the statistical mechanics of an ideal gas.
+[00:25:56] Both systems have conserved quantities like total money, shares, or energy.
+[00:26:01] And as traders or particles continuously interact,
+[00:26:04] they naturally settle into&nbsp; equilibrium distributions.
+[00:26:08] In that sense, you can loosely&nbsp; think of a market as having a 'money temperature,'
+[00:26:13] which offers&nbsp; an interesting perspective on markets.
+[00:26:16] But for now, let's go back and see how
+[00:26:18] the amount&nbsp; of manipulation varies across different scenarios.
+[00:26:22] Here are three distinct price jumps,
+[00:26:25] but&nbsp; not all of them are caused by manipulation.
+[00:26:28] For example, this jump right here?
+[00:26:30] That's a genuine market reaction to positive news about the company.
+[00:26:34] We can simulate this with our traders reacting to what is called a sentiment curve.
+[00:26:39] Think of the sentiment curve as a signal
+[00:26:42] reflecting the market's collective&nbsp; belief about a company's future.
+[00:26:46] Positive news can shift the curve upward,
+[00:26:48] representing increased confidence of investors.
+[00:26:51] With fresh money injected into the market,
+[00:26:54] both the trading volume and price drive upward.
+[00:26:58] Compare that to a random price&nbsp; jump caused by low trading volume.
+[00:27:02] Here, the sentiment curve stays flat.
+[00:27:05] Nothing external has changed.
+[00:27:07] However, if we had inflated&nbsp; the volume with
+[00:27:10] self-trading without actually price setting,
+[00:27:12] it would have looked more like news than noise.
+[00:27:15] At least on the surface.
+[00:27:17] A price jump accompanied by increased volume seems natural for good news.
+[00:27:22] But self-trading leaves a trace, making it detectable in the manipulation graph.
+[00:27:27] One important note:
+[00:27:28] this graph isn't proof of manipulation.
+[00:27:31] Patterns like these occur naturally.
+[00:27:34] Eventually, it's about identifying&nbsp; traders with repeated suspicious behavior.
+[00:27:38] And only when more instances stack up
+[00:27:40] does it trigger further investigation.
+[00:27:43] Now, what happens when we go for price-setting?
+[00:27:47] That's the pump-and-dump method.
+[00:27:49] The sentiment stays flat.
+[00:27:51] There's no real news driving the price.
+[00:27:53] So, all the activity is fake.
+[00:27:56] And here's the thing about fraud detection:
+[00:27:59] it's a constant cat-and-mouse game.
+[00:28:01] Let me show you an example.
+[00:28:04] Instead of pushing the price with a simple, obvious distribution that leaves dents on the graph,
+[00:28:09] we can disguise the manipulation further.
+[00:28:11] By crafting a carefully-shaped&nbsp; manipulator price distribution,
+[00:28:16] we make the final order&nbsp; curve look completely normal. It's just… shifted.
+[00:28:21] What does that mean?
+[00:28:22] It means we've essentially faked an entire market at a different price and volume level.
+[00:28:28] That's about as deceptive as it gets.
+[00:28:30] The complicated part?
+[00:28:32] It comes with a huge initial&nbsp; cost
+[00:28:34] and you have to guess what the original price&nbsp; distribution will look like.
+[00:28:38] If you guess right, this kind of&nbsp; manipulation can be undetectable,
+[00:28:43] at least from the order curve shapes alone.
+[00:28:46] Things get even trickier when manipulation pairs up with real information.
+[00:28:51] Not fake news, but reliable information.
+[00:28:53] Take positive sentiment, for instance.
+[00:28:56] It's natural to expect the market to go up when good news breaks.
+[00:29:00] But how much of an increase is reasonable?
+[00:29:03] Only one of these markets&nbsp; here is free of manipulation.
+[00:29:07] The others amplify or downplay the news.
+[00:29:10] So, how can you tell, right off the bat, which one is genuine?
+[00:29:13] Each one aligns with the truth to some degree.
+[00:29:18] The main takeaway is this:
+[00:29:20] when 'someone' gains monopoly power over the market,
+[00:29:23] the market can't function as it's supposed to.
+[00:29:26] It becomes a losing game for everyone else.
+[00:29:29] And if that 'someone' isn't you,
+[00:29:31] then no matter how sharp your predictions are,
+[00:29:34] you're likely to fall prey to the manipulator.
+[00:29:37] You might be thinking,
+[00:29:38] "Well, these frauds don't really happen no longer in the big, regulated markets
+[00:29:42] where my retirement funds are parked."
+[00:29:45] And you'd be mostly right!
+[00:29:47] Nowadays these markets are&nbsp; monitored by oversight teams equipped with
+[00:29:51] far more advanced&nbsp; financial forensic tools to keep the game fair for the rest of us.
+[00:29:56] In a way, this video is a nod to their work.
+[00:29:59] But as more people dive&nbsp; into less-regulated markets,
+[00:30:02] maybe there's wisdom in not taking every price.
+[00:30:06] When a deal looks too good to be true,
+[00:30:08] well, you know how that usually goes.
+[00:30:11] But every once in a while you do get lucky
+[00:30:14] and find a deal that works in your favor.
+[00:30:16] Take this one:
+[00:30:17] If someone offered to teach you
+[00:30:19] math, data analysis, programming, and AI,
+[00:30:22] that's the volume,
+[00:30:23] in just a few minutes of hands-on learning a day,
+[00:30:26] that's the price,
+[00:30:28] that'd be a solid trade!
+[00:30:30] Well, that's Brilliant.
+[00:30:31] And what I like about Brilliant is  that
+[00:30:34] they don't just throw information at you.
+[00:30:36] They help you figure things out for yourself.
+[00:30:39] Every one of the thousands of lessons is interactive,
+[00:30:42] letting you solve problems while playing with concepts.
+[00:30:45] It's an intuitive approach, and for me,  that's what makes learning stick.
+[00:30:50] If today's video got you curious about market trends and data patterns,
+[00:30:54] have a look at the new data science courses.
+[00:30:57] With real-world datasets from Airbnb, Spotify, and more,
+[00:31:01] you'll learn how to spot trends and make smarter decisions.
+[00:31:04] To try everything Brilliant has to offer for free for a full 30 days, visit
+[00:31:09] brilliant.org/braintruffle/ or scan the QR code onscreen,
+[00:31:13] or you can click the link in the description.
+[00:31:16] You'll also get 20% off an annual premium subscription.
+[00:31:20] Thanks for watching, and thank you for your support!

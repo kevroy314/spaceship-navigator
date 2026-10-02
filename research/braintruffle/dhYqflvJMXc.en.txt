@@ -1,0 +1,589 @@
+[00:00:00] This – is an interplanetary transport network!
+[00:00:03] And you think I can reach my home planet?
+[00:00:05] J.: I mean, probably?!
+[00:00:07] That's the spirit!
+[00:00:09] And this – is my probability tracer&nbsp; solving tough spaceflight riddles.
+[00:00:13] What's the best path home,&nbsp; optimizing fuel and time?
+[00:00:17] That's an insane&nbsp; dynamical/combinatorial mixed problem.
+[00:00:21] And as we solve it, you learn to use&nbsp; manifolds, weak stability boundaries,
+[00:00:25] periodic orbits, and many more spaceflight tools.
+[00:00:28] All shown in ways you&nbsp; probably haven't seen before.
+[00:00:31] And we start with building the tracer.
+[00:00:33] I.. hope to get it right.
+[00:00:35] Because my friend needs a rescue.
+[00:00:36] I'm not judging, but how do you get here ..&nbsp; running low on everything: the journey is over.
+[00:00:42] Still, it's a great example of what&nbsp; to do when lost in outer space!
+[00:00:46] Step one: What makes 'getting home' so hard?
+[00:00:50] Imagine nothing else but you in a spaceship.
+[00:00:53] Getting from here to there is peanuts.
+[00:00:55] Fire and drift along a straight path.
+[00:00:58] Let's add a planet, and you swing by.
+[00:01:00] Is it still a great path?
+[00:01:02] Look into the future!
+[00:01:03] And for this two-body constellation,&nbsp; looking means solving analytic expressions.
+[00:01:07] Which are pretty simple – give parameters,&nbsp; and you get the Keplerian orbits.
+[00:01:11] Now, you can't see it, but the planet&nbsp; moves around the gravitational center, too.
+[00:01:15] Energy and momentum conservation.
+[00:01:17] You will see it by adding more massive planets.
+[00:01:20] But except for some motions, you rarely find these&nbsp; simple mathematically closed-form expressions.
+[00:01:25] Now we all have computers.
+[00:01:26] So, there is an easy prediction method for&nbsp; many masses: numerical time integration.
+[00:01:31] The idea is simple.
+[00:01:32] Take the current gravitational forces&nbsp; to guess tiny velocity changes.
+[00:01:35] And take the current velocities&nbsp; to guess tiny location changes.
+[00:01:38] You guessed it: Newton's laws of motion.
+[00:01:41] This stepwise computation is prone to&nbsp; errors and takes your computer some time.
+[00:01:46] Now, there is a tweak to speed up the&nbsp; computation by splitting the simulation.
+[00:01:50] The spaceship is lightweight compared to the&nbsp; planets, and so is its impact on their motion.
+[00:01:55] So, make a first run without the&nbsp; spaceship and store the paths.
+[00:01:58] And then, play back the planet's motion in&nbsp; the next run to get the spaceship's reaction.
+[00:02:02] That's much faster in total if you&nbsp; want to compute many spaceships anyway.
+[00:02:05] Each new simulation only moves one spaceship&nbsp; pulled by three gravitational forces.
+[00:02:10] Sounds great?
+[00:02:11] Here is the kicker.
+[00:02:12] To see if a path is a winner, predict the future.
+[00:02:15] Which, even for just one simulated spaceship,&nbsp; gets harder the longer the journey.
+[00:02:19] Here, I fire a little bit, and&nbsp; my route zaps all over the place!
+[00:02:23] With all the uncertainties about the real&nbsp; world, longer simulations are hard to trust.
+[00:02:27] But no need for thrust issues here.
+[00:02:29] I can fire anytime to tune the path&nbsp; and make a different winner, right?
+[00:02:33] Absolutely, but the next question&nbsp; is: what is the best firing?
+[00:02:36] Say you are short on travel&nbsp; time and propellant consumption.
+[00:02:39] To get the optimal route: You have to search&nbsp; along all possible firings at any time!
+[00:02:44] That's a continuum of decisions!
+[00:02:46] Simply firing initially and then doing&nbsp; nothing can't be the whole story?
+[00:02:50] Oh, and for my friend here,&nbsp; there is an easy way home.
+[00:02:53] Fire relative to planet Silk in prograde direction&nbsp; at this point to slow down relative to the Sun.
+[00:02:59] Wait a little bit.
+[00:03:03] Reach planet Blue's orbit.
+[00:03:05] Fire retrograde relative to Blue to slow&nbsp; down while falling into an orbit around Blue.
+[00:03:09] From here on land! It's that easy.
+[00:03:12] And seriously, how else to get home.
+[00:03:15] That's a Hohmann transfer, which I&nbsp; learned makes an ideal transfer orbit?
+[00:03:19] The problem is, it's too costly here.
+[00:03:21] Propellant runs out during the&nbsp; 'Low Blue Orbit' 'injection burn.'
+[00:03:25] So, what's the better sequence?
+[00:03:26] Let's compare all possible paths home,&nbsp; considering all possible intermediate firings.
+[00:03:31] Spoiler: The continuity of firing&nbsp; possibilities actually helps.
+[00:03:35] Spoiler spoiler: running special experiments,&nbsp; low-energy routes will come up automatically.
+[00:03:40] And don't panic!
+[00:03:41] I keep this playground solar system&nbsp; flexible in sizes and masses.
+[00:03:45] I want to see all local and global action at once.
+[00:03:47] Because this system revolves around education.
+[00:03:50] Step two: what's wrong with rays?
+[00:03:52] Forget about firing for now.
+[00:03:54] That's like spawning new rays.
+[00:03:56] There is a problem with ray&nbsp; tracing in the first place.
+[00:03:59] I give an example.
+[00:04:00] Say you perform a gravity&nbsp; assist maneuver, aka swing-by.
+[00:04:03] The speed before and after the swing-by&nbsp; won't change relative to the planet,
+[00:04:07] but the path direction will.
+[00:04:09] Relative to the Sun, this changes the speed and&nbsp; the orbital energy: you can reach farther out.
+[00:04:14] And here is the problem: After the swing-by,&nbsp; the resolution of the ray package is lost.
+[00:04:18] Now, honestly, this spreading is nothing bad.
+[00:04:20] It's great for route controlling.
+[00:04:22] But it generates more non-sampled&nbsp; space between the rays.
+[00:04:25] To fill in the details, shoot more rays.
+[00:04:27] But it doesn't solve the unbalanced resolution.
+[00:04:30] It's easy to miss a winner.
+[00:04:31] So why don't we build not a ray&nbsp; tracer but a probability tracer?
+[00:04:35] Let's push spaceship-position&nbsp; probabilities over a computational grid.
+[00:04:39] This gives a numerically equalized look,&nbsp; and if a target is reachable, you see it!
+[00:04:44] Step three: tracing spaceship probabilities
+[00:04:47] First, let's get this right: tracing&nbsp; probabilities answers a different question.
+[00:04:52] You don't look for precise routes&nbsp; but whether there are any routes.
+[00:04:55] And then you know if it's&nbsp; worth reconstructing a winner.
+[00:04:58] So, all I need is a probability&nbsp; cloud that lives on a spatial grid.
+[00:05:01] And the algorithm tunes grid values to show&nbsp; whatever infinitely many spaceships do.
+[00:05:06] Awesome, right?
+[00:05:07] Well, that's impossible.
+[00:05:08] Think of two probability clouds overlapping.
+[00:05:11] Nothing happens.
+[00:05:12] They pass without interaction.
+[00:05:13] And why should they?
+[00:05:14] They represent infinitely&nbsp; many independent spaceships.
+[00:05:17] I hope you see the problem?
+[00:05:19] Both clouds overlap with&nbsp; different velocity vectors.
+[00:05:22] So, which one tells the position-based&nbsp; algorithm how to shift the grid values?
+[00:05:26] Which vector wins?
+[00:05:27] Or, for that matter, how to even&nbsp; tell each cloud its velocity?
+[00:05:31] It's simple: A position-based description
+[00:05:33] contains not enough space to handle&nbsp; arbitrarily multi-valued velocities.
+[00:05:37] The probability lives in position&nbsp; and velocity space – the phase space.
+[00:05:41] And don't think of one magical phase&nbsp; space size; it depends on the problem.
+[00:05:45] I give you an example.
+[00:05:47] These 1,000 particles make one point&nbsp; in a 4,000-dimensional phase space.
+[00:05:51] Each coordinate stores unique&nbsp; information about some particle.
+[00:05:55] You can make this point a blurred&nbsp; blob to think collectively about
+[00:05:58] infinitely many variations of this experiment.
+[00:06:00] And here is the key.
+[00:06:02] Instead of tracing probabilities in this&nbsp; high-dimensional n-particle phase space,
+[00:06:06] ask how likely to find any particle to be&nbsp; in a given location and velocity range.
+[00:06:11] You can chase the probability in the same&nbsp; phase space as that of the spaceship.
+[00:06:15] However, while the spaceship probability&nbsp; passes without self-interaction,
+[00:06:19] the fluid does, and the probability shows it.
+[00:06:22] With enough particle interaction, they&nbsp; struggle themselves to effectively
+[00:06:26] two-dimensional behavior –&nbsp; they equilibrate locally.
+[00:06:29] And then, position-based fields make sense&nbsp; – temperature, pressure, or probability.
+[00:06:34] Reduce to non-self-interaction, and&nbsp; you need a four-dimensional grid.
+[00:06:38] So, the plasma or fluid side of the spectrum&nbsp; are challenging for their own reasons.
+[00:06:43] But they also come with their own&nbsp; solution methods that we can steal.
+[00:06:46] But it won't be easy!
+[00:06:48] Watch this!
+[00:06:49] This simulation runs on the huge amount of&nbsp; 200 x 200 cells …
+[00:06:54] by 200 cells …
+[00:06:56] by 200 cells.
+[00:06:57] 1.6 billion cells to get this blocky blöb?
+[00:07:01] I was hoping for a full-blown statistical&nbsp; analysis, but it's getting out of reach!
+[00:07:06] I mean, to investigate my&nbsp; manifolds, I need a tracer.
+[00:07:09] Don't worry, things get worse.
+[00:07:11] Imagine a spaceship in one&nbsp; dimension within a potential well.
+[00:07:15] The closer it gets to the&nbsp; sides, the more it pushes back.
+[00:07:18] The phase space has two dimensions:&nbsp; one for position and one for velocity.
+[00:07:22] And a probability density blob&nbsp; reflects infinitely many spaceships.
+[00:07:26] Now, look at this.
+[00:07:27] As time passes, the probability mixes.
+[00:07:30] Yet, per tracer, the probability&nbsp; density stays constant.
+[00:07:33] It doesn't diffuse with neighbor values.
+[00:07:35] The motion along position and&nbsp; velocity compensate each other,
+[00:07:38] and arbitrary phase-space volumes are conserved.
+[00:07:41] So, this blob moves incompressibly, generating&nbsp; infinite details without probability diffusion.
+[00:07:47] It looks like diffusion if you&nbsp; don't look precisely, though.
+[00:07:50] And that's the problem.
+[00:07:51] My algorithm just stores grid&nbsp; values – it doesn't look precisely.
+[00:07:55] To update these, you trace back&nbsp; where the probability came from.
+[00:07:58] Which likely was somewhere between grid points.
+[00:08:01] So you have to guess these values.
+[00:08:03] This gives numerical softening or diffusion.
+[00:08:06] Then, why bother with all this?
+[00:08:08] Well, compared to ray tracing,&nbsp; you equalize the resolution.
+[00:08:11] Although, under the hood, it&nbsp; uses structured ray segments.
+[00:08:14] But the interpolation breaks the accuracy.
+[00:08:17] So, is all my hope in statistical&nbsp; astrodynamics doomed to diffuse?
+[00:08:21] Thinking about it, doesn't it look like randomly&nbsp; firing – that I have to implement anyway?
+[00:08:26] Also, I don't need the&nbsp; probability but the reachability.
+[00:08:28] Do you get home – yes or no!
+[00:08:31] Step 4: tracing spaceship reachability
+[00:08:33] Careful!
+[00:08:34] Numerical diffusion can look like random firing.
+[00:08:37] But the probability blurs differently&nbsp; – mainly along the phase space flow.
+[00:08:41] Random firing, however, means acceleration,
+[00:08:44] so it blurs along the velocity axis,&nbsp; which then translates into position blurs.
+[00:08:48] And this tiny distinction matters.
+[00:08:50] We care about reachability but in phase space.
+[00:08:53] You don't want to reach planet&nbsp; Blue's location at any cost.
+[00:08:55] You have a velocity window to reach as well.
+[00:08:58] Now, there is a computational&nbsp; shortcut to handle that.
+[00:09:01] Think about reaching this spot&nbsp; with the one-dimensional spaceship.
+[00:09:04] Random firing makes many&nbsp; spaceships reach the goal.
+[00:09:07] But the fastest ones travel&nbsp; on the blob's boundary.
+[00:09:10] They keep expanding the blob the&nbsp; fastest by firing continuously.
+[00:09:14] Here, for the fastest way, fire towards&nbsp; the goal and then fire backwards.
+[00:09:18] Now, there are electrical engines&nbsp; built to fire continuously.
+[00:09:22] Essentially, they generate a relatively&nbsp; low thrust over a long period of time.
+[00:09:26] In contrast, chemical engines give&nbsp; higher thrust for shorter periods of time.
+[00:09:31] So, when I later solve a&nbsp; continuous firing problem,
+[00:09:34] I just need to trace the boundary – great!
+[00:09:36] And realizing this, I wanted to build&nbsp; an exact grid-based boundary tracer.
+[00:09:41] I put it in a longer version of this video.
+[00:09:43] And I partly managed to make it work, but it looks&nbsp; like a gap-free prediction implies diffusion.
+[00:09:48] Making this whole grid thing is a debacle.
+[00:09:51] And I get the hint: To get my&nbsp; tracer, I have to sacrifice.
+[00:09:55] Step 6: Building spray tracers.
+[00:09:57] Back to scratch.
+[00:09:58] I'm going to use rays –&nbsp; with a statistical mindset.
+[00:10:01] And I wanna use my grid – somehow!
+[00:10:03] This is how I made it.
+[00:10:05] Remember: ray segments plus interpolation&nbsp; crushes accuracy, so I use non-stop tracers.
+[00:10:10] And by tuning the phase point&nbsp; updates, I control their accuracy.
+[00:10:13] This is how it works: The time integration&nbsp; shifts position and velocity via rules.
+[00:10:18] Acceleration changes velocity,&nbsp; which itself changes location.
+[00:10:21] Take the simplest form.
+[00:10:23] If you keep the current values constant&nbsp; over a time step, the update is a product.
+[00:10:27] Reduce the timestep, and you&nbsp; reduce the error accumulation.
+[00:10:30] But that's inefficient.
+[00:10:32] Higher-order methods, using&nbsp; a mashup of test shots,
+[00:10:34] give similar accuracy with&nbsp; less computational cost.
+[00:10:37] But you can do better.
+[00:10:39] Remember how the probability moved in phase space?
+[00:10:41] It conserved volume.
+[00:10:43] At least when the system itself conserves energy.
+[00:10:45] So, if you make your integrator share this&nbsp; property, you get better long-time behavior.
+[00:10:50] But how to make it volume-conserving?
+[00:10:52] Look how the classical 1st order&nbsp; method pushes this box over time steps.
+[00:10:57] The simultaneous shifts in position&nbsp; and velocity make the box bigger.
+[00:11:01] So instead, make staggered shifts&nbsp; along position and velocity.
+[00:11:04] The trick is to split the update&nbsp; in volume-conserving shear motions.
+[00:11:08] Which here works since the acceleration&nbsp; is independent of the velocity.
+[00:11:11] It won't stretch while shearing!
+[00:11:13] And this so-called symplectic integration&nbsp; gives great long-time behavior.
+[00:11:17] Now, I'm not saying you should&nbsp; always use symplectic integration.
+[00:11:20] A non-symplectic integrator ramped up to high&nbsp; accuracy fulfills symplecticity naturally.
+[00:11:26] Both types converge to the&nbsp; ground truth, just differently.
+[00:11:29] And the more information about the system&nbsp; you bake into the integrator, the better.
+[00:11:33] Split in Kepler orbit and interplanetary
+[00:11:35] interaction steps if you have weak&nbsp; interactions in planetary scenarios.
+[00:11:39] Make it fit your problem!
+[00:11:41] Now, to let my tracers mimic spaceships, I&nbsp; activate randomly firing and limited fuel.
+[00:11:46] They also spawn offsprings to fill in the gaps.
+[00:11:48] And I built a grid that limits the spaceship
+[00:11:50] density in phase space and&nbsp; so the computational time.
+[00:11:53] There is my grid! :)
+[00:11:54] So the rays explore, and the grid prunes.
+[00:11:56] That's all great, but eventually,&nbsp; you send millions of rays.
+[00:11:59] Which is costly.
+[00:12:01] And that's where the statistical nature helps.
+[00:12:03] Remember: predictions are hard, and&nbsp; slight nudges make huge impacts.
+[00:12:07] So, at least when getting first&nbsp; inspiration for possible routes,
+[00:12:10] why bother predicting accurately&nbsp; when you fire randomly anyway.
+[00:12:14] Numerical errors are easily overcompensated.
+[00:12:16] Just make sure the less accurate&nbsp; blob covers the exact one.
+[00:12:20] You can artificially crank up the firepower&nbsp; or take other creative global measures.
+[00:12:24] Ultimately, modifying the blob's global behavior&nbsp; can be faster than making all tracers accurate.
+[00:12:29] This cheaply generates an&nbsp; over-optimistic blob evolution,
+[00:12:32] but it definitely contains the winner route.
+[00:12:34] Which means you drastically limit the phase space&nbsp; portion where to look for the exact solution!
+[00:12:39] Filtering impossible routes and optimizing&nbsp; promising candidates is easily in post.
+[00:12:45] Step 7: Testflight
+[00:12:47] I'm not judging, but what on earth&nbsp; is my friend doing near the Moon?
+[00:12:51] Anyway, getting home is probably a cakewalk.
+[00:12:54] Let's compute the reachability for&nbsp; a continuously firing engine first.
+[00:12:57] Which I made comically strong&nbsp; to highlight the maneuvers.
+[00:13:00] And remember: we just need&nbsp; to trace the phase space
+[00:13:03] blob's boundary to find the quickest way home.
+[00:13:05] So, in the counting grid, I&nbsp; can delete the tracers inside.
+[00:13:08] And just for this experiment, I made&nbsp; the spaceship ultra heat resistant.
+[00:13:12] It allows for hefty aerobraking – and&nbsp; reaching Blue's position is here enough.
+[00:13:15] And for the records, the projection of a phase
+[00:13:17] space blob's boundary looks like&nbsp; a filled region in position space.
+[00:13:21] And now, let's run it.
+[00:13:22] There you have it: boundary tracing&nbsp; answers a very specific question.
+[00:13:26] How to get home as quickly as&nbsp; possible under continuous firing?
+[00:13:30] That's how!
+[00:13:31] Fire prograde relative to Moon to screw&nbsp; out of Moon's gravitational significance.
+[00:13:36] And once you fall down to Blue,
+[00:13:37] I thought continuous retrograde firing eats&nbsp; up the orbital energy most efficiently.
+[00:13:42] Or maybe firing against the&nbsp; angular momentum works better.
+[00:13:45] Kind of like the inverse of&nbsp; the maneuver for leaving Moon.
+[00:13:48] But the solution is surprisingly elegant.
+[00:13:51] Remember, I allowed for crashing into&nbsp; Blue, and the code takes me at my words.
+[00:13:55] So, it fires a little retrograde, but&nbsp; there is an overlayed firing to the right.
+[00:13:59] And it gets home, not in the first&nbsp; encounter, but in the end much faster!
+[00:14:04] The idea is: if you slowly chew up the angular&nbsp; momentum and still miss at the first encounter,
+[00:14:08] prepare yourself to at least&nbsp; make it in the second attempt.
+[00:14:12] And since the electrical engine can&nbsp; only push so much, it needs a little
+[00:14:15] bit more time and lever to do so, which&nbsp; it gets by swinging to a higher altitude.
+[00:14:20] So, being less efficient at the&nbsp; first encounter gives more time
+[00:14:24] to fight the angular momentum and crash home.
+[00:14:26] Now, if this maneuver is so great,&nbsp; why didn't we leave Moon that way?
+[00:14:30] Well, simply because we didn't start in an&nbsp; anti-crashing trajectory but in a circular
+[00:14:35] orbit, for which screwing out is the&nbsp; fastest way when firing continuously.
+[00:14:39] But when landing, heat resistance allowed&nbsp; for this rather "experimental" approach.
+[00:14:43] Surprisingly, it still works when&nbsp; holding the firing direction constant.
+[00:14:48] This basically fakes a new potential&nbsp; for a virtually non-firing spaceship.
+[00:14:52] It's like the classical rubber-sheet model tilted.
+[00:14:55] And my codes found this recipe simply by&nbsp; pushing millions of dumb tracers around.
+[00:15:00] Anyway, the gridded boundary has some thickness.
+[00:15:02] So, checking nearby tracers; you're&nbsp; quite flexible in getting home.
+[00:15:06] And don't forget it's a&nbsp; numerical global solution method.
+[00:15:09] It gives a winner inspiration.
+[00:15:11] The route gets better by fine-tuning later.
+[00:15:14] Now that was fun, but …
+[00:15:16] What about non-continuous, stronger firings?
+[00:15:18] We could use stronger, continuous random&nbsp; firing combined with a propellant cut-off logic.
+[00:15:23] But tracing out all 'technically&nbsp; possible' paths really bows up the blob.
+[00:15:27] That's why I add a little bit of&nbsp; sanity by firing when it is beneficial.
+[00:15:31] And to see this benefit, I shoot one-dimensional&nbsp; spaceships into this potential well.
+[00:15:36] Here, the phase space paths&nbsp; quickly start to squeeze.
+[00:15:39] This is because slower spaceships&nbsp; spent more time in this well.
+[00:15:42] They are accelerated for longer,&nbsp; building up more velocity change.
+[00:15:46] And since energy is here conserved, each&nbsp; path is of constant energy per unit mass.
+[00:15:50] By the way, in this reference&nbsp; frame, the well doesn't move.
+[00:15:53] So velocity and kinetic energy&nbsp; are relative to that well.
+[00:15:57] Now, while firing, let's say all&nbsp; the reaction mass pushed by the
+[00:16:00] engine is just one big mass pushed all at once.
+[00:16:03] In fact, let's make both&nbsp; masses equal for simplicity.
+[00:16:06] Then, firing splits the big&nbsp; mass into two smaller masses,
+[00:16:09] each following their own path, initially&nbsp; differing by a fixed relative velocity.
+[00:16:14] Obviously, to get the most bang for the&nbsp; buck, make the split when you can jump as
+[00:16:18] much energy levels as possible,&nbsp; which is during the squeezing.
+[00:16:22] There are the points of highest speed along&nbsp; each path, where kinetic energy climbs easiest.
+[00:16:27] The final speed-up or slow-down merely by firing&nbsp; within a potential well is the Oberth effect.
+[00:16:33] Now, if you start out at higher velocity,&nbsp; the Oberth contribution shrinks.
+[00:16:37] And this makes sense: passing so quickly,
+[00:16:40] there is not enough time to accelerate&nbsp; much and build up greater velocity changes.
+[00:16:44] And so the squeezing fades&nbsp; for higher initial speeds.
+[00:16:48] It's like leveling the well.
+[00:16:49] When passing a rock instead of a&nbsp; planet, there is less Oberth effect.
+[00:16:54] On the other hand, taking your time is beneficial.
+[00:16:57] That's why the capture/escape path is&nbsp; super sensitive to the Oberth effect.
+[00:17:01] That's the path that barely escapes.
+[00:17:04] Nonetheless, along each path, it's always&nbsp; beneficial to fire at the fastest point.
+[00:17:09] And you get an intuitive visualization&nbsp; by shooting non-firing blobs.
+[00:17:13] This makes it somewhat of&nbsp; a squeezing detection tool.
+[00:17:15] Since the phase space volume doesn't change,&nbsp; velocity-squeezing means position expansion.
+[00:17:21] Apply it inside the well?!
+[00:17:22] Once again, most squeezing&nbsp; is at the fastest point.
+[00:17:25] Now, the question is, how does it&nbsp; translate to the two-dimensional case?
+[00:17:29] It's quite similar!
+[00:17:30] First, let's take paths that share&nbsp; the same point of closest encounter.
+[00:17:34] This connects them at their point of&nbsp; highest velocity via a single burn.
+[00:17:37] That's great for later comparison.
+[00:17:39] So, shooting-off blobs that have the same size at
+[00:17:42] each path's slowest point, you see the&nbsp; highest stretching at the fastest point.
+[00:17:46] Firing here splits the energy most effectively.
+[00:17:49] So, in the diagrams, I compare firing&nbsp; at the fastest and the slowest point.
+[00:17:53] This is the Oberth effect.
+[00:17:55] Now, you can tell; among the paths,&nbsp; the parabola is most effective.
+[00:17:59] And the reason simply comes down&nbsp; to where the slowest point is.
+[00:18:02] On an ellipse, it is the outmost point.
+[00:18:04] And the more you fire at the fastest point, the&nbsp; more it moves away, and the velocity lowers.
+[00:18:09] Until you get a parabola with zero velocity at&nbsp; infinity – that's the route that barely escapes.
+[00:18:16] Fire more, and you get hyperbolas&nbsp; with non-zero velocity at infinity.
+[00:18:20] And that's it:
+[00:18:21] Having non-zero velocity at the slowest points,
+[00:18:24] ellipses and hyperbolas give you more kinetic&nbsp; energy when firing on their worst side.
+[00:18:28] This counters the Oberth effect.
+[00:18:30] You can still see a huge absolute energy increase.
+[00:18:33] But it would be huge already,&nbsp; even without the Oberth effect.
+[00:18:37] And, of course, arriving on a parabola,&nbsp; the post-firing hyperbola won't have the
+[00:18:42] highest energy compared to hyperbolic arrivals.
+[00:18:44] But the Oberth effect is "most effective."
+[00:18:47] So, in my simulation, I fire stronger aligned&nbsp; with the velocity vector closer to the planet.
+[00:18:52] And I hope millions of routes&nbsp; show the best combination.
+[00:18:55] You cannot always approach close to a parabola.
+[00:18:58] Now, back to my friend: let's get back to Moon!
+[00:19:00] The blob quickly explores phase space,
+[00:19:03] working on millions of possible&nbsp; routes, and … I can't see anything!
+[00:19:06] So, just for learning, I&nbsp; give you something better.
+[00:19:10] Let's sit on a Low Blue Orbit everywhere at once.
+[00:19:12] And remembering the Oberth&nbsp; effect, I will fire twice.
+[00:19:15] One firing to get away from&nbsp; Blue and another firing to
+[00:19:18] get captured by the Moon – nowhere in between.
+[00:19:21] On top, I vary the initial fire strength.
+[00:19:24] Each of these rings are millions&nbsp; of spaceships, colored by strength.
+[00:19:28] Very soon, we hit Moon.
+[00:19:29] And here, we could make the second&nbsp; firing to get captured by the Moon.
+[00:19:33] This family of routes is the Hohmann transfer&nbsp; for a prograde or retrograde orbit around Moon.
+[00:19:38] It's pretty expensive fuel-wise&nbsp; but quite fast: it's the first hit.
+[00:19:42] But let's keep going.
+[00:19:44] Every time the lines intersect with Moon,&nbsp; a firing would conclude a family of routes.
+[00:19:49] And there are a lot of them –&nbsp; I cannot even show them all!
+[00:19:52] But there is one type of family&nbsp; that should draw your attention.
+[00:19:55] These lines slowly approach Moon.
+[00:19:57] Until some tracers get ballistically&nbsp; captured by Moon without any firing.
+[00:20:02] Now, seeing the winner route doesn't tell&nbsp; you why it is possible in the first place.
+[00:20:06] And this is really cool.
+[00:20:07] Let's rerun the ballistic trajectory, and&nbsp; I want you to focus on this section here.
+[00:20:12] You see it?
+[00:20:13] We shoot off on an ellipse, but instead&nbsp; of sticking to it, we get pulled aside.
+[00:20:17] Looks pretty much like the inverse of the&nbsp; continuous firing solution we found before.
+[00:20:21] But we don't fire here!
+[00:20:23] So where does it come from?
+[00:20:25] Surprise, surprise: it's the&nbsp; Sun – nature fires for us!
+[00:20:28] To get a first overview,&nbsp; draw the potential energy!
+[00:20:31] And you clearly see: close to Blue, most&nbsp; of the local dynamics are governed by Blue.
+[00:20:36] And the farther you go outwards, the more
+[00:20:38] the collective gravitational&nbsp; pull shifts towards the Sun.
+[00:20:41] That's why we don't stick to the two-body ellipse.
+[00:20:44] In this first swing of the journey,
+[00:20:46] the Sun gets more relevant, and especially&nbsp; the Blue-Moon interplay gets less relevant.
+[00:20:51] And there is a simple model that "captures"&nbsp; this: the restricted circular three-body model.
+[00:20:56] It's a great playground with already rich&nbsp; dynamical structures that explain a lot.
+[00:21:00] Now, to study the motion with the Sun always in&nbsp; the same direction, co-rotate the reference frame.
+[00:21:06] This change in perspective alters the form of the
+[00:21:08] equations of spaceship motion when&nbsp; written in co-rotating coordinates.
+[00:21:12] By how much are they altered?
+[00:21:14] Exactly as needed so that the generated&nbsp; motion looks correct from "the outside."
+[00:21:18] I give you an example.
+[00:21:20] Here, I look at a resting mass from a&nbsp; moving and rotating reference frame.
+[00:21:24] From that perspective, the mass&nbsp; seems to get pushed around.
+[00:21:28] So, computing in this accelerating reference&nbsp; frame, you have to add some forces.
+[00:21:32] Which combined push exactly as needed to&nbsp; look like resting after back-transformation.
+[00:21:37] So, these forces only pop up for kinematic&nbsp; reasons – once we mess with the coordinates.
+[00:21:42] You describe the same physical motion after&nbsp; all – just from a fancy-dancy perspective.
+[00:21:46] But, as it goes, some of this mess is beneficial.
+[00:21:50] Here, the gravitational forces keep&nbsp; both masses on circular orbits.
+[00:21:54] And focus on the smaller mass here.
+[00:21:56] Once co-rotating with the same rotational speed,
+[00:21:59] the centrifugal force makes&nbsp; the mass apparently force-free.
+[00:22:03] In fact, you can compute the centrifugal&nbsp; force anywhere by plugging in some position.
+[00:22:08] So, we can see it as a downhill push coming from&nbsp; a position-based potential scaled with the mass.
+[00:22:13] And we can do the same with&nbsp; the gravitational potential.
+[00:22:16] Obviously, bake them into an effective potential.
+[00:22:19] That's the potential the spaceship sees&nbsp; in this co-rotating reference frame.
+[00:22:24] It's still pushed by the Coriolis force,
+[00:22:26] but the effective potential gives a hard&nbsp; reachability limit for a given energy.
+[00:22:30] And so, a non-firing blob never exceeds the&nbsp; zero-velocity lines for a given energy level.
+[00:22:36] You can lock the blobs to&nbsp; certain energetic regions.
+[00:22:39] This potential is a great predictive tool.
+[00:22:41] And you can do even more.
+[00:22:44] Apparently, you can sit at the stationary
+[00:22:46] Lagrange points to rest&nbsp; in the co-rotating system.
+[00:22:49] Let's isolate this point here and kick forward.
+[00:22:51] The Coriolis force immediately pushes&nbsp; to the right of the relative velocity.
+[00:22:55] Eventually, we drift off.
+[00:22:57] But if we start next to the Lagrange&nbsp; point and shoot off just right,
+[00:23:01] we can balance both forces to&nbsp; orbit around the Lagrange point.
+[00:23:04] In a way, this is how my code computes this orbit.
+[00:23:07] The shooting method tweaks the kick-off to&nbsp; nail down this orbit by rewarding periodicity.
+[00:23:12] And for this symmetric orbit type it's enough&nbsp; to look for perpendicular axis crossings.
+[00:23:17] Now, when there is one orbit, there are more.
+[00:23:19] Tweaking not just the kick-off&nbsp; velocity but the location as
+[00:23:22] well – meaning the whole phase space&nbsp; point – you land on a different orbit.
+[00:23:26] Just enforce periodicity and some&nbsp; distance measure towards the last orbit.
+[00:23:30] Then you performed 'numerical continuation'.
+[00:23:32] You have a solution point of a problem - here a
+[00:23:35] phase space point of an orbit - and&nbsp; you find points on neighbor orbits.
+[00:23:39] Now, tracing such an orbit numerically,&nbsp; you can check it's hard to stay on them.
+[00:23:43] They are surrounded by regions in&nbsp; phase space that, once you sit on them,
+[00:23:46] lead you to the orbit or away from&nbsp; it – stable or unstable manifolds.
+[00:23:51] These are the structures I'm looking for.
+[00:23:54] Why?
+[00:23:54] Because they tell you in advance what you get.
+[00:23:56] Take the one-dimensional spaceship&nbsp; with a hill-shaped potential.
+[00:23:59] Starting anywhere makes you follow the flow.
+[00:24:02] Starting at the equilibrium leads you nowhere.
+[00:24:04] This point is not an orbit,
+[00:24:06] but let's pretend it is equivalent as&nbsp; in: once you sit on it, you stay on it.
+[00:24:10] A stationary feature of the phase space motion.
+[00:24:13] And the stable and unstable&nbsp; manifolds are nothing more
+[00:24:15] but curves that lead you to and from that point.
+[00:24:18] Though you never reach it, it would&nbsp; take an infinite amount of time.
+[00:24:21] But they are helpful as they tell&nbsp; you what happens close to them.
+[00:24:24] You know in advance that once you ride close&nbsp; to the stable manifold, you will curve away,
+[00:24:29] following either side of the unstable manifold.
+[00:24:31] That's the skeleton of the phase space motion.
+[00:24:34] Also, taking slightly different paths is great to
+[00:24:36] generate some waiting time while&nbsp; ending up at the same location.
+[00:24:40] Both points are great for planning a spaceflight.
+[00:24:43] Remember: to catch up with Moon, you need the&nbsp; right position and velocity at the right time.
+[00:24:47] And no matter how energetic you start out,
+[00:24:50] you need to build up angular&nbsp; momentum relative to Blue as well.
+[00:24:53] That's why the Hohmann transfer&nbsp; comes with a strong second burn.
+[00:24:57] But the manifolds tell us how to get it for free.
+[00:24:59] Part of the stable manifold reaches down to Blue.
+[00:25:02] You can follow close to it, having enough&nbsp; energy but still low angular momentum.
+[00:25:07] But looking at the unstable manifold,&nbsp; we know there must be the right "curve
+[00:25:11] away" bringing us up here in time –&nbsp; having much more angular momentum.
+[00:25:15] Under the hood, it's the effective&nbsp; potential and the Coriolis force pushing us.
+[00:25:19] Also note: we curve away close to the&nbsp; outside of the stable manifold tube.
+[00:25:23] You can guess what happens being inside the tube.
+[00:25:26] Now, having the angular momentum,&nbsp; we need to approach Moon just right,
+[00:25:29] which doesn't even exist in the three-body&nbsp; system where these manifolds come from.
+[00:25:34] Well, closer to Blue and Moon,
+[00:25:35] their restricted three-body system&nbsp; with its manifolds is more relevant.
+[00:25:39] So, hopping manifolds is the name of the game –&nbsp; and we follow the stable manifold to the Moon.
+[00:25:44] Now, approaching Moon statistically, some tracers&nbsp; get temporarily captured for a number of cycles.
+[00:25:50] And to get the essence of&nbsp; this, go ahead systematically.
+[00:25:53] Any passing trajectory has a point&nbsp; of its first closest encounter.
+[00:25:57] And so you start at an angle with a perpendicular&nbsp; kick-off – here in prograde direction.
+[00:26:02] If it wouldn't be for Blue, you would then&nbsp; make an ellipse with a predefined eccentricity.
+[00:26:06] But since Blue spits in the soup, count the&nbsp; number of revolutions around Moon until escape.
+[00:26:11] For that, you check the Kepler energy sign of the&nbsp; local spaceship-Moon system after each revolution.
+[00:26:17] So, n-stable orbits make n revolutions&nbsp; around Moon with a negative energy
+[00:26:21] sign at the cut section – all without&nbsp; making a full revolution around Blue.
+[00:26:25] That's the simulation cut-off time.
+[00:26:27] Repeat this experiment for the&nbsp; next points along the cut section,
+[00:26:30] and you find changes in the n-stability.
+[00:26:33] Now, let's focus on 0- and 1-stable&nbsp; orbits and their boundaries.
+[00:26:37] These boundary points collected for all
+[00:26:39] angles for the given eccentricity&nbsp; make the weak stability boundary.
+[00:26:43] And along this boundary, you find&nbsp; points that will crash into Moon.
+[00:26:47] Now, these sets of points&nbsp; are great for two reasons:
+[00:26:50] First, obviously, they tell you where to&nbsp; be in phase space to get captured by Moon.
+[00:26:54] This is similar to the effective&nbsp; potential and manifold ideas.
+[00:26:58] Second, while sometimes coinciding with&nbsp; manifold points, they make a more general tool.
+[00:27:03] Manifolds are great; they split energetic regions,
+[00:27:05] making it easy to see where&nbsp; stuff goes in and goes out.
+[00:27:08] But they need orbits to emerge from.
+[00:27:10] And the orbits need Lagrange&nbsp; points to emerge from.
+[00:27:13] And these Lagrange points here need the restricted&nbsp; circular three-body system to emerge from.
+[00:27:18] When you go with a restricted four-body system,
+[00:27:21] the Lagrange points and the&nbsp; emerging structures are no more.
+[00:27:24] The three body sub-systems are&nbsp; disturbed by the remaining mass.
+[00:27:27] And so you don't exactly rest in&nbsp; the co-rotating reference frame.
+[00:27:31] But there are still sensitive regions, and&nbsp; the manifolds still make a great guide.
+[00:27:35] The weak stability boundary – you can&nbsp; build it for more general systems directly.
+[00:27:39] You simply count revolutions&nbsp; – however, they came about.
+[00:27:42] It's just time-dependent now.
+[00:27:44] But honestly, if nature gently carries you close&nbsp; to Moon, fire a little bit to safely stay with it.
+[00:27:50] That's how you blow up the n-stability.
+[00:27:52] You jump from the 1-stability&nbsp; for the eccentric approach to
+[00:27:55] the above 10-stability for the circular orbit.
+[00:28:00] These are the phase space&nbsp; structures for low-energy
+[00:28:02] transfer to the Moon – or anywhere else?
+[00:28:05] Starting from a Low Blue&nbsp; Orbit fire to get up here.
+[00:28:09] Then, follow inside the stable manifold tube and&nbsp; slip through the orbit into the unstable manifold.
+[00:28:14] If we are lucky, it overlaps with&nbsp; the stable manifold of planet Yellow.
+[00:28:18] But we aren't.
+[00:28:19] They don't even come close.
+[00:28:21] Visualizing the speed by an upward shift,&nbsp; you can guess the phase space distance.
+[00:28:25] So, you look for a&nbsp; cost-effective two-burn hop-over.
+[00:28:29] That's an intermediate Hohmann transfer.
+[00:28:31] From here on, it is the inverted&nbsp; sequence to a Low Yellow Orbit.
+[00:28:35] This sequence of manifolds is part of&nbsp; the interplanetary transport network.
+[00:28:39] Now, as fancy as it looks, it's hard to see if&nbsp; it's better than a classical Hohmann transfer.
+[00:28:44] So, let me convince you with a much more intuitive&nbsp; Blue-Moon example that such routes can be cheaper.
+[00:28:50] Remember: Since, all we got&nbsp; to do is getting up here,
+[00:28:53] let's get there via gravity assist by Moon itself.
+[00:28:56] The Hohmann transfer would need a strong&nbsp; retrograde burn to get captured by Moon.
+[00:29:00] The low-energy ballistic transfer&nbsp; gets you captured for free.
+[00:29:03] It just takes some time.
+[00:29:05] That's the trade-off.
+[00:29:06] And for a fair comparison, both missions&nbsp; lead here to a 2-stable capture.
+[00:29:11] Also, the Coriolis force and effective potential&nbsp; work in our favor in the fourth quadrant as well.
+[00:29:16] Here, the angular momentum keeps&nbsp; building up in the right way.
+[00:29:19] So you can expect similar routes to the Moon.
+[00:29:22] You can also use inner routes.
+[00:29:24] That's when you hop on Blue-Moon's&nbsp; inner stable manifold – either via
+[00:29:27] a Hohmann transfer or the low thrust spiral.
+[00:29:30] This carries you up to the Moon.
+[00:29:33] And to show what else is possible, the orbit&nbsp; families we found are linked to other families.
+[00:29:37] The planar Lyapunov orbits – the ones I have shown&nbsp; before – bifurcate into Halo orbits and many more.
+[00:29:43] Each having its own manifolds.
+[00:29:44] It's a mess.
+[00:29:46] It's helpful, nonetheless.
+[00:29:47] Things seem cluttered from time to time,
+[00:29:49] leaving you wondering if you ever make&nbsp; it: there is always a way, always!
+[00:29:53] Step 8: Time to get home.
+[00:29:57] This is the problem:
+[00:29:58] My friend makes an elliptic orbit at planet Silk&nbsp; with enough propellant to reach planet Blue.
+[00:30:03] But not enough to get into&nbsp; a circular Low Blue Orbit.
+[00:30:06] Oxygen is limited.
+[00:30:07] And hull integrity is … we shouldn't aerobrake.
+[00:30:10] So, to lose energy, we need&nbsp; clever swing-by's, possibly fired.
+[00:30:13] Speaking of firing:
+[00:30:14] On the first elliptic passage – firing closest
+[00:30:17] to the planet doesn't make the best&nbsp; departure angle relative to the Sun.
+[00:30:20] Not all of the Oberth speed boost&nbsp; goes in the backwards direction.
+[00:30:24] That's why the best firing point&nbsp; makes an inefficient compromise.
+[00:30:27] Simply waiting gives better departure&nbsp; angles, and you can reach "farther down."
+[00:30:31] Then again, the planets must align for&nbsp; great swing-bys – that's a phasing problem.
+[00:30:35] This is how I made it.
+[00:30:37] I divided the space in an interplanetary&nbsp; part and local planetary parts.
+[00:30:41] These control the tracer resolutions.
+[00:30:43] Now, the tracers without contact&nbsp; didn't make it to Blue in time.
+[00:30:46] So, the winner route is hidden&nbsp; in the uninvestigated shadows.
+[00:30:50] These I explore with higher&nbsp; resolution sampled from the recording.
+[00:30:53] Eventually, I iterate along encounters.
+[00:30:56] Now, at planet Blue, some tracers have enough&nbsp; propellant to decelerate onto the goal orbit.
+[00:31:00] That makes a complete route.
+[00:31:02] And since tiny changes make a huge difference,&nbsp; you get infinitely many routes per family.
+[00:31:06] Simply pick a suitable route from an&nbsp; efficient cluster, trading time vs. propellant.
+[00:31:11] This route makes five revolutions around planet&nbsp; Silk before leaving for the inner planets.
+[00:31:16] Here, a swing-by at Blue&nbsp; takes away a lot of energy.
+[00:31:19] Still, it needs additional firing to&nbsp; make the final arc hit home just right.
+[00:31:24] If you can invest more travel time, take&nbsp; this route and save even more propellant.
+[00:31:28] The Blue-Yellow double swing-by&nbsp; takes away even more energy.
+[00:31:31] And then just wait until you catch up with Blue.
+[00:31:34] Both variants are much better than the&nbsp; instant and optimal Hohmann transfer.
+[00:31:38] And as expected, since I encouraged&nbsp; Oberth-promoting swing-bys,
+[00:31:42] the winners are mostly composed&nbsp; of locally efficient maneuvers.
+[00:31:45] And if you color it not by cluster but&nbsp; by interplanetary segment, you get this.
+[00:31:50] The more swing-bys you consider, the easier it&nbsp; is to get the final arc close to Blue's orbit.
+[00:31:55] Making it easier to arrive&nbsp; on a low-energy manifold.
+[00:31:59] By the way, this is another&nbsp; riddle I'm trying to solve.
+[00:32:02] Maybe you can help me with that&nbsp; … if you enjoyed the video?
+[00:32:05] Thank you for watching!
+[00:32:06] Oberth and out.
