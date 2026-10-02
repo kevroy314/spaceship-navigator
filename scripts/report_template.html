@@ -1,0 +1,499 @@
+<title>Spacenav Flight Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Saira+Semi+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Deliberately single-theme: a flight log in the dark of space. Every colour is set explicitly. */
+:root {
+  color-scheme: dark;
+  --ground: #0a0e16;
+  --panel: #0f1520;
+  --panel-2: #141c2a;
+  --line: #1f2a3b;
+  --ink: #e4ebf5;
+  --ink-2: #a9b6c9;
+  --muted: #74839a;
+  --accent: #6da7ec;
+  --pilot: #d95926;
+  --good: #0ca30c;
+  --bad: #d03b3b;
+  --warn: #fab219;
+  --t-easy: #199e70;
+  --t-medium: #3987e5;
+  --t-hard: #d55181;
+  --t-blind: #c98500;
+  --display: "Saira Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--ground); color: var(--ink); }
+body { font: 15px/1.55 var(--body); padding-inline: 20px; padding-block: 28px 64px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 48px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: 0.01em; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(34px, 6vw, 56px); line-height: 1.02; font-weight: 700; }
+h2 { font-size: 26px; line-height: 1.15; }
+h3 { font-size: 20px; }
+p { margin: 0; max-width: 68ch; color: var(--ink-2); }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.num, table, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.dim { color: var(--muted); }
+header { display: flex; flex-direction: column; gap: 14px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 22px; font: 13px/1.4 var(--mono); color: var(--muted); }
+.meta b { color: var(--ink); font-weight: 500; }
+section { display: flex; flex-direction: column; gap: 16px; }
+.sec-head { display: flex; flex-direction: column; gap: 6px; }
+
+/* tier tiles */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 12px; }
+.tile { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: flex;
+  flex-direction: column; gap: 10px; }
+.tile .name { display: flex; align-items: center; gap: 8px; font: 600 15px/1 var(--display); letter-spacing: 0.08em; text-transform: uppercase; }
+.tile .sw { width: 10px; height: 10px; border-radius: 2px; }
+.tile .desc { font-size: 13px; color: var(--muted); min-height: 2.8em; }
+.tile .big { font: 600 40px/1 var(--display); }
+.tile .row { display: flex; justify-content: space-between; font: 13px/1.5 var(--mono); color: var(--ink-2); }
+.tile .row b { color: var(--ink); font-weight: 500; }
+.delta.up { color: #3fcf6a; } .delta.down { color: #f07272; }
+
+/* charts */
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 16px; }
+.chart { min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px 14px 8px; position: relative; }
+.chart h3 { font-size: 16px; margin-bottom: 2px; }
+.chart .sub { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.chart svg { width: 100%; height: auto; display: block; overflow: visible; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 12px/1.4 var(--mono); color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.legend i.dash { background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px) !important; height: 2px; }
+.tip { position: absolute; pointer-events: none; background: #05080e; border: 1px solid var(--line); border-radius: 5px;
+  padding: 8px 10px; font: 12px/1.5 var(--mono); color: var(--ink); white-space: nowrap; z-index: 5; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
+.tip .k { color: var(--muted); }
+
+/* table */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 7px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; position: sticky; top: 0; background: var(--panel-2); }
+td:first-child, th:first-child { text-align: left; }
+tr:last-child td { border-bottom: 0; }
+td.best { color: #3fcf6a; }
+.pill { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 999px; font-size: 11px; background: rgba(208,59,59,.18); color: #f49a9a; }
+
+/* gallery */
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 12px 14px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 4; }
+.controls label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; font: 13px/1 var(--mono); color: var(--ink-2); }
+.controls input[type=range] { width: min(320px, 100%); accent-color: var(--accent); }
+.colorbar { display: flex; align-items: center; gap: 8px; font: 12px/1 var(--mono); color: var(--muted); }
+.colorbar .bar { width: 140px; height: 8px; border-radius: 4px; }
+.tier { display: flex; flex-direction: column; gap: 12px; }
+.tier-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.grid4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 12px; }
+.ep { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+.ep canvas { width: 100%; aspect-ratio: 1 / 1; display: block; background: #070a11; cursor: crosshair; max-width: 100%; }
+.ep .cap { padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; }
+.ep .cap .t { font: 600 14px/1.2 var(--display); letter-spacing: 0.04em; text-transform: uppercase; }
+.ep .cap .m { font: 12px/1.45 var(--mono); color: var(--ink-2); }
+.st-arrived { color: #3fcf6a; } .st-fail { color: #f07272; }
+.note { font-size: 13px; color: var(--muted); max-width: 80ch; }
+button, input { font: inherit; }
+input:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 520px) { body { padding-inline: 16px; } .tile .big { font-size: 34px; } }
+.hidden { display: none !important; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="eyebrow">spacenav · reinforcement learning</div>
+    <h1>Flight log</h1>
+    <p id="lede"></p>
+    <div class="meta" id="meta"></div>
+  </header>
+
+  <section>
+    <div class="sec-head">
+      <h2>Where it stands</h2>
+      <p>Latest checkpoint on the four frozen evaluation suites (<span id="suite-n">600</span> fixed tasks each, greedy policy), against the scripted pilot flying the same tasks. <b>Win</b> = the agent arrives where the pilot fails, or both arrive and the agent's weighted cost is lower. Cost is the task's weighted mix of time, path, fuel and exposure, each divided by a straight-line reference, so lower is better and about 1 means "as costly as the naive estimate".</p>
+    </div>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Learning curves</h2>
+      <p>Each point is a checkpoint scored on the frozen suites. Dashed lines are the scripted pilot on the same tasks. Hover for values.</p>
+    </div>
+    <div class="legend" id="tier-legend"></div>
+    <div class="charts">
+      <div class="chart" id="c-success"><h3>Success rate</h3><div class="sub">share of tasks where the ship reaches B (rendezvous: ≤ 3 u/s)</div></div>
+      <div class="chart" id="c-win"><h3>Win rate against the pilot</h3><div class="sub">share of tasks the agent does better than the scripted pilot</div></div>
+      <div class="chart" id="c-train"><h3>Training rollouts</h3><div class="sub">stochastic policy on training levels; rendezvous share ramps with the curriculum</div></div>
+      <div class="chart hidden" id="c-ref"><h3>Cost against the best known flight</h3><div class="sub">median agent cost ÷ best flight found by the planner or the pilot, on the reference subset (1.0 = as good)</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Does each version beat the last?</h2>
+      <p id="mono-text"></p>
+    </div>
+    <div class="table-wrap"><table id="mono-table"></table></div>
+    <ul id="notes" class="note" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px"></ul>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>Trajectories by training iteration</h2>
+      <p>Four showcase tasks per suite, each flown by every checkpoint. Early checkpoints are dark and thin, later ones lighter and bolder; the orange dashed path is the scripted pilot. Faint grey lines are where each body travels during the flight (bodies drawn at launch), a red ✕ marks a failed flight. Drag the slider to pick out one checkpoint everywhere; hover a plot to identify a path.</p>
+    </div>
+    <div class="controls">
+      <label for="ck">checkpoint <input id="ck" type="range" min="0" max="0" value="0"> <span id="ck-v" class="mono"></span></label>
+      <label for="only"><input id="only" type="checkbox"> only this checkpoint</label>
+      <label for="pilot"><input id="pilot" type="checkbox" checked> pilot</label>
+      <div class="colorbar"><span>early</span><span class="bar" id="cbar"></span><span>late</span></div>
+      <span class="dim mono" style="font-size:12px"><span style="color:#d95926">╌</span> pilot · <span style="color:#5dffd6">╌</span> best known</span>
+    </div>
+    <div id="gallery" style="display:flex;flex-direction:column;gap:36px"></div>
+  </section>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const TIERS = {
+  easy: { label: "Easy", color: "var(--t-easy)", hex: "#199e70", desc: "One fly-through target 100–350 u away, in planet and moon systems, with fuel to spare." },
+  medium: { label: "Medium", color: "var(--t-medium)", hex: "#3987e5", desc: "Tours of one or two stops across every training family, on a tank with little to waste." },
+  hard: { label: "Hard", color: "var(--t-hard)", hex: "#d55181", desc: "Two or three stops, half of them docks at ≤ 3 u/s, usually carrying less Δv than a direct flight needs." },
+  blind: { label: "Blind", color: "var(--t-blind)", hex: "#c98500", desc: "Families never trained on — trinary, pulsar, rogue flyby — and sometimes free to choose the order." },
+};
+const TIER_KEYS = Object.keys(TIERS).filter(k => DATA.gallery[k]);
+const pct = v => v == null || !isFinite(v) ? "—" : `${Math.round(v * 100)}%`;
+const fmtCost = v => v == null || !isFinite(v) ? "—" : v.toFixed(2);
+const refAt = (k, u) => (DATA.references?.[k]?.by_update ?? {})[String(u)];
+function refRow(k) {
+  const r = refAt(k, DATA.checkpoints[DATA.checkpoints.length - 1]);
+  if (!r) return "";
+  return `<div class="row"><span>cost ÷ best known</span><b>${r.median_ratio.toFixed(2)} <span class="dim">beats it on ${pct(r.beats_best_known)}</span></b></div>`;
+}
+const fmtSteps = s => s >= 1e9 ? `${(s / 1e9).toFixed(2)}B` : `${(s / 1e6).toFixed(0)}M`;
+const $ = id => document.getElementById(id);
+const E = DATA.evals, last = E[E.length - 1], first = E[0];
+
+// ---------- header
+{
+  const t = DATA.train[DATA.train.length - 1] || {};
+  const regress = E.filter(e => Object.keys(e.regressions || {}).length).length;
+  const beat = TIER_KEYS.filter(k => last.metrics[k].success >= last.metrics[k].pilot_success).length;
+  $("eyebrow").textContent = `spacenav · PPO run ${DATA.run}`;
+  $("lede").textContent = `One policy trained across ${DATA.config.n_envs.toLocaleString()} parallel ships on ` +
+    `${(DATA.train_levels || 0).toLocaleString()} generated levels. ` +
+    `After ${fmtSteps(last.env_steps)} environment steps it matches or beats the scripted pilot's success rate on ${beat} of ${TIER_KEYS.length} suites, ` +
+    `and ${regress === 0 ? "no checkpoint regressed on any suite" : `${regress} of ${E.length} checkpoints regressed on at least one suite`}.`;
+  const hrs = (t.wall || 0) / 3600;
+  $("meta").innerHTML = [
+    ["checkpoints", E.length], ["env steps", fmtSteps(last.env_steps)], ["updates", last.update],
+    ["wall clock", `${hrs.toFixed(1)} h`], ["throughput", `${Math.round((t.sps || 0) / 1000)}k steps/s`],
+    ["batch", `${DATA.config.n_envs}×${DATA.config.n_steps}`], ["GPU", "GTX 1080 Ti"],
+  ].map(([k, v]) => `<span>${k} <b>${v}</b></span>`).join("");
+}
+
+// ---------- tiles
+$("tiles").innerHTML = TIER_KEYS.map(k => {
+  const m = last.metrics[k], T = TIERS[k];
+  const d = m.success - m.pilot_success;
+  return `<div class="tile">
+    <div class="name"><span class="sw" style="background:${T.color}"></span>${T.label}</div>
+    <div class="desc">${T.desc}</div>
+    <div class="big num">${pct(m.success)}</div>
+    <div class="row"><span>pilot</span><b>${pct(m.pilot_success)} <span class="delta ${d >= 0 ? "up" : "down"}">${d >= 0 ? "+" : "−"}${Math.abs(Math.round(d * 100))}</span></b></div>
+    <div class="row"><span>win vs pilot</span><b>${pct(m.win_rate_vs_pilot)}</b></div>
+    ${DATA.previous ? `<div class="row"><span>previous run</span><b>${pct(DATA.previous[k].success)}</b></div>` : ""}
+    ${refRow(k)}
+    <div class="row"><span>mean cost on arrival</span><b>${fmtCost(m.objective)} <span class="dim">pilot ${fmtCost(DATA.pilot_cost[k])}</span></b></div>
+  </div>`;
+}).join("");
+$("tier-legend").innerHTML = TIER_KEYS.map(k => `<span><i style="background:${TIERS[k].color}"></i>${TIERS[k].label}</span>`).join("") +
+  `<span style="color:var(--ink-2)"><i class="dash" style="color:var(--ink-2)"></i>pilot (same tasks)</span>`;
+
+// ---------- line charts (SVG, one y-axis, hover crosshair)
+function lineChart(host, xs, series, { yMax = 1, fmt = pct, xFmt = fmtSteps } = {}) {
+  const W = 520, H = 250, L = 40, R = 12, T = 10, B = 28;
+  const x0 = Math.min(...xs), x1 = Math.max(...xs) || 1;
+  const X = v => L + (v - x0) / Math.max(x1 - x0, 1) * (W - L - R);
+  const Y = v => T + (1 - v / yMax) * (H - T - B);
+  const ns = "http://www.w3.org/2000/svg";
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  for (let g = 0; g <= 4; g++) {
+    const v = yMax * g / 4, y = Y(v);
+    s += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="#1f2a3b" stroke-width="1"/>`;
+    s += `<text x="${L - 6}" y="${y + 4}" text-anchor="end" fill="#74839a" font-size="11" font-family="IBM Plex Mono, monospace">${fmt(v)}</text>`;
+  }
+  const ticks = 4;
+  for (let g = 0; g <= ticks; g++) {
+    const v = x0 + (x1 - x0) * g / ticks;
+    s += `<text x="${X(v)}" y="${H - 8}" text-anchor="middle" fill="#74839a" font-size="11" font-family="IBM Plex Mono, monospace">${xFmt(v)}</text>`;
+  }
+  for (const se of series) {
+    const pts = se.ys.map((y, i) => y == null ? null : [X(xs[i]), Y(y)]).filter(Boolean);
+    if (!pts.length) continue;
+    const d = pts.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join("");
+    s += `<path d="${d}" fill="none" stroke="${se.hex}" stroke-width="${se.dash ? 1.5 : 2}" ${se.dash ? 'stroke-dasharray="5 4" opacity="0.7"' : ""} stroke-linejoin="round" stroke-linecap="round"/>`;
+    if (!se.dash) { const p = pts[pts.length - 1]; s += `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${se.hex}" stroke="#0f1520" stroke-width="2"/>`; }
+  }
+  s += `<line class="xh" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="#a9b6c9" stroke-width="1" opacity="0"/>`;
+  s += `<rect x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent"/>`;
+  s += `</svg>`;
+  host.insertAdjacentHTML("beforeend", s);
+  const svg = host.querySelector("svg"), xh = svg.querySelector(".xh");
+  const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; host.appendChild(tip);
+  svg.addEventListener("pointermove", (e) => {
+    const r = svg.getBoundingClientRect();
+    const vx = (e.clientX - r.left) / r.width * W;
+    let i = 0, best = Infinity;
+    xs.forEach((v, j) => { const d = Math.abs(X(v) - vx); if (d < best) { best = d; i = j; } });
+    xh.setAttribute("x1", X(xs[i])); xh.setAttribute("x2", X(xs[i])); xh.setAttribute("opacity", 0.5);
+    tip.hidden = false;
+    tip.innerHTML = `<div class="k">${xFmt(xs[i])} steps</div>` + series.filter(se => !se.dash || se.showTip)
+      .map(se => `<div><span style="color:${se.hex}">■</span> ${se.name} <b>${fmt(se.ys[i])}</b></div>`).join("");
+    const hx = (X(xs[i]) / W) * r.width + 12;
+    tip.style.left = `${Math.min(hx, r.width - tip.offsetWidth - 4)}px`; tip.style.top = `${40}px`;
+  });
+  svg.addEventListener("pointerleave", () => { tip.hidden = true; xh.setAttribute("opacity", 0); });
+}
+{
+  const xs = E.map(e => e.env_steps);
+  const s1 = [], s2 = [];
+  for (const k of TIER_KEYS) {
+    s1.push({ name: TIERS[k].label, hex: TIERS[k].hex, ys: E.map(e => e.metrics[k].success) });
+    s1.push({ name: `${TIERS[k].label} pilot`, hex: TIERS[k].hex, dash: true, ys: E.map(e => e.metrics[k].pilot_success) });
+    s2.push({ name: TIERS[k].label, hex: TIERS[k].hex, ys: E.map(e => e.metrics[k].win_rate_vs_pilot) });
+  }
+  lineChart($("c-success"), xs, s1);
+  lineChart($("c-win"), xs, s2);
+  const tr = DATA.train;
+  const refSeries = TIER_KEYS.filter(k => DATA.references?.[k]?.by_update)
+    .map(k => ({ name: TIERS[k].label, hex: TIERS[k].hex,
+                 ys: E.map(e => refAt(k, e.update)?.median_ratio ?? null) }));
+  if (refSeries.length) {
+    $("c-ref").classList.remove("hidden");
+    const yMax = Math.min(4, Math.max(1.6, ...refSeries.flatMap(s => s.ys.filter(Boolean))) * 1.1);
+    lineChart($("c-ref"), xs, refSeries.concat([{ name: "best known", hex: "#a9b6c9", dash: true, showTip: true,
+      ys: E.map(() => 1) }]), { yMax, fmt: v => v == null || !isFinite(v) ? "—" : v.toFixed(1) });
+  }
+  lineChart($("c-train"), tr.map(t => t.env_steps), [
+    { name: "fly-through", hex: "#3987e5", ys: tr.map(t => t.success_flythrough) },
+    { name: "rendezvous", hex: "#d55181", ys: tr.map(t => t.success_rendezvous) },
+    { name: "rendezvous share", hex: "#a9b6c9", dash: true, showTip: true, ys: tr.map(t => t.p_rendezvous) },
+  ]);
+  $("c-train").insertAdjacentHTML("beforeend", `<div class="legend" style="padding:4px 0 6px"><span><i style="background:#3987e5"></i>fly-through</span><span><i style="background:#d55181"></i>rendezvous</span><span style="color:#a9b6c9"><i class="dash"></i>rendezvous share of tasks</span></div>`);
+}
+
+// ---------- monotonicity table
+{
+  const best = {};
+  let rows = "";
+  const bestIdx = {};
+  for (const k of TIER_KEYS) { let b = -1; E.forEach((e, i) => { if (e.metrics[k].success > b) { b = e.metrics[k].success; bestIdx[k] = i; } }); }
+  E.forEach((e, i) => {
+    rows += `<tr><td>${e.update}</td><td>${fmtSteps(e.env_steps)}</td>` + TIER_KEYS.map(k => {
+      const m = e.metrics[k];
+      const drop = e.regressions && e.regressions[k];
+      return `<td class="${bestIdx[k] === i ? "best" : ""}">${pct(m.success)}${drop ? `<span class="pill">↓ ${Math.round(drop * 100)} pts</span>` : ""}</td><td class="dim">${pct(m.win_rate_vs_pilot)}</td>`;
+    }).join("") + `</tr>`;
+  });
+  $("mono-table").innerHTML = `<thead><tr><th>update</th><th>steps</th>${TIER_KEYS.map(k => `<th>${TIERS[k].label} success</th><th>win</th>`).join("")}</tr></thead><tbody>${rows}</tbody>`;
+  const n = E.filter(e => Object.keys(e.regressions || {}).length).length;
+  $("mono-text").textContent = n === 0
+    ? `Every checkpoint scored at least as well as the best before it on every suite (within 3 points of noise). Green marks each suite's best checkpoint.`
+    : `${n} checkpoint${n > 1 ? "s" : ""} fell more than 3 points below an earlier best on some suite (red pills). A drop on the blind suite while the seen suites keep rising is the overfitting signal to watch. Green marks each suite's best checkpoint.`;
+}
+
+if (DATA.suite_size) $("suite-n").textContent = DATA.suite_size;
+$("notes").innerHTML = (DATA.notes || []).map(n => `<li>${n}</li>`).join("");
+
+// ---------- trajectory gallery (canvas)
+const RAMP = ["#184f95", "#1c5cab", "#256abf", "#2a78d6", "#3987e5", "#5598e7", "#6da7ec", "#86b6ef", "#9ec5f4", "#b7d3f6", "#cde2fb"];
+function ramp(t) {
+  const x = Math.max(0, Math.min(1, t)) * (RAMP.length - 1), i = Math.floor(x), f = x - i;
+  const a = RAMP[i], b = RAMP[Math.min(i + 1, RAMP.length - 1)];
+  const h = (c, o) => parseInt(c.slice(o, o + 2), 16);
+  const m = o => Math.round(h(a, o) + (h(b, o) - h(a, o)) * f);
+  return `rgb(${m(1)},${m(3)},${m(5)})`;
+}
+$("cbar").style.background = `linear-gradient(90deg, ${RAMP.join(",")})`;
+const ck = $("ck");
+ck.max = DATA.checkpoints.length - 1; ck.value = ck.max;
+const views = [];
+const ZONE_FILL = { debris: "rgba(190,160,120,0.13)", radiation: "rgba(190,80,255,0.12)", sensor: "rgba(255,90,90,0.05)" };
+const BODY_FILL = { star: "#ffe2a0", black_hole: "#000", neutron_star: "#cfe3ff", giant: "#d6a26a", rocky: "#8f8a80", moon: "#a7a7a7", asteroid: "#8d857b", station: "#5dd6ff" };
+
+function makeEpisode(host, ep, tier) {
+  const card = document.createElement("div"); card.className = "ep";
+  const cv = document.createElement("canvas"); card.appendChild(cv);
+  const cap = document.createElement("div"); cap.className = "cap"; card.appendChild(cap);
+  const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; card.appendChild(tip);
+  host.appendChild(card);
+  // bounds: every flight path plus A and B, padded; never larger than the play area
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  const add = ([x, y]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); };
+  add(ep.start); (ep.waypoints || []).forEach(wp => add(wp.path ? wp.path[0] : wp.pos));
+  const lim = ep.level_radius * 1.35;
+  for (const r of ep.runs.concat([ep.pilot])) for (const p of r.path) if (Math.hypot(p[0], p[1]) < lim) add(p);
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, half = Math.max(x1 - x0, y1 - y0, 160) * 0.62;
+  const view = { card, cv, cap, tip, ep, tier, cx, cy, half };
+  views.push(view);
+  cv.addEventListener("pointermove", (e) => hover(view, e));
+  cv.addEventListener("pointerleave", () => { tip.hidden = true; view.hover = null; draw(view); });
+  return view;
+}
+
+const at = (path, idx) => {
+  const i = Math.max(0, Math.min(Math.floor(idx), path.length - 1));
+  return path[i];
+};
+
+function draw(v) {
+  const { cv, ep } = v;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const S = cv.clientWidth || 300;
+  if (cv.width !== Math.round(S * dpr)) { cv.width = Math.round(S * dpr); cv.height = Math.round(S * dpr); }
+  const c = cv.getContext("2d");
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const k = S / (2 * v.half);
+  const X = x => S / 2 + (x - v.cx) * k, Y = y => S / 2 - (y - v.cy) * k;
+  v.X = X; v.Y = Y; v.k = k;
+  c.fillStyle = "#070a11"; c.fillRect(0, 0, S, S);
+  // zones at launch
+  for (const z of ep.zones) {
+    c.beginPath(); c.arc(X(z.centre[0]), Y(z.centre[1]), z.r_out * k, 0, Math.PI * 2);
+    if (z.r_in > 0) c.arc(X(z.centre[0]), Y(z.centre[1]), z.r_in * k, 0, Math.PI * 2, true);
+    c.fillStyle = z.exposure && ep.weights[3] > 0 ? "rgba(255,210,70,0.12)" : (ZONE_FILL[z.kind] || "transparent");
+    c.fill("evenodd");
+    if (z.exposure && ep.weights[3] > 0) { c.strokeStyle = "rgba(255,210,70,0.6)"; c.setLineDash([4, 4]); c.stroke(); c.setLineDash([]); }
+  }
+  // body paths during the flight, then bodies at launch
+  c.lineWidth = 1;
+  for (const b of ep.bodies) {
+    if (b.kind === "tracer" || b.path.length < 2) continue;
+    c.strokeStyle = b.kind === "station" ? "rgba(93,214,255,0.25)" : "rgba(160,175,200,0.22)";
+    c.beginPath(); b.path.forEach((p, i) => i ? c.lineTo(X(p[0]), Y(p[1])) : c.moveTo(X(p[0]), Y(p[1]))); c.stroke();
+  }
+  for (const b of ep.bodies) {
+    if (b.kind === "tracer") continue;
+    const [x, y] = b.path[0];
+    const R = Math.max(b.radius * k, b.kind === "station" ? 2 : 1.6);
+    if (b.lum > 0) {
+      const g = c.createRadialGradient(X(x), Y(y), 0, X(x), Y(y), R * 4);
+      g.addColorStop(0, "rgba(255,210,140,0.45)"); g.addColorStop(1, "rgba(255,160,60,0)");
+      c.fillStyle = g; c.beginPath(); c.arc(X(x), Y(y), R * 4, 0, Math.PI * 2); c.fill();
+    }
+    if (b.atmo > 0) { c.fillStyle = "rgba(130,190,255,0.22)"; c.beginPath(); c.arc(X(x), Y(y), (b.radius + b.atmo) * k, 0, Math.PI * 2); c.fill(); }
+    c.fillStyle = BODY_FILL[b.kind] || "#999";
+    c.beginPath(); c.arc(X(x), Y(y), R, 0, Math.PI * 2); c.fill();
+    if (b.kind === "black_hole") { c.strokeStyle = "#ffd28a"; c.lineWidth = 1.2; c.stroke(); c.lineWidth = 1; }
+  }
+  // waypoints: numbered, with the route between them
+  const wps = ep.waypoints || [];
+  wps.forEach((wp, w) => {
+    const [wx, wy] = wp.path ? at(wp.path, 0) : wp.pos;
+    if (wp.path) {
+      c.strokeStyle = "rgba(93,255,157,0.35)"; c.setLineDash([3, 3]); c.beginPath();
+      wp.path.forEach((p, i) => i ? c.lineTo(X(p[0]), Y(p[1])) : c.moveTo(X(p[0]), Y(p[1])));
+      c.stroke(); c.setLineDash([]);
+    }
+    c.strokeStyle = "#5dff9d"; c.lineWidth = 1.5;
+    c.beginPath(); c.arc(X(wx), Y(wy), Math.max(wp.radius * k, 5), 0, Math.PI * 2); c.stroke();
+    c.fillStyle = "#5dff9d"; c.font = "11px IBM Plex Mono, monospace";
+    c.fillText(wps.length > 1 ? `${w + 1}${wp.rendezvous ? " dock" : ""}` : (wp.rendezvous ? "B dock" : "B"),
+               X(wx) + Math.max(wp.radius * k, 5) + 6, Y(wy) - 6);
+  });
+  if (wps.length > 1) {
+    c.strokeStyle = "rgba(93,255,157,0.25)"; c.setLineDash([2, 6]); c.beginPath();
+    c.moveTo(X(ep.start[0]), Y(ep.start[1]));
+    wps.forEach(wp => { const [wx, wy] = wp.path ? at(wp.path, 0) : wp.pos; c.lineTo(X(wx), Y(wy)); });
+    c.stroke(); c.setLineDash([]);
+  }
+  c.lineWidth = 1;
+  c.fillStyle = "#e4ebf5"; c.font = "11px IBM Plex Mono, monospace";
+  c.fillText("A", X(ep.start[0]) + 7, Y(ep.start[1]) - 7);
+  c.beginPath(); c.arc(X(ep.start[0]), Y(ep.start[1]), 3.5, 0, Math.PI * 2); c.fill();
+
+  const sel = +ck.value, only = $("only").checked, n = ep.runs.length;
+  const path = (pts, color, w, dash, alpha) => {
+    c.globalAlpha = alpha; c.strokeStyle = color; c.lineWidth = w; c.setLineDash(dash || []);
+    c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(X(p[0]), Y(p[1])) : c.moveTo(X(p[0]), Y(p[1]))); c.stroke();
+    c.setLineDash([]); c.globalAlpha = 1;
+  };
+  const cross = (p, color, s = 4) => {
+    c.strokeStyle = color; c.lineWidth = 2; c.beginPath();
+    c.moveTo(X(p[0]) - s, Y(p[1]) - s); c.lineTo(X(p[0]) + s, Y(p[1]) + s);
+    c.moveTo(X(p[0]) + s, Y(p[1]) - s); c.lineTo(X(p[0]) - s, Y(p[1]) + s); c.stroke();
+  };
+  c.lineJoin = "round"; c.lineCap = "round";
+  if ($("pilot").checked) {
+    path(ep.pilot.path, "#d95926", 1.6, [5, 4], 0.9);
+    if (ep.reference?.path) path(ep.reference.path, "#5dffd6", 1.6, [2, 3], 0.85);
+  }
+  ep.runs.forEach((r, i) => {
+    if (only && i !== sel) return;
+    if (i === sel || i === v.hover) return;
+    const t = n > 1 ? i / (n - 1) : 1;
+    path(r.path, ramp(t), 0.8 + 1.4 * t, null, 0.35 + 0.45 * t);
+    if (r.status !== "arrived") cross(r.path[r.path.length - 1], "rgba(208,59,59,0.55)", 3);
+  });
+  for (const i of [v.hover, sel]) {
+    if (i == null || i < 0) continue;
+    const r = ep.runs[i];
+    path(r.path, "#05080e", 5, null, 0.9);
+    path(r.path, i === sel ? "#ffffff" : ramp(i / Math.max(n - 1, 1)), 2.6, null, 1);
+    const end = r.path[r.path.length - 1];
+    if (r.status !== "arrived") cross(end, "#d03b3b", 6);
+    else { c.fillStyle = "#5dff9d"; c.beginPath(); c.arc(X(end[0]), Y(end[1]), 3.5, 0, Math.PI * 2); c.fill(); }
+  }
+  // caption
+  const r = ep.runs[sel];
+  const obj = ["time", "path", "fuel", "exposure"].map((o, i) => ep.weights[i] > 0.005 ? `${o} ${Math.round(ep.weights[i] * 100)}%` : "").filter(Boolean).join(" · ");
+  const nwp = (ep.waypoints || []).length;
+  const kit = `${nwp} stop${nwp === 1 ? "" : "s"}${ep.order_free ? ", any order" : ""} · Δv ${(ep.fuel * ep.accel).toFixed(0)} u/s`;
+  const st = s => `<span class="${s === "arrived" ? "st-arrived" : "st-fail"}">${s}</span>`;
+  v.cap.innerHTML = `<div class="t">${ep.family.replace(/_/g, " ")} · ${kit}</div>
+    <div class="m">minimise ${obj}</div>
+    <div class="m">ckpt ${r.update}: ${st(r.status)}${r.status === "arrived" ? ` cost ${r.objective.toFixed(2)}` : ""} · pilot: ${st(ep.pilot.status)}${ep.pilot.status === "arrived" ? ` cost ${ep.pilot.objective.toFixed(2)}` : ""}${ep.reference?.cost ? ` · best known ${ep.reference.cost.toFixed(2)}` : ""}</div>`;
+}
+
+function hover(v, e) {
+  const rect = v.cv.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  let best = 14, hit = null;
+  v.ep.runs.forEach((r, i) => {
+    if ($("only").checked && i !== +ck.value) return;
+    for (const p of r.path) { const d = Math.hypot(v.X(p[0]) - mx, v.Y(p[1]) - my); if (d < best) { best = d; hit = i; } }
+  });
+  let pilotHit = false;
+  if ($("pilot").checked) for (const p of v.ep.pilot.path) { const d = Math.hypot(v.X(p[0]) - mx, v.Y(p[1]) - my); if (d < best) { best = d; pilotHit = true; hit = null; } }
+  v.hover = hit; draw(v);
+  if (hit == null && !pilotHit) { v.tip.hidden = true; return; }
+  const r = pilotHit ? v.ep.pilot : v.ep.runs[hit];
+  const E0 = DATA.evals[hit] || {};
+  v.tip.hidden = false;
+  v.tip.innerHTML = pilotHit ? `<b>scripted pilot</b><br>${r.status}${r.status === "arrived" ? ` · cost ${r.objective.toFixed(2)}` : ""}`
+    : `<b>checkpoint ${r.update}</b> <span class="k">${fmtSteps(E0.env_steps || 0)} steps</span><br>${r.status}${r.status === "arrived" ? ` · cost ${r.objective.toFixed(2)}` : ""} · ${(r.ticks * DATA.ctrl_dt).toFixed(1)} s`;
+  v.tip.style.left = `${Math.min(mx + 12, rect.width - v.tip.offsetWidth - 6)}px`;
+  v.tip.style.top = `${Math.min(my + 12, rect.width - 50)}px`;
+}
+
+{
+  const g = $("gallery");
+  for (const k of TIER_KEYS) {
+    const T = TIERS[k], m = last.metrics[k];
+    g.insertAdjacentHTML("beforeend", `<div class="tier" id="tier-${k}"><div class="tier-head"><h3><span style="color:${T.color}">■</span> ${T.label}</h3>
+      <span class="dim mono" style="font-size:13px">${T.desc} Latest: ${pct(m.success)} arrive (pilot ${pct(m.pilot_success)}).</span></div><div class="grid4"></div></div>`);
+    const host = g.lastElementChild.querySelector(".grid4");
+    for (const ep of DATA.gallery[k]) makeEpisode(host, ep, k);
+  }
+  const redraw = () => { const i = +ck.value; $("ck-v").textContent = `update ${DATA.checkpoints[i]} · ${fmtSteps(E[i].env_steps)} steps`; views.forEach(draw); };
+  ck.addEventListener("input", redraw); $("only").addEventListener("change", redraw); $("pilot").addEventListener("change", redraw);
+  window.addEventListener("resize", redraw);
+  redraw();
+}
+</script>

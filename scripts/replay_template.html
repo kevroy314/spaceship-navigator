@@ -1,0 +1,328 @@
+<title>Spacenav Ghost Fleet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Saira+Semi+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Single-theme by intent: a replay room in the dark of space. Every colour is explicit. */
+:root {
+  color-scheme: dark;
+  --ground: #0a0e16;
+  --panel: #0f1520;
+  --line: #1f2a3b;
+  --ink: #e4ebf5;
+  --ink-2: #a9b6c9;
+  --muted: #74839a;
+  --accent: #6da7ec;
+  --pilot: #d95926;
+  --ref: #5dffd6;
+  --good: #3fcf6a;
+  --bad: #f07272;
+  --t-easy: #199e70;
+  --t-medium: #3987e5;
+  --t-hard: #d55181;
+  --t-blind: #c98500;
+  --display: "Saira Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--ground); color: var(--ink); }
+body { font: 15px/1.55 var(--body); padding-inline: 20px; padding-block: 24px 56px; }
+.wrap { max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+h1 { font-family: var(--display); font-size: clamp(30px, 5vw, 46px); line-height: 1.03; font-weight: 700;
+  margin: 0; text-wrap: balance; }
+p { margin: 0; max-width: 72ch; color: var(--ink-2); }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.dim { color: var(--muted); }
+header { display: flex; flex-direction: column; gap: 12px; }
+
+/* transport */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; display: flex; flex-wrap: wrap;
+  align-items: center; gap: 10px 16px; background: rgba(12, 18, 32, 0.94); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 12px; backdrop-filter: blur(8px); }
+button { background: #13203a; color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 10px; font: inherit; cursor: pointer; }
+button:hover { border-color: var(--accent); color: #fff; }
+button.on { border-color: var(--accent); color: var(--accent); }
+#play { width: 46px; font-size: 15px; }
+#scrub { flex: 1 1 240px; min-width: 160px; accent-color: var(--accent); }
+.clock { font: 500 15px/1 var(--mono); min-width: 96px; text-align: right; }
+.speeds { display: flex; gap: 4px; }
+.speeds button { padding: 6px 8px; font-size: 12px; }
+.key { display: flex; align-items: center; gap: 8px; font: 12px/1 var(--mono); color: var(--muted); flex-wrap: wrap; }
+.key .ramp { width: 120px; height: 8px; border-radius: 4px; }
+.key i { display: inline-block; width: 14px; height: 0; border-top: 2px dashed currentColor; }
+
+/* episode grid */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 14px; }
+.ep { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+  display: flex; flex-direction: column; min-width: 0; }
+.ep canvas { width: 100%; aspect-ratio: 1 / 1; display: block; background: #070a11; max-width: 100%; }
+.ep .cap { padding: 9px 11px; display: flex; flex-direction: column; gap: 3px; }
+.ep .t { font: 600 14px/1.2 var(--display); letter-spacing: 0.05em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 7px; }
+.ep .sw { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.ep .m { font: 12px/1.45 var(--mono); color: var(--ink-2); display: flex; justify-content: space-between; gap: 8px; }
+.arrived { color: var(--good); }
+.lost { color: var(--bad); }
+@media (max-width: 520px) { body { padding-inline: 16px; } .clock { min-width: 74px; font-size: 13px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="eyebrow">spacenav · ghost fleet</div>
+    <h1>Every checkpoint flies the same mission</h1>
+    <p id="lede"></p>
+  </header>
+
+  <div class="bar">
+    <button id="play" title="play / pause">❚❚</button>
+    <input id="scrub" type="range" min="0" max="100" value="0" step="1" aria-label="time">
+    <span class="clock mono" id="clock">0.0 s</span>
+    <div class="speeds" id="speeds"></div>
+    <div class="key">
+      <span>early</span><span class="ramp" id="ramp"></span><span>late</span>
+      <span style="color:var(--pilot)"><i></i> pilot</span>
+      <span style="color:var(--ref)"><i></i> planned best</span>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const $ = (id) => document.getElementById(id);
+const TIERS = { easy: "#199e70", medium: "#3987e5", hard: "#d55181", blind: "#c98500" };
+const RAMP = ["#184f95", "#1c5cab", "#256abf", "#2a78d6", "#3987e5", "#5598e7", "#6da7ec", "#86b6ef", "#9ec5f4", "#b7d3f6", "#cde2fb"];
+const TRAIL = 26;                      // trail length, in samples
+const fmtSteps = s => s >= 1e9 ? `${(s / 1e9).toFixed(2)}B` : `${Math.round(s / 1e6)}M`;
+
+function ramp(t) {
+  const x = Math.max(0, Math.min(1, t)) * (RAMP.length - 1), i = Math.floor(x), f = x - i;
+  const a = RAMP[i], b = RAMP[Math.min(i + 1, RAMP.length - 1)];
+  const h = (c, o) => parseInt(c.slice(o, o + 2), 16);
+  const m = o => Math.round(h(a, o) + (h(b, o) - h(a, o)) * f);
+  return `rgb(${m(1)},${m(3)},${m(5)})`;
+}
+$("ramp").style.background = `linear-gradient(90deg, ${RAMP.join(",")})`;
+$("eyebrow").textContent = `spacenav · ghost fleet · run ${DATA.run}`;
+$("lede").textContent = `${DATA.checkpoints.length} checkpoints of the same policy, from ${fmtSteps(DATA.steps[0])} to `
+  + `${fmtSteps(DATA.steps[DATA.steps.length - 1])} environment steps, flying ${DATA.episodes.length} missions at once. `
+  + `Dark ships are early in training, bright ships late. Planets move as they really do during the flight; `
+  + `a ship stops with a ✕ where it died and a ● where it docked.`;
+
+const state = { t: 0, playing: true, speed: 1, last: performance.now() };
+const views = [];
+
+// ---------------------------------------------------------------- sampling
+const at = (path, idx) => {
+  const i = Math.max(0, Math.min(Math.floor(idx) || 0, path.length - 1));   // clamp: paths can be short
+  const j = Math.min(i + 1, path.length - 1);
+  const f = Math.max(0, Math.min(1, idx - i));
+  const a = path[i], b = path[j];
+  return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+};
+const heading = (path, idx) => {
+  if (path.length < 2) return 0;          // a flight that ended on its first tick
+  const i = Math.max(0, Math.min(Math.floor(idx), path.length - 2));
+  const a = path[i], b = path[i + 1];
+  return Math.atan2(b[1] - a[1], b[0] - a[0]);
+};
+
+// ---------------------------------------------------------------- build cards
+for (const ep of DATA.episodes) {
+  const card = document.createElement("div");
+  card.className = "ep";
+  const cv = document.createElement("canvas");
+  const cap = document.createElement("div");
+  cap.className = "cap";
+  const obj = ["time", "path", "fuel", "exposure"]
+    .map((o, i) => ep.weights[i] > 0.005 ? `${o} ${Math.round(ep.weights[i] * 100)}%` : "").filter(Boolean).join(" · ");
+  const nwp = (ep.waypoints || []).length;
+  const kit = `${nwp} stop${nwp === 1 ? "" : "s"}${ep.order_free ? ", any order" : ""} · Δv ${(ep.fuel * ep.accel).toFixed(0)} u/s`;
+  cap.innerHTML = `<div class="t"><span class="sw" style="background:${TIERS[ep.tier]}"></span>
+      ${ep.family.replace(/_/g, " ")} · ${kit}</div>
+    <div class="m"><span class="dim">minimise ${obj}</span><span class="tally"></span></div>`;
+  card.append(cv, cap);
+  $("grid").appendChild(card);
+
+  // Frame on the flights that matter: A, B, the pilot, the reference and the later
+  // half of the checkpoints.  Early ghosts often fly off into nothing, and letting
+  // them set the bounds shrinks everything else to a dot.
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  const add = ([x, y]) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); };
+  add(ep.start); (ep.waypoints || []).forEach(wp => add(wp.path ? wp.path[0] : wp.pos));
+  const lim = ep.level_radius * 1.35;
+  const framing = ep.ghosts.slice(Math.floor(ep.ghosts.length / 2))
+    .concat([ep.pilot], ep.reference ? [ep.reference] : []);
+  for (const g of framing) for (const p of g.path) if (Math.hypot(p[0], p[1]) < lim) add(p);
+  for (const wp of ep.waypoints || []) if (wp.path) for (const p of wp.path) add(p);
+  views.push({ ep, cv, tally: cap.querySelector(".tally"), visible: true,
+               cx: (x0 + x1) / 2, cy: (y0 + y1) / 2,
+               half: Math.max(x1 - x0, y1 - y0, 140) * 0.56 });
+}
+
+// only animate what is on screen
+if ("IntersectionObserver" in window) {
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    const v = views.find(v => v.cv === e.target);
+    if (v) v.visible = e.isIntersecting;
+  }), { rootMargin: "200px" });
+  views.forEach(v => io.observe(v.cv));
+}
+
+// ---------------------------------------------------------------- drawing
+const BODY_FILL = { star: "#ffe2a0", black_hole: "#000", neutron_star: "#cfe3ff", giant: "#d6a26a",
+  rocky: "#8f8a80", moon: "#a7a7a7", asteroid: "#8d857b", station: "#5dd6ff" };
+const ZONE_FILL = { debris: "rgba(190,160,120,0.085)", radiation: "rgba(190,70,255,0.10)", sensor: "rgba(255,90,90,0.04)" };
+const ZONE_EDGE = { debris: "rgba(205,180,140,0.30)", radiation: "rgba(210,120,255,0.30)", sensor: "rgba(255,120,120,0.30)" };
+
+function draw(v, t) {
+  const { ep, cv } = v;
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  const S = cv.clientWidth || 320;
+  if (cv.width !== Math.round(S * dpr)) { cv.width = cv.height = Math.round(S * dpr); }
+  const c = cv.getContext("2d");
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const k = S / (2 * v.half);
+  const X = x => S / 2 + (x - v.cx) * k, Y = y => S / 2 - (y - v.cy) * k;
+
+  c.fillStyle = "#070a11"; c.fillRect(0, 0, S, S);
+  const bIdx = t / ep.body_stride;
+  const bodyAt = i => at(ep.bodies[i].path, bIdx);
+
+  // zones ride with their anchor
+  for (const z of ep.zones) {
+    const [zx, zy] = z.anchor >= 0 ? bodyAt(z.anchor) : z.centre;
+    c.beginPath();
+    c.arc(X(zx), Y(zy), z.r_out * k, 0, Math.PI * 2);
+    if (z.r_in > 0) c.arc(X(zx), Y(zy), z.r_in * k, 0, Math.PI * 2, true);
+    const hot = z.exposure && ep.weights[3] > 0;
+    c.fillStyle = hot ? "rgba(255,210,70,0.10)" : (ZONE_FILL[z.kind] || "transparent");
+    c.fill("evenodd");
+    c.strokeStyle = hot ? "rgba(255,210,70,0.55)" : (ZONE_EDGE[z.kind] || "transparent");
+    c.lineWidth = 1; c.setLineDash([5, 5]); c.stroke(); c.setLineDash([]);
+  }
+
+  // bodies, drawn where they are right now
+  ep.bodies.forEach((b, i) => {
+    if (b.kind === "tracer") return;
+    const [x, y] = bodyAt(i);
+    const R = Math.max(b.radius * k, b.kind === "station" ? 2 : 1.6);
+    if (b.lum > 0) {
+      const g = c.createRadialGradient(X(x), Y(y), 0, X(x), Y(y), R * 4);
+      g.addColorStop(0, "rgba(255,214,150,0.5)"); g.addColorStop(1, "rgba(255,160,60,0)");
+      c.fillStyle = g; c.beginPath(); c.arc(X(x), Y(y), R * 4, 0, Math.PI * 2); c.fill();
+    }
+    if (b.atmo > 0) {
+      c.fillStyle = "rgba(130,190,255,0.20)";
+      c.beginPath(); c.arc(X(x), Y(y), (b.radius + b.atmo) * k, 0, Math.PI * 2); c.fill();
+    }
+    c.fillStyle = BODY_FILL[b.kind] || "#999";
+    c.beginPath(); c.arc(X(x), Y(y), R, 0, Math.PI * 2); c.fill();
+    if (b.kind === "black_hole") { c.strokeStyle = "#ffd28a"; c.lineWidth = 1.2; c.stroke(); }
+  });
+
+  // start and the waypoints of the tour, each riding its own orbit
+  c.strokeStyle = "rgba(220,230,255,0.45)"; c.lineWidth = 1;
+  c.beginPath(); c.arc(X(ep.start[0]), Y(ep.start[1]), 4, 0, Math.PI * 2); c.stroke();
+  const wps = ep.waypoints || [];
+  wps.forEach((wp, w) => {
+    const [wx, wy] = wp.anchor >= 0 ? bodyAt(wp.anchor) : wp.pos;
+    c.strokeStyle = "#5dff9d"; c.lineWidth = 1.4;
+    c.beginPath(); c.arc(X(wx), Y(wy), Math.max(wp.radius * k, 6), 0, Math.PI * 2); c.stroke();
+    if (wps.length > 1) {
+      c.fillStyle = "rgba(93,255,157,0.9)"; c.font = "10px IBM Plex Mono, monospace";
+      c.fillText(`${w + 1}`, X(wx) + Math.max(wp.radius * k, 6) + 4, Y(wy) - 4);
+    }
+  });
+
+  const idx = t / DATA.stride;
+  const trace = (g, color, width, dash) => {
+    const end = Math.min(idx, g.path.length - 1);
+    const from = Math.max(0, Math.floor(end) - TRAIL);
+    c.strokeStyle = color; c.lineWidth = width; c.setLineDash(dash || []);
+    c.lineJoin = c.lineCap = "round";
+    c.beginPath();
+    for (let i = from; i <= Math.floor(end); i++) { const p = g.path[i]; i === from ? c.moveTo(X(p[0]), Y(p[1])) : c.lineTo(X(p[0]), Y(p[1])); }
+    const p = at(g.path, end); c.lineTo(X(p[0]), Y(p[1]));
+    c.stroke(); c.setLineDash([]);
+    return p;
+  };
+  const ship = (p, ang, color, size) => {
+    c.save(); c.translate(X(p[0]), Y(p[1])); c.rotate(-ang);
+    c.fillStyle = color; c.beginPath();
+    c.moveTo(size, 0); c.lineTo(-size * 0.62, -size * 0.52); c.lineTo(-size * 0.32, 0); c.lineTo(-size * 0.62, size * 0.52);
+    c.closePath(); c.fill(); c.restore();
+  };
+  const cross = (p, color) => {
+    c.strokeStyle = color; c.lineWidth = 1.6;
+    c.beginPath(); c.moveTo(X(p[0]) - 3.5, Y(p[1]) - 3.5); c.lineTo(X(p[0]) + 3.5, Y(p[1]) + 3.5);
+    c.moveTo(X(p[0]) + 3.5, Y(p[1]) - 3.5); c.lineTo(X(p[0]) - 3.5, Y(p[1]) + 3.5); c.stroke();
+  };
+
+  if (ep.reference) trace(ep.reference, "rgba(93,255,214,0.55)", 1.2, [2, 3]);
+  trace(ep.pilot, "rgba(217,89,38,0.75)", 1.3, [5, 4]);
+  if (t < ep.pilot.ticks) ship(at(ep.pilot.path, idx), heading(ep.pilot.path, idx), "#d95926", 5);
+
+  let done = 0, arrived = 0;
+  const n = ep.ghosts.length;
+  ep.ghosts.forEach((g, i) => {
+    const f = n > 1 ? i / (n - 1) : 1;
+    const col = ramp(f);
+    const alive = t < g.ticks;
+    c.globalAlpha = alive ? 0.35 + 0.5 * f : 0.5;
+    const p = trace(g, col, 0.8 + 1.2 * f);
+    c.globalAlpha = 1;
+    if (alive) ship(p, heading(g.path, idx), col, 3.4 + 2.2 * f);
+    else {
+      done++;
+      if (g.status === "arrived") {
+        arrived++;
+        c.fillStyle = col; c.beginPath(); c.arc(X(p[0]), Y(p[1]), 2.6, 0, Math.PI * 2); c.fill();
+      } else cross(p, "rgba(208,59,59,0.8)");
+    }
+  });
+  v.tally.innerHTML = `<span class="arrived">${arrived} docked</span> · <span class="dim">${n - done} flying</span>`;
+}
+
+// ---------------------------------------------------------------- transport
+const SPEEDS = [1, 2, 4, 8];
+const DEFAULT_SPEED = 2;
+state.speed = DEFAULT_SPEED;
+$("speeds").innerHTML = SPEEDS.map(s => `<button data-s="${s}" class="${s === DEFAULT_SPEED ? "on" : ""}">${s}×</button>`).join("");
+$("speeds").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  state.speed = +b.dataset.s;
+  [...$("speeds").children].forEach(x => x.classList.toggle("on", x === b));
+});
+$("scrub").max = DATA.max_ticks;
+$("scrub").addEventListener("input", () => { state.t = +$("scrub").value; frameAll(); });
+$("play").addEventListener("click", () => setPlaying(!state.playing));
+function setPlaying(on) { state.playing = on; $("play").textContent = on ? "❚❚" : "▶"; }
+window.addEventListener("keydown", (e) => {
+  if (e.code === "Space") { e.preventDefault(); setPlaying(!state.playing); }
+});
+
+function frameAll() {
+  $("scrub").value = Math.round(state.t);
+  $("clock").textContent = `${(state.t * DATA.ctrl_dt).toFixed(1)} s`;
+  for (const v of views) if (v.visible) draw(v, state.t);
+}
+
+function loop(now) {
+  const dt = Math.min((now - state.last) / 1000, 0.25);
+  state.last = now;
+  if (state.playing) {
+    state.t += dt * state.speed / DATA.ctrl_dt;
+    if (state.t >= DATA.max_ticks + 30) state.t = 0;      // hold a moment, then run it again
+  }
+  frameAll();
+  requestAnimationFrame(loop);
+}
+setPlaying(true);
+requestAnimationFrame(loop);
+</script>
