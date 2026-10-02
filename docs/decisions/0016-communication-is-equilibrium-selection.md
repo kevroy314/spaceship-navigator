@@ -58,9 +58,10 @@ causal maps look blank ([0009](0009-probability-field-and-alpha.md)).
   convention in self-play" is unavailable for the human case. This is a second,
   independent reason for the name-first vocabulary in
   [0011](0011-callouts-and-legibility.md) — not a stylistic preference.
-- Pre-play commitment is a distinct channel from in-flight callouts and should be
-  built and measured separately: one bit exchanged before the episode may do more
-  than a stream during it.
+- ~~Pre-play commitment is a distinct channel from in-flight callouts~~ —
+  **withdrawn by [0017](0017-no-pre-play.md): there is no pre-play.** Every
+  episode is novel to every participant, so coordination is in-band from a cold
+  start. Participants share a protocol, never a plan.
 
 ## Process note
 This record exists because an assumption was asserted from a property that did
