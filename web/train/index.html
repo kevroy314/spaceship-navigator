@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0e16">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 rx=%223%22 fill=%22%230f1520%22/%3E%3Cpath d=%22M2 12 L6 7 L9 10 L14 4%22 stroke=%22%236da7ec%22 stroke-width=%222%22 fill=%22none%22/%3E%3C/svg%3E">
+<title>spacenav · training</title>
+<style>
+:root {
+  color-scheme: dark;
+  --ground: #0a0e16; --panel: #0f1520; --panel2: #141c2a; --line: #1f2a3b;
+  --ink: #e4ebf5; --ink2: #a9b6c9; --muted: #74839a; --accent: #6da7ec;
+  --good: #3fcf6a; --bad: #f07272; --warn: #ffc247; --pilot: #d95926;
+  --easy: #199e70; --medium: #3987e5; --hard: #d55181; --blind: #c98500;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--ground); color: var(--ink);
+  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+body { padding: calc(10px + env(safe-area-inset-top)) 12px calc(28px + env(safe-area-inset-bottom)); }
+.wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.mono, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.dim { color: var(--muted); }
+h1 { font-size: 17px; margin: 0; letter-spacing: 0.04em; text-transform: uppercase; }
+header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 3;
+  background: rgba(10,14,22,0.95); padding: 6px 0; }
+.live { display: inline-flex; align-items: center; gap: 6px; font: 11px/1 var(--mono); color: var(--muted); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+.dot.off { background: var(--bad); }
+.runs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+.chip { flex: none; background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 12px; font: 12px/1 var(--mono); color: var(--ink2); cursor: pointer; }
+.chip.on { border-color: var(--accent); color: #fff; }
+.chip .s { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.s.running { background: var(--good); } .s.finished { background: var(--accent); } .s.stalled { background: var(--warn); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.bar { height: 10px; border-radius: 5px; background: #0b111c; overflow: hidden; border: 1px solid var(--line); }
+.bar > div { height: 100%; background: linear-gradient(90deg, #2a78d6, #6da7ec); transition: width .4s ease; }
+.row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.big { font: 600 26px/1.1 var(--mono); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+.tile { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.tile .k { font: 10px/1.4 var(--mono); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.tile .v { font: 600 18px/1.2 var(--mono); }
+.suites { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 8px; }
+.suite { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; }
+.suite .name { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.suite .track { position: relative; height: 8px; border-radius: 4px; background: #0b111c; margin: 7px 0 5px; }
+.suite .fill { position: absolute; inset: 0 auto 0 0; border-radius: 4px; }
+.suite .pilot { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--pilot); }
+.suite .meta { display: flex; justify-content: space-between; font: 11px/1.3 var(--mono); color: var(--ink2); }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.chart { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px 4px; }
+.chart h3 { margin: 0 0 2px; font: 600 11px/1.3 var(--mono); letter-spacing: .07em; text-transform: uppercase; color: var(--ink2); }
+.chart svg { width: 100%; height: 92px; display: block; }
+.legend { display: flex; gap: 10px; flex-wrap: wrap; font: 10px/1.4 var(--mono); color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 4px; }
+table { width: 100%; border-collapse: collapse; font: 11px/1.5 var(--mono); }
+td, th { padding: 3px 6px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 400; text-align: right; }
+td:first-child, th:first-child { text-align: left; }
+.scroll { overflow-x: auto; max-height: 260px; overflow-y: auto; }
+.pill { border-radius: 999px; padding: 1px 7px; font: 10px/1.6 var(--mono); }
+.pill.reg { background: rgba(208,59,59,.2); color: #f49a9a; }
+.pill.ok { background: rgba(63,207,106,.15); color: var(--good); }
+@media (max-width: 480px) { .big { font-size: 22px; } body { padding-inline: 10px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Training</h1>
+    <span class="live"><span class="dot" id="dot"></span><span id="livetxt">connecting…</span></span>
+    <div class="runs" id="runs"></div>
+  </header>
+
+  <div class="card" id="progress">
+    <div class="row"><div><span class="big" id="pct">—</span> <span class="dim mono" id="phase"></span></div>
+      <div class="mono" id="eta">—</div></div>
+    <div class="bar" style="margin:8px 0 6px"><div id="pbar" style="width:0%"></div></div>
+    <div class="row mono dim" style="font-size:11px"><span id="steps">—</span><span id="rate">—</span></div>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:8px"><b class="mono" style="font-size:12px">EVAL SUITES</b>
+      <span class="dim mono" style="font-size:11px" id="ckpt">—</span></div>
+    <div class="suites" id="suites"></div>
+  </div>
+
+  <div class="charts" id="charts"></div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:6px"><b class="mono" style="font-size:12px">RECENT UPDATES</b></div>
+    <div class="scroll"><table id="log"></table></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const S = { run: null, points: [], evals: [], runs: [], es: null };
+const SUITES = ["easy", "medium", "hard", "blind"];
+const COL = { easy: "var(--easy)", medium: "var(--medium)", hard: "var(--hard)", blind: "var(--blind)" };
+const HEX = { easy: "#199e70", medium: "#3987e5", hard: "#d55181", blind: "#c98500" };
+const pct = v => v == null ? "—" : `${(v * 100).toFixed(0)}%`;
+const fmtSteps = v => v >= 1e9 ? `${(v / 1e9).toFixed(2)}B` : v >= 1e6 ? `${(v / 1e6).toFixed(0)}M` : `${(v / 1e3).toFixed(0)}k`;
+function dur(s) {
+  if (s == null || !isFinite(s)) return "—";
+  s = Math.max(0, Math.round(s));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return h ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m ${String(s % 60).padStart(2, "0")}s`;
+}
+
+function connect(run) {
+  if (S.es) S.es.close();
+  S.run = run; S.points = []; S.evals = [];
+  S.es = new EventSource(`/api/stream?run=${encodeURIComponent(run || "")}`);
+  S.es.onmessage = (e) => {
+    const d = JSON.parse(e.data);
+    S.runs = d.runs;
+    if (d.run !== S.run) { S.run = d.run; S.points = []; S.evals = []; }
+    if (d.points) S.points.push(...d.points);
+    if (d.evals) S.evals.push(...d.evals);
+    setLive(true);
+    render();
+  };
+  S.es.onerror = () => { setLive(false); };
+}
+function setLive(on) {
+  $("dot").classList.toggle("off", !on);
+  $("livetxt").textContent = on ? `live · ${new Date().toLocaleTimeString()}` : "reconnecting…";
+}
+
+function render() {
+  const sum = S.runs.find(r => r.name === S.run) || S.runs[S.runs.length - 1];
+  $("runs").innerHTML = S.runs.map(r =>
+    `<button class="chip ${r.name === S.run ? "on" : ""}" data-run="${r.name}">
+       <span class="s ${r.status}"></span>${r.name}</button>`).join("");
+  [...$("runs").children].forEach(b => b.onclick = () => connect(b.dataset.run));
+  if (!sum) return;
+
+  // progress + eta
+  $("pct").textContent = `${(sum.progress * 100).toFixed(1)}%`;
+  $("phase").textContent = `${sum.updates}/${sum.total_updates} updates · ${sum.status}`;
+  $("pbar").style.width = `${Math.min(100, sum.progress * 100)}%`;
+  $("steps").textContent = `${fmtSteps(sum.env_steps)} / ${fmtSteps(sum.total_steps)} env steps · ${sum.checkpoints} checkpoints`;
+  $("rate").textContent = `${Math.round(sum.rate / 1000)}k steps/s · elapsed ${dur(sum.elapsed)}`;
+  $("eta").innerHTML = sum.status === "finished" ? `<span class="pill ok">done</span>`
+    : `ETA <b>${dur(sum.eta)}</b>`;
+
+  // headline training numbers
+  const L = sum.latest || {};
+  const tiles = [
+    ["success", pct(L.success)], ["fly-through", pct(L.success_flythrough)],
+    ["rendezvous", pct(L.success_rendezvous)], ["waypoints", (L.waypoints ?? 0).toFixed(1)],
+    ["reached", pct(L.reached_frac)], ["return", (L.ep_return ?? 0).toFixed(2)],
+    ["crash", pct(L.crash)], ["timeout", pct(L.timeout)],
+    ["entropy", (L.entropy ?? 0).toFixed(2)], ["KL", (L.approx_kl ?? 0).toFixed(4)],
+  ];
+  $("tiles").innerHTML = tiles.map(([k, v]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+
+  // eval suites: agent bar, pilot marker, win rate
+  const ev = S.evals[S.evals.length - 1];
+  $("ckpt").textContent = ev ? `checkpoint ${ev.update} · ${fmtSteps(ev.env_steps)} steps` : "no checkpoint yet";
+  $("suites").innerHTML = SUITES.filter(k => ev && ev.metrics[k]).map(k => {
+    const m = ev.metrics[k], best = (sum.best || {})[k] ?? 0;
+    const reg = (sum.regressions || {})[k];
+    return `<div class="suite"><div class="row"><span class="name" style="color:${COL[k]}">${k}</span>
+        <span class="mono" style="font-size:12px">${pct(m.success)}${reg ? ` <span class="pill reg">↓${Math.round(reg * 100)}</span>` : ""}</span></div>
+      <div class="track"><div class="fill" style="width:${m.success * 100}%;background:${COL[k]}"></div>
+        <div class="pilot" style="left:${m.pilot_success * 100}%" title="scripted pilot"></div></div>
+      <div class="meta"><span>pilot ${pct(m.pilot_success)}</span><span>win ${pct(m.win_rate_vs_pilot)}</span><span>best ${pct(best)}</span></div></div>`;
+  }).join("");
+
+  drawCharts();
+
+  // recent updates
+  const rows = S.points.slice(-40).reverse();
+  $("log").innerHTML = `<thead><tr><th>upd</th><th>steps</th><th>succ</th><th>ret</th><th>len</th><th>crash</th><th>tout</th><th>ent</th></tr></thead><tbody>`
+    + rows.map(p => `<tr><td>${p.update}</td><td>${fmtSteps(p.env_steps)}</td><td>${pct(p.success)}</td>`
+      + `<td>${(p.ep_return ?? 0).toFixed(2)}</td><td>${Math.round(p.ep_length ?? 0)}</td>`
+      + `<td>${pct(p.crash)}</td><td>${pct(p.timeout)}</td><td>${(p.entropy ?? 0).toFixed(2)}</td></tr>`).join("")
+    + `</tbody>`;
+}
+
+function spark(series, { yMax = null, yMin = 0, fmt = pct } = {}) {
+  const W = 300, H = 92, L = 30, R = 6, T = 8, B = 16;
+  const all = series.flatMap(s => s.pts.map(p => p[1])).filter(v => v != null && isFinite(v));
+  if (!all.length) return `<svg viewBox="0 0 ${W} ${H}"></svg>`;
+  const hi = yMax ?? (Math.max(...all) * 1.08 || 1);        // (?? with || needs the parens)
+  const lo = yMin == null ? Math.min(...all) : Math.min(yMin, Math.min(...all));
+  const xs = series.flatMap(s => s.pts.map(p => p[0]));
+  const x0 = Math.min(...xs), x1 = Math.max(...xs) || 1;
+  const X = v => L + (x1 === x0 ? 0.5 : (v - x0) / (x1 - x0)) * (W - L - R);
+  const Y = v => T + (1 - (v - lo) / ((hi - lo) || 1)) * (H - T - B);
+  let out = "";
+  for (const g of [0, 0.5, 1]) {
+    const v = lo + (hi - lo) * g, y = Y(v);
+    out += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="#1f2a3b"/>`
+      + `<text x="${L - 4}" y="${y + 3}" text-anchor="end" fill="#74839a" font-size="8" font-family="ui-monospace,monospace">${fmt(v)}</text>`;
+  }
+  for (const s of series) {
+    const pts = s.pts.filter(p => p[1] != null && isFinite(p[1]));
+    if (!pts.length) continue;
+    out += `<path d="${pts.map((p, i) => `${i ? "L" : "M"}${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join("")}"
+      fill="none" stroke="${s.hex}" stroke-width="${s.w || 1.6}" stroke-linejoin="round" ${s.dash ? 'stroke-dasharray="4 3" opacity=".65"' : ""}/>`;
+    const last = pts[pts.length - 1];
+    if (!s.dash) out += `<circle cx="${X(last[0]).toFixed(1)}" cy="${Y(last[1]).toFixed(1)}" r="2.6" fill="${s.hex}"/>`;
+  }
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${out}</svg>`;
+}
+
+function drawCharts() {
+  const P = S.points, E = S.evals;
+  const charts = [];
+  charts.push(["Training success", spark([
+    { hex: "#6da7ec", pts: P.map(p => [p.env_steps, p.success]) },
+    { hex: "#3fcf6a", pts: P.map(p => [p.env_steps, p.reached_frac]), w: 1.2, dash: true },
+  ], { yMax: 1 }), `<i style="background:#6da7ec"></i>tour complete <i style="background:#3fcf6a"></i>waypoints reached`]);
+  charts.push(["Eval success by suite", spark(SUITES.filter(k => E.length && E[0].metrics[k]).map(k =>
+    ({ hex: HEX[k], pts: E.map(e => [e.env_steps, e.metrics[k].success]) })), { yMax: 1 }),
+    SUITES.map(k => `<i style="background:${HEX[k]}"></i>${k}`).join(" ")]);
+  charts.push(["Return", spark([{ hex: "#ffc247", pts: P.map(p => [p.env_steps, p.ep_return]) }],
+    { yMin: null, fmt: v => v.toFixed(1) }), ""]);
+  charts.push(["Failures", spark([
+    { hex: "#f07272", pts: P.map(p => [p.env_steps, p.crash]) },
+    { hex: "#ffc247", pts: P.map(p => [p.env_steps, p.timeout]) },
+    { hex: "#a9b6c9", pts: P.map(p => [p.env_steps, p.lost]) },
+  ], { yMax: 1 }), `<i style="background:#f07272"></i>crash <i style="background:#ffc247"></i>timeout <i style="background:#a9b6c9"></i>lost`]);
+  charts.push(["Curriculum", spark([
+    { hex: "#d55181", pts: P.map(p => [p.env_steps, p.p_rendezvous]) },
+    { hex: "#6da7ec", pts: P.map(p => [p.env_steps, (p.wp_max ?? 1) / 4]) },
+    { hex: "#c98500", pts: P.map(p => [p.env_steps, p.budget_lo]) },
+  ], { yMax: 1.2 }), `<i style="background:#d55181"></i>rendezvous <i style="background:#6da7ec"></i>tour length ÷4 <i style="background:#c98500"></i>fuel budget`]);
+  charts.push(["Policy entropy", spark([{ hex: "#9ec5f4", pts: P.map(p => [p.env_steps, p.entropy]) }],
+    { yMin: null, fmt: v => v.toFixed(1) }), ""]);
+  $("charts").innerHTML = charts.map(([t, svg, leg]) =>
+    `<div class="chart"><h3>${t}</h3>${svg}${leg ? `<div class="legend">${leg}</div>` : ""}</div>`).join("");
+}
+
+fetch("/api/runs").then(r => r.json()).then(rs => {
+  S.runs = rs;
+  const running = rs.find(r => r.status === "running") || rs[rs.length - 1];
+  connect(running ? running.name : "");
+}).catch(() => connect(""));
+</script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#04060c">
+  <title>Spacenav</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Cpath d=%22M14 8 3 2.5 5 8 3 13.5z%22 fill=%22%235dd6ff%22/%3E%3C/svg%3E">
+</head>
+<body>
+  <canvas id="view"></canvas>
+
+  <div id="hud">
+  <div id="mission" class="panel">
+    <div class="row title"><span id="family">—</span><span id="eid" class="dim"></span></div>
+    <div id="objective" class="chips"></div>
+    <div id="targetinfo" class="dim small"></div>
+    <div id="warn" class="warn hidden"></div>
+  </div>
+
+  <div id="gauges" class="panel">
+    <div class="gauges-row">
+    <div class="gauge"><label>HULL</label><div class="bar"><div id="hull" class="fill hull"></div></div><span id="hullv"></span></div>
+    <div class="gauge"><label>FUEL</label><div class="bar"><div id="fuel" class="fill fuel"></div></div><span id="fuelv"></span></div>
+    </div>
+    <div class="stats">
+      <div><label>time</label><span id="time">0.0</span></div>
+      <div><label>speed</label><span id="speed">0</span></div>
+      <div><label>dist</label><span id="dist">0</span></div>
+      <div><label>rel v</label><span id="relv">0</span></div>
+      <div><label>score</label><span id="score">0</span></div>
+    </div>
+    <div id="hazards" class="hazards"></div>
+    <div id="instr" class="instr hidden">
+      <div class="ins" id="insEta" title="eta: the share of the local pull that is NOT the dominant body. Near 0 a one-body picture is right; near 1 it is lying to you."><label>&#951; MODEL</label><span>&#8212;</span></div>
+      <div class="ins" id="insA" title="A: the tank measured against the impulse gravity will deliver over the rest of the flight. Below 1 you cannot power through the field."><label>A BUDGET</label><span>&#8212;</span></div>
+      <div class="ins" id="insD" title="D = eta / A: the share of the tank that flying the wrong model would cost."><label>D DEMAND</label><span>&#8212;</span></div>
+      <div class="ins" id="insHz" title="How far ahead the forecast still means anything: the time at which the prediction cone opens wider than the arrival radius. Past it, commit to nothing. The forecast is only run 20 s ahead, so a cone still tight at the end of that window reads as &#8805;20s."><label>HORIZON</label><span>&#8212;</span></div>
+      <div class="ins" id="insS" title="Stretch: the local divergence rate (1/s). How fast neighbouring trajectories pull apart."><label>STRETCH</label><span>&#8212;</span></div>
+      <div id="ihint" class="ihint dim">Where the cone opens, the forecast has expired &#8212; fly on feel from there, and keep fuel in hand.</div>
+    </div>
+  </div>
+
+  <div id="timebar">
+    <button id="bRewind" title="hold to rewind (Z)">⏪</button>
+    <button id="bSlower" title="slower ([)">−</button>
+    <span id="speedv">1×</span>
+    <button id="bFaster" title="faster (])">+</button>
+  </div>
+
+  <div id="topbar">
+    <button id="bPlay" title="start / pause">▶</button>
+    <button id="bRestart" title="restart">↻</button>
+    <button id="bFollow" title="follow ship">◎</button>
+    <button id="bPred" class="on" title="trajectory prediction">⤳</button>
+    <button id="bMenu" title="menu">☰</button>
+  </div>
+  </div>
+
+  <div id="touch">
+    <div class="cluster">
+      <button id="tLeft" class="pad" aria-label="turn left">⟲</button>
+      <button id="tRight" class="pad" aria-label="turn right">⟳</button>
+    </div>
+    <div class="cluster">
+      <button id="tGentle" class="pad small" aria-label="gentle thrust">½</button>
+      <button id="tThrust" class="pad big" aria-label="thrust">▲</button>
+    </div>
+  </div>
+
+  <div id="banner" class="banner"></div>
+
+  <div id="side" class="panel">
+    <div class="drawer-head"><span class="sectitle">Menu</span><button id="bClose">✕</button></div>
+    <div class="section">
+      <div class="sectitle">Episode</div>
+      <div class="grid2">
+        <label>pool</label><select id="pool"></select>
+        <label>family</label><select id="famsel"></select>
+        <label>level</label><input id="level" type="number" min="0" value="0">
+        <label>task seed</label><input id="seed" type="number" min="0" value="0">
+        <label>stops</label><select id="stops"><option>1</option><option>2</option><option selected>3</option><option>4</option></select>
+        <label>moving</label><select id="moving"><option value="0">all stationary</option><option value="33">a third move</option><option value="50" selected>half move</option><option value="75">most move</option><option value="100">all move</option></select>
+        <label>docking</label><label class="inline"><input id="docking" type="checkbox"> must match speed</label>
+        <label>contested</label><label class="inline"><input id="contested" type="checkbox"> park where two pulls fight</label>
+      </div>
+      <div class="buttons"><button id="go">Load</button><button id="rand">Random</button><button id="nextseed">Next A→B</button></div>
+    </div>
+    <div class="section">
+      <div class="sectitle">Curriculum</div>
+      <div class="grid2">
+        <label>band</label><select id="cband"></select>
+      </div>
+      <div id="cnote" class="small dim"></div>
+      <div id="clist" class="runs"></div>
+    </div>
+    <div class="section">
+      <div class="sectitle">Runs <span class="dim small">(overlay)</span></div>
+      <div id="runs" class="runs"></div>
+      <div class="buttons"><button id="pilot">Run pilot</button><button id="coast">Coast</button><button id="refresh">Reload</button></div>
+    </div>
+    <div class="section">
+      <div class="sectitle">Handling</div>
+      <div class="grid2">
+        <label for="sens">steering</label>
+        <input id="sens" type="range" min="0.25" max="1" step="0.05" value="0.7">
+      </div>
+      <div class="small dim" id="sensv">0.70 · hold to turn faster · ½ for fine steering</div>
+    </div>
+    <div class="section">
+      <div class="sectitle">Instruments</div>
+      <label class="togg"><input id="showinstr" type="checkbox" checked> show the cockpit panel</label>
+      <div id="instrnote" class="small dim"></div>
+    </div>
+    <div class="section">
+      <div class="sectitle">Replay</div>
+      <input id="scrub" type="range" min="0" max="1800" value="0">
+      <div class="buttons"><button id="replay">Replay ▶</button><button id="toplay">Back to play</button></div>
+    </div>
+    <div class="section small dim help touch-help">
+      Hold <b>⟲ ⟳</b> to turn, <b>▲</b> to thrust; <b>½</b> toggles gentle thrust.<br>
+      Hold <b>⏪</b> to rewind, then fly on from there · <b>− +</b> change game speed.<br>
+      Drag to pan, pinch to zoom · <b>◎</b> follows the ship · <b>⤳</b> toggles the predicted path.
+    </div>
+    <div class="section small dim help key-help">
+      <b>←/→</b> or <b>A/D</b> turn · <b>↑/W</b> thrust (<b>Shift</b> = gentle)<br>
+      <b>Z</b> (hold) rewind · <b>Space</b> start/pause · <b>R</b> restart · <b>F</b> follow ship · <b>P</b> trajectory prediction<br>
+      <b>[ ]</b> game speed · wheel zoom · drag pan · <b>H</b> hide panels
+    </div>
+  </div>
+
+  <div id="result" class="modal hidden">
+    <div class="modal-body">
+      <h2 id="rtitle"></h2>
+      <table id="rtable"></table>
+      <div id="rnote" class="dim small"></div>
+      <div class="buttons">
+        <button id="save">Save run</button><button id="back3">⏪ Back 3 s</button><button id="retry">Retry (R)</button>
+        <button id="rreplay">Replay</button><button id="rnext">Next A→B</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
