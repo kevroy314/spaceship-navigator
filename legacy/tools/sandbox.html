@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gravity Sandbox</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#0a0a14; color:#c8d0e0; font-family:'Segoe UI',system-ui,sans-serif; overflow:hidden; }
+canvas { display:block; cursor:crosshair; }
+
+#ui {
+  position:fixed; top:12px; left:12px; z-index:10;
+  background:rgba(10,10,24,0.9); border:1px solid rgba(80,140,220,0.3);
+  border-radius:8px; padding:14px 16px; min-width:220px;
+  backdrop-filter:blur(6px); display:flex; flex-direction:column; gap:8px;
+  user-select:none; font-size:12px;
+}
+#ui h1 { font-size:13px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:#5ebbff; }
+.row { display:flex; align-items:center; gap:6px; }
+.row label { min-width:60px; color:#8090a8; }
+.row input[type=range] { flex:1; }
+.row .val { min-width:50px; text-align:right; color:#e0e8f0; font-variant-numeric:tabular-nums; }
+button {
+  background:rgba(40,60,100,0.6); border:1px solid rgba(80,140,220,0.3);
+  color:#c8d0e0; border-radius:4px; padding:5px 10px; font-size:11px;
+  cursor:pointer; transition:background .15s;
+}
+button:hover { background:rgba(60,90,140,0.7); }
+button.active { background:rgba(94,187,255,0.25); border-color:#5ebbff; color:#fff; }
+.btn-row { display:flex; gap:4px; flex-wrap:wrap; }
+#info { color:#556680; font-size:10px; line-height:1.5; }
+#export-area {
+  display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  z-index:100; background:rgba(10,10,24,0.97); border:1px solid rgba(80,140,220,0.4);
+  border-radius:8px; padding:16px; width:500px; max-height:80vh;
+}
+#export-area textarea { width:100%; height:300px; background:#0f1020; color:#c8d0e0;
+  border:1px solid rgba(80,140,220,0.2); border-radius:4px; padding:8px;
+  font-family:monospace; font-size:11px; resize:vertical; }
+#export-area .btn-row { margin-top:8px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="ui">
+  <h1>Gravity Sandbox</h1>
+  <div id="info">
+    Click to place body. Drag to set velocity.<br>
+    Scroll to adjust mass. Right-click to delete.<br>
+    Middle-click+drag to pan. Scroll+Shift to zoom.
+  </div>
+
+  <div class="row">
+    <label>Mass</label>
+    <input type="range" id="mass-slider" min="18" max="31" step="0.5" value="24">
+    <span class="val" id="mass-val">1e24</span>
+  </div>
+  <div class="row">
+    <label>Time scale</label>
+    <input type="range" id="dt-slider" min="-1" max="4" step="0.1" value="2">
+    <span class="val" id="dt-val">100x</span>
+  </div>
+  <div class="row">
+    <label>Trails</label>
+    <input type="range" id="trail-slider" min="0" max="2000" step="50" value="500">
+    <span class="val" id="trail-val">500</span>
+  </div>
+  <div class="row">
+    <label>Softening</label>
+    <input type="range" id="soft-slider" min="7" max="11" step="0.5" value="9">
+    <span class="val" id="soft-val">1e9</span>
+  </div>
+
+  <div class="btn-row">
+    <button id="btn-pause">Pause</button>
+    <button id="btn-clear">Clear All</button>
+    <button id="btn-export">Export</button>
+  </div>
+
+  <div class="btn-row" style="margin-top:4px;">
+    <button id="btn-preset-solar">Solar System</button>
+    <button id="btn-preset-binary">Binary Star</button>
+    <button id="btn-preset-3body">3-Body</button>
+  </div>
+
+  <div style="margin-top:6px; font-size:10px; color:#556680;">
+    <span id="body-count">0</span> bodies |
+    <span id="sim-time">0</span>s elapsed |
+    <span id="fps-display">0</span> fps
+  </div>
+</div>
+
+<div id="export-area">
+  <h1 style="font-size:13px; color:#5ebbff; margin-bottom:8px;">EXPORTED CONFIGURATION</h1>
+  <textarea id="export-text" readonly></textarea>
+  <div class="btn-row">
+    <button id="btn-copy">Copy to Clipboard</button>
+    <button id="btn-close-export">Close</button>
+  </div>
+</div>
+
+<script>
+// =========================================================================
+// Constants
+// =========================================================================
+const G = 6.6743e-11;
+const AU = 1.496e11;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+// =========================================================================
+// State
+// =========================================================================
+let bodies = [];       // {x, y, vx, vy, mass, trail: [{x,y}], color}
+let paused = false;
+let simTime = 0;
+let dragging = null;   // {bodyIdx, startX, startY} for velocity setting
+let placing = null;    // {x, y} world coords while mouse is down
+let panning = false;
+let panStart = {x:0, y:0};
+
+// View transform: world -> screen
+let view = { cx: 50*AU, cy: 50*AU, scale: 1.3e-10 }; // center on 50AU, ~domain center
+
+let massExp = 24;
+let dtMultiplier = 100;
+let baseDt = 3600;     // 1 hour base timestep
+let maxTrail = 500;
+let softening = 1e9;
+let frameCount = 0;
+let lastFpsTime = performance.now();
+let fpsDisplay = 0;
+
+// =========================================================================
+// Colors by mass range
+// =========================================================================
+function bodyColor(mass) {
+  const e = Math.log10(mass);
+  if (e >= 29) return '#ffdd44';       // star
+  if (e >= 26) return '#4488ee';       // gas giant
+  if (e >= 23) return '#44aa66';       // terrestrial
+  if (e >= 18) return '#888888';       // asteroid
+  return '#555555';
+}
+
+function bodyRadius(mass) {
+  return Math.max(2, Math.min(20, (Math.log10(mass) - 18) * 1.8));
+}
+
+// =========================================================================
+// Coordinate transforms
+// =========================================================================
+function worldToScreen(wx, wy) {
+  return {
+    x: (wx - view.cx) * view.scale + canvas.width/2,
+    y: (wy - view.cy) * view.scale + canvas.height/2,
+  };
+}
+
+function screenToWorld(sx, sy) {
+  return {
+    x: (sx - canvas.width/2) / view.scale + view.cx,
+    y: (sy - canvas.height/2) / view.scale + view.cy,
+  };
+}
+
+// =========================================================================
+// Physics
+// =========================================================================
+function step(dt) {
+  const N = bodies.length;
+  if (N === 0) return;
+
+  // Compute accelerations (direct N-body, 3D 1/r^2 law)
+  const ax = new Float64Array(N);
+  const ay = new Float64Array(N);
+  const soft2 = softening * softening;
+
+  for (let i = 0; i < N; i++) {
+    for (let j = i+1; j < N; j++) {
+      const dx = bodies[j].x - bodies[i].x;
+      const dy = bodies[j].y - bodies[i].y;
+      const r2 = dx*dx + dy*dy + soft2;
+      const r = Math.sqrt(r2);
+      const inv_r3 = 1 / (r2 * r);
+
+      const fi = G * bodies[j].mass * inv_r3;
+      const fj = G * bodies[i].mass * inv_r3;
+
+      ax[i] += fi * dx;
+      ay[i] += fi * dy;
+      ax[j] -= fj * dx;
+      ay[j] -= fj * dy;
+    }
+  }
+
+  // Leapfrog integration
+  for (let i = 0; i < N; i++) {
+    bodies[i].vx += ax[i] * dt;
+    bodies[i].vy += ay[i] * dt;
+    bodies[i].x += bodies[i].vx * dt;
+    bodies[i].y += bodies[i].vy * dt;
+
+    // Trail
+    bodies[i].trail.push({x: bodies[i].x, y: bodies[i].y});
+    if (bodies[i].trail.length > maxTrail) {
+      bodies[i].trail.shift();
+    }
+  }
+
+  simTime += dt;
+}
+
+// =========================================================================
+// Rendering
+// =========================================================================
+function render() {
+  ctx.fillStyle = '#0a0a14';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(40,50,80,0.3)';
+  ctx.lineWidth = 1;
+  // Draw AU grid lines
+  const gridAU = 10;
+  const gridStep = gridAU * AU;
+  const topLeft = screenToWorld(0, 0);
+  const botRight = screenToWorld(canvas.width, canvas.height);
+  const startX = Math.floor(topLeft.x / gridStep) * gridStep;
+  const startY = Math.floor(topLeft.y / gridStep) * gridStep;
+
+  ctx.beginPath();
+  for (let wx = startX; wx <= botRight.x; wx += gridStep) {
+    const s = worldToScreen(wx, 0);
+    ctx.moveTo(s.x, 0);
+    ctx.lineTo(s.x, canvas.height);
+  }
+  for (let wy = startY; wy <= botRight.y; wy += gridStep) {
+    const s = worldToScreen(0, wy);
+    ctx.moveTo(0, s.y);
+    ctx.lineTo(canvas.width, s.y);
+  }
+  ctx.stroke();
+
+  // AU labels
+  ctx.fillStyle = 'rgba(80,100,140,0.5)';
+  ctx.font = '9px monospace';
+  for (let wx = startX; wx <= botRight.x; wx += gridStep) {
+    const s = worldToScreen(wx, topLeft.y);
+    const auVal = (wx / AU).toFixed(0);
+    ctx.fillText(auVal + ' AU', s.x + 2, 12);
+  }
+
+  // Trails
+  for (const b of bodies) {
+    if (b.trail.length < 2) continue;
+    ctx.beginPath();
+    const t0 = worldToScreen(b.trail[0].x, b.trail[0].y);
+    ctx.moveTo(t0.x, t0.y);
+    for (let i = 1; i < b.trail.length; i++) {
+      const t = worldToScreen(b.trail[i].x, b.trail[i].y);
+      ctx.lineTo(t.x, t.y);
+    }
+    ctx.strokeStyle = b.color + '60';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Bodies
+  for (let i = 0; i < bodies.length; i++) {
+    const b = bodies[i];
+    const s = worldToScreen(b.x, b.y);
+    const r = bodyRadius(b.mass);
+
+    // Glow
+    const grad = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r * 3);
+    grad.addColorStop(0, b.color + '40');
+    grad.addColorStop(1, b.color + '00');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r * 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Body
+    ctx.fillStyle = b.color;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mass label
+    ctx.fillStyle = 'rgba(200,210,230,0.6)';
+    ctx.font = '9px monospace';
+    ctx.fillText(b.mass.toExponential(1), s.x + r + 4, s.y - 2);
+
+    // Velocity vector
+    const vScale = view.scale * 3600 * 10; // show velocity as ~10-hour displacement
+    const vx = b.vx * vScale;
+    const vy = b.vy * vScale;
+    if (Math.abs(vx) > 1 || Math.abs(vy) > 1) {
+      ctx.strokeStyle = '#5ebbff60';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(s.x, s.y);
+      ctx.lineTo(s.x + vx, s.y + vy);
+      ctx.stroke();
+      // Arrowhead
+      const angle = Math.atan2(vy, vx);
+      ctx.beginPath();
+      ctx.moveTo(s.x + vx, s.y + vy);
+      ctx.lineTo(s.x + vx - 6*Math.cos(angle-0.4), s.y + vy - 6*Math.sin(angle-0.4));
+      ctx.moveTo(s.x + vx, s.y + vy);
+      ctx.lineTo(s.x + vx - 6*Math.cos(angle+0.4), s.y + vy - 6*Math.sin(angle+0.4));
+      ctx.stroke();
+    }
+  }
+
+  // Placing preview
+  if (placing && !dragging) {
+    const s = worldToScreen(placing.x, placing.y);
+    const r = bodyRadius(Math.pow(10, massExp));
+    ctx.strokeStyle = '#5ebbff80';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Dragging velocity vector preview
+  if (dragging) {
+    const b = bodies[dragging.bodyIdx];
+    const s = worldToScreen(b.x, b.y);
+    ctx.strokeStyle = '#ff884480';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(dragging.currentSX, dragging.currentSY);
+    ctx.stroke();
+
+    // Show velocity magnitude
+    const endW = screenToWorld(dragging.currentSX, dragging.currentSY);
+    const dvx = (endW.x - b.x) / 10;  // 10 seconds worth of velocity
+    const dvy = (endW.y - b.y) / 10;
+    const speed = Math.sqrt(dvx*dvx + dvy*dvy);
+    ctx.fillStyle = '#ff8844';
+    ctx.font = '11px monospace';
+    ctx.fillText((speed/1000).toFixed(1) + ' km/s', dragging.currentSX + 10, dragging.currentSY - 10);
+  }
+}
+
+// =========================================================================
+// Main loop
+// =========================================================================
+function tick() {
+  requestAnimationFrame(tick);
+
+  if (!paused) {
+    const substeps = 4;
+    const dt = baseDt * dtMultiplier / substeps;
+    for (let i = 0; i < substeps; i++) {
+      step(dt);
+    }
+  }
+
+  render();
+
+  // FPS
+  frameCount++;
+  const now = performance.now();
+  if (now - lastFpsTime > 500) {
+    fpsDisplay = Math.round(frameCount / ((now - lastFpsTime) / 1000));
+    frameCount = 0;
+    lastFpsTime = now;
+  }
+
+  // UI updates
+  document.getElementById('body-count').textContent = bodies.length;
+  document.getElementById('sim-time').textContent = (simTime / 86400).toFixed(1) + ' days';
+  document.getElementById('fps-display').textContent = fpsDisplay;
+}
+
+// =========================================================================
+// Input handling
+// =========================================================================
+canvas.addEventListener('mousedown', (e) => {
+  if (e.button === 1 || (e.button === 0 && e.altKey)) {
+    // Middle click or alt+click: pan
+    panning = true;
+    panStart = {x: e.clientX, y: e.clientY};
+    canvas.style.cursor = 'grabbing';
+    return;
+  }
+
+  if (e.button === 2) {
+    // Right click: delete nearest body
+    e.preventDefault();
+    const w = screenToWorld(e.clientX, e.clientY);
+    let minDist = Infinity, minIdx = -1;
+    for (let i = 0; i < bodies.length; i++) {
+      const d = Math.hypot(bodies[i].x - w.x, bodies[i].y - w.y);
+      if (d < minDist) { minDist = d; minIdx = i; }
+    }
+    if (minIdx >= 0 && minDist * view.scale < 30) {
+      bodies.splice(minIdx, 1);
+    }
+    return;
+  }
+
+  // Left click: place body
+  const w = screenToWorld(e.clientX, e.clientY);
+  const mass = Math.pow(10, massExp);
+  const newBody = {
+    x: w.x, y: w.y, vx: 0, vy: 0, mass,
+    trail: [], color: bodyColor(mass),
+  };
+  bodies.push(newBody);
+  dragging = {
+    bodyIdx: bodies.length - 1,
+    startSX: e.clientX, startSY: e.clientY,
+    currentSX: e.clientX, currentSY: e.clientY,
+  };
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (panning) {
+    const dx = e.clientX - panStart.x;
+    const dy = e.clientY - panStart.y;
+    view.cx -= dx / view.scale;
+    view.cy -= dy / view.scale;
+    panStart = {x: e.clientX, y: e.clientY};
+    return;
+  }
+  if (dragging) {
+    dragging.currentSX = e.clientX;
+    dragging.currentSY = e.clientY;
+    return;
+  }
+  // Preview placement
+  const w = screenToWorld(e.clientX, e.clientY);
+  placing = {x: w.x, y: w.y};
+});
+
+canvas.addEventListener('mouseup', (e) => {
+  if (panning) {
+    panning = false;
+    canvas.style.cursor = 'crosshair';
+    return;
+  }
+  if (dragging) {
+    const b = bodies[dragging.bodyIdx];
+    const endW = screenToWorld(dragging.currentSX, dragging.currentSY);
+    // Velocity: displacement from body to release point, scaled
+    // Use a scale factor: 1 pixel of drag = some velocity
+    // Map screen distance to velocity: drag represents 10s of travel
+    b.vx = (endW.x - b.x) / 10;
+    b.vy = (endW.y - b.y) / 10;
+    dragging = null;
+  }
+});
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  if (e.shiftKey) {
+    // Zoom
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    const w = screenToWorld(e.clientX, e.clientY);
+    view.scale *= factor;
+    // Keep mouse position fixed in world coords
+    view.cx = w.x - (e.clientX - canvas.width/2) / view.scale;
+    view.cy = w.y - (e.clientY - canvas.height/2) / view.scale;
+  } else {
+    // Adjust mass
+    massExp += e.deltaY > 0 ? -0.5 : 0.5;
+    massExp = Math.max(12, Math.min(31, massExp));
+    document.getElementById('mass-slider').value = massExp;
+    updateMassDisplay();
+  }
+}, {passive: false});
+
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+// =========================================================================
+// UI controls
+// =========================================================================
+function updateMassDisplay() {
+  const v = Math.pow(10, massExp);
+  document.getElementById('mass-val').textContent = v.toExponential(0);
+}
+
+document.getElementById('mass-slider').addEventListener('input', (e) => {
+  massExp = parseFloat(e.target.value);
+  updateMassDisplay();
+});
+
+document.getElementById('dt-slider').addEventListener('input', (e) => {
+  dtMultiplier = Math.pow(10, parseFloat(e.target.value));
+  document.getElementById('dt-val').textContent =
+    dtMultiplier >= 1 ? dtMultiplier.toFixed(0) + 'x' : dtMultiplier.toFixed(2) + 'x';
+});
+
+document.getElementById('trail-slider').addEventListener('input', (e) => {
+  maxTrail = parseInt(e.target.value);
+  document.getElementById('trail-val').textContent = maxTrail;
+});
+
+document.getElementById('soft-slider').addEventListener('input', (e) => {
+  softening = Math.pow(10, parseFloat(e.target.value));
+  document.getElementById('soft-val').textContent = softening.toExponential(0);
+});
+
+document.getElementById('btn-pause').addEventListener('click', () => {
+  paused = !paused;
+  document.getElementById('btn-pause').textContent = paused ? 'Resume' : 'Pause';
+  document.getElementById('btn-pause').classList.toggle('active', paused);
+});
+
+document.getElementById('btn-clear').addEventListener('click', () => {
+  bodies = [];
+  simTime = 0;
+});
+
+// =========================================================================
+// Presets
+// =========================================================================
+function addBody(x_au, y_au, vx, vy, mass) {
+  const cx = 50 * AU; // domain center
+  const cy = 50 * AU;
+  bodies.push({
+    x: cx + x_au * AU, y: cy + y_au * AU,
+    vx, vy, mass,
+    trail: [], color: bodyColor(mass),
+  });
+}
+
+document.getElementById('btn-preset-solar').addEventListener('click', () => {
+  bodies = []; simTime = 0;
+  // Sun
+  addBody(0, 0, 0, 0, 1.989e30);
+  // Mercury
+  addBody(0.387, 0, 0, 47400, 3.301e23);
+  // Venus
+  addBody(0.723, 0, 0, 35000, 4.867e24);
+  // Earth
+  addBody(1.0, 0, 0, 29784, 5.972e24);
+  // Mars
+  addBody(1.524, 0, 0, 24100, 6.417e23);
+  // Jupiter
+  addBody(5.203, 0, 0, 13100, 1.898e27);
+  // Saturn
+  addBody(9.537, 0, 0, 9700, 5.683e26);
+
+  view.cx = 50*AU; view.cy = 50*AU; view.scale = 6e-11;
+});
+
+document.getElementById('btn-preset-binary').addEventListener('click', () => {
+  bodies = []; simTime = 0;
+  // Binary star system
+  const M = 1.0e30;
+  const sep = 5 * AU;
+  const v = Math.sqrt(G * M / (2 * sep)); // orbital velocity for equal-mass binary
+  addBody(-2.5, 0, 0, v, M);
+  addBody(2.5, 0, 0, -v, M);
+  // Planet orbiting the pair at large distance
+  const r_p = 20;
+  const v_p = Math.sqrt(G * 2 * M / (r_p * AU));
+  addBody(r_p, 0, 0, v_p, 1e25);
+
+  view.cx = 50*AU; view.cy = 50*AU; view.scale = 3e-11;
+});
+
+document.getElementById('btn-preset-3body').addEventListener('click', () => {
+  bodies = []; simTime = 0;
+  // Chaotic 3-body: three comparable masses
+  const M = 5e29;
+  addBody(0, 0, 0, 0, M * 2);
+  addBody(3, 0, 0, Math.sqrt(G * M * 2 / (3*AU)) * 1.1, M);
+  addBody(-4, 2, Math.sqrt(G * M * 2 / (5*AU)) * 0.4, -Math.sqrt(G * M * 2 / (5*AU)) * 0.7, M * 0.8);
+
+  view.cx = 50*AU; view.cy = 50*AU; view.scale = 8e-11;
+});
+
+// =========================================================================
+// Export
+// =========================================================================
+document.getElementById('btn-export').addEventListener('click', () => {
+  const config = {
+    bodies: bodies.map((b, i) => ({
+      index: i,
+      x_au: (b.x - 50*AU) / AU,
+      y_au: (b.y - 50*AU) / AU,
+      vx_ms: b.vx,
+      vy_ms: b.vy,
+      mass_kg: b.mass,
+      type: Math.log10(b.mass) >= 29 ? 'star' :
+            Math.log10(b.mass) >= 26 ? 'giant' :
+            Math.log10(b.mass) >= 23 ? 'terrestrial' : 'asteroid',
+    })),
+    simulation: {
+      softening_m: softening,
+      dt_base_s: baseDt,
+      dt_multiplier: dtMultiplier,
+      sim_time_days: simTime / 86400,
+      G: G,
+      AU: AU,
+    },
+    notes: 'Exported from Gravity Sandbox. Positions relative to domain center (50 AU, 50 AU).',
+  };
+
+  // Also generate YAML-ish format for the level_gen config
+  let yaml = '# Gravity Sandbox Export\n';
+  yaml += '# Paste into configs/ or use as reference for level_gen parameters\n\n';
+  yaml += 'level_gen:\n';
+
+  const stars = config.bodies.filter(b => b.type === 'star');
+  const giants = config.bodies.filter(b => b.type === 'giant');
+  const terrestrials = config.bodies.filter(b => b.type === 'terrestrial');
+
+  if (stars.length > 0) {
+    const masses = stars.map(b => b.mass_kg);
+    yaml += `  primary_mass_range: [${Math.min(...masses).toExponential(1)}, ${Math.max(...masses).toExponential(1)}]\n`;
+  }
+
+  const planets = [...giants, ...terrestrials];
+  if (planets.length > 0) {
+    const orbits = planets.map(b => Math.sqrt(b.x_au**2 + b.y_au**2)).sort((a,b) => a-b);
+    yaml += `  num_planets_range: [${planets.length}, ${planets.length}]\n`;
+    yaml += `  inner_orbit_au: ${orbits[0].toFixed(2)}\n`;
+    if (orbits.length > 1) {
+      const ratios = [];
+      for (let i = 1; i < orbits.length; i++) ratios.push(orbits[i] / orbits[i-1]);
+      yaml += `  orbit_spacing_range: [${Math.min(...ratios).toFixed(2)}, ${Math.max(...ratios).toFixed(2)}]\n`;
+    }
+  }
+
+  if (terrestrials.length > 0) {
+    const masses = terrestrials.map(b => b.mass_kg);
+    yaml += `  terrestrial_mass_range: [${Math.min(...masses).toExponential(1)}, ${Math.max(...masses).toExponential(1)}]\n`;
+  }
+  if (giants.length > 0) {
+    const masses = giants.map(b => b.mass_kg);
+    yaml += `  giant_mass_range: [${Math.min(...masses).toExponential(1)}, ${Math.max(...masses).toExponential(1)}]\n`;
+    yaml += `  giant_fraction: ${(giants.length / planets.length).toFixed(2)}\n`;
+  }
+
+  const text = yaml + '\n# Full JSON:\n# ' + JSON.stringify(config, null, 2).replace(/\n/g, '\n# ');
+
+  document.getElementById('export-text').value = text;
+  document.getElementById('export-area').style.display = 'block';
+});
+
+document.getElementById('btn-copy').addEventListener('click', () => {
+  const ta = document.getElementById('export-text');
+  ta.select();
+  navigator.clipboard.writeText(ta.value);
+});
+
+document.getElementById('btn-close-export').addEventListener('click', () => {
+  document.getElementById('export-area').style.display = 'none';
+});
+
+// =========================================================================
+// Resize
+// =========================================================================
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// =========================================================================
+// Boot
+// =========================================================================
+updateMassDisplay();
+tick();
+</script>
+</body>
+</html>

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spaceship Navigator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      overflow: hidden;
+      background: #0a0a12;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: #c8d0e0;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ---- Overlay UI Panel ---- */
+    #ui-panel {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 10;
+      background: rgba(10, 10, 24, 0.85);
+      border: 1px solid rgba(80, 140, 220, 0.3);
+      border-radius: 8px;
+      padding: 14px 18px;
+      min-width: 240px;
+      backdrop-filter: blur(6px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      user-select: none;
+    }
+
+    #ui-panel h1 {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: #5ebbff;
+      margin-bottom: 2px;
+    }
+
+    .ui-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ui-row label {
+      font-size: 12px;
+      color: #8090a8;
+      min-width: 56px;
+    }
+
+    select, input[type="range"] {
+      background: rgba(20, 24, 40, 0.9);
+      border: 1px solid rgba(80, 140, 220, 0.25);
+      color: #c8d0e0;
+      border-radius: 4px;
+      padding: 4px 6px;
+      font-size: 12px;
+      outline: none;
+      flex: 1;
+    }
+
+    select:focus, input[type="range"]:focus {
+      border-color: rgba(80, 140, 220, 0.6);
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      height: 6px;
+      background: #1a1e30;
+      border-radius: 3px;
+      padding: 0;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #5ebbff;
+      cursor: pointer;
+    }
+
+    button {
+      background: rgba(40, 60, 100, 0.6);
+      border: 1px solid rgba(80, 140, 220, 0.3);
+      color: #c8d0e0;
+      border-radius: 4px;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    button:hover {
+      background: rgba(60, 90, 140, 0.7);
+      border-color: rgba(80, 140, 220, 0.5);
+    }
+
+    button.active {
+      background: rgba(94, 187, 255, 0.25);
+      border-color: #5ebbff;
+      color: #fff;
+    }
+
+    /* ---- Mode Toggle ---- */
+    #mode-toggle {
+      display: flex;
+      gap: 4px;
+    }
+
+    #mode-toggle button {
+      flex: 1;
+    }
+
+    /* ---- Replay Controls ---- */
+    #replay-controls {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      border-top: 1px solid rgba(80, 140, 220, 0.15);
+      padding-top: 8px;
+    }
+
+    #replay-controls.visible {
+      display: flex;
+    }
+
+    .playback-bar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .playback-bar button {
+      padding: 4px 8px;
+      font-size: 11px;
+      min-width: 28px;
+    }
+
+    #speed-display {
+      font-size: 11px;
+      color: #5ebbff;
+      min-width: 32px;
+      text-align: center;
+    }
+
+    /* ---- Stats Display ---- */
+    #stats-panel {
+      border-top: 1px solid rgba(80, 140, 220, 0.15);
+      padding-top: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 12px;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #556680;
+    }
+
+    .stat-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e0e8f0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ---- Fuel / Mass Bar ---- */
+    #fuel-bar-container {
+      border-top: 1px solid rgba(80, 140, 220, 0.15);
+      padding-top: 8px;
+    }
+
+    #fuel-bar-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #556680;
+      margin-bottom: 4px;
+    }
+
+    #fuel-bar-outer {
+      width: 100%;
+      height: 10px;
+      background: #1a1e30;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    #fuel-bar-inner {
+      height: 100%;
+      width: 100%;
+      border-radius: 5px;
+      background: linear-gradient(90deg, #ff3c3c, #ffaa22, #00e8ff);
+      transition: width 0.15s ease;
+    }
+
+    /* ---- Connection Indicator ---- */
+    #connection-status {
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    #connection-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ff4444;
+    }
+
+    #connection-dot.connected {
+      background: #44ff88;
+      box-shadow: 0 0 6px #44ff88;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Three.js canvas is injected here by the renderer -->
+
+  <div id="ui-panel">
+    <h1>Spaceship Navigator</h1>
+
+    <div id="connection-status">
+      <div id="connection-dot"></div>
+      <span id="connection-text">Disconnected</span>
+    </div>
+
+    <!-- Mode Toggle -->
+    <div id="mode-toggle">
+      <button id="btn-play" class="active">Play</button>
+      <button id="btn-replay">Replay</button>
+    </div>
+
+    <!-- Config Selector -->
+    <div class="ui-row">
+      <label>Config</label>
+      <select id="config-select">
+        <option value="">Loading...</option>
+      </select>
+    </div>
+
+    <!-- Replay Controls -->
+    <div id="replay-controls">
+      <div class="ui-row">
+        <label>Iteration</label>
+        <input type="range" id="iteration-slider" min="0" max="100" value="0" />
+        <span id="iteration-value" class="stat-value" style="min-width:36px;text-align:right;font-size:12px;">0</span>
+      </div>
+      <div class="ui-row">
+        <label>Episode</label>
+        <select id="episode-select">
+          <option value="">--</option>
+        </select>
+      </div>
+      <div class="playback-bar">
+        <button id="btn-step-back" title="Step back">&lt;&lt;</button>
+        <button id="btn-play-pause" title="Play / Pause">Play</button>
+        <button id="btn-step-fwd" title="Step forward">&gt;&gt;</button>
+        <input type="range" id="speed-slider" min="0" max="6" step="1" value="2" style="flex:1;" />
+        <span id="speed-display">1x</span>
+      </div>
+      <div class="ui-row">
+        <label>Time</label>
+        <input type="range" id="scrub-slider" min="0" max="1000" value="0" style="flex:1;" />
+      </div>
+    </div>
+
+    <!-- Stats Display -->
+    <div id="stats-panel">
+      <div class="stat-item">
+        <span class="stat-label">Fuel</span>
+        <span class="stat-value" id="stat-fuel">--</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Velocity</span>
+        <span class="stat-value" id="stat-velocity">--</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Distance</span>
+        <span class="stat-value" id="stat-distance">--</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Time</span>
+        <span class="stat-value" id="stat-time">--</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Reward</span>
+        <span class="stat-value" id="stat-reward">--</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Mass</span>
+        <span class="stat-value" id="stat-mass">--</span>
+      </div>
+    </div>
+
+    <!-- Fuel / Mass Bar -->
+    <div id="fuel-bar-container">
+      <div id="fuel-bar-label">Ship Mass / Fuel</div>
+      <div id="fuel-bar-outer">
+        <div id="fuel-bar-inner" style="width: 100%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
