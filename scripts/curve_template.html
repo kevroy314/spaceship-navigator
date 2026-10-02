@@ -1,0 +1,401 @@
+<title>Two Routes Per Rung</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Saira+Semi+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Single-theme by intent: a flight-test room. Every colour is explicit. */
+:root {
+  color-scheme: dark;
+  --ground: #0a0e16; --panel: #0f1520; --line: #1f2a3b;
+  --ink: #e4ebf5; --ink-2: #a9b6c9; --muted: #74839a;
+  --approx: #e0862f;   /* the route patched conics plans */
+  --ideal: #52d8c4;    /* the route the parameters allow */
+  --good: #3fcf6a; --bad: #f07272; --body: #56657f;
+  --display: "Saira Semi Condensed", "Helvetica Neue", Arial, sans-serif;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+body { background: var(--ground); color: var(--ink); font-family: var(--sans); line-height: 1.55; }
+.wrap { max-width: 68rem; margin: 0 auto; padding-block: 2rem 4rem; padding-left: 16px; padding-right: 16px; }
+h1 { font-family: var(--display); font-size: clamp(2rem, 6vw, 3rem); line-height: 1.04; margin: 0 0 .5rem;
+     font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { color: var(--ink-2); max-width: 46rem; margin: 0 0 .3rem; }
+.meta { font-family: var(--mono); font-size: .7rem; color: var(--muted); letter-spacing: .05em;
+        text-transform: uppercase; margin-bottom: 1.6rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; font-size: .85rem;
+          color: var(--ink-2); margin-bottom: 1.4rem; }
+.key { display: inline-flex; align-items: center; gap: .4rem; }
+.key i { width: 18px; height: 3px; border-radius: 2px; display: inline-block; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: rgba(10,14,22,.94);
+       border: 1px solid var(--line); border-radius: 4px; padding: .6rem .7rem; margin-bottom: 1.4rem;
+       display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; backdrop-filter: blur(6px); }
+button { font-family: var(--sans); font-size: .82rem; background: var(--panel); color: var(--ink);
+         border: 1px solid var(--line); border-radius: 3px; padding: .35rem .7rem; cursor: pointer; }
+button:hover { border-color: var(--approx); }
+button.on { border-color: var(--ideal); color: var(--ideal); }
+button:focus-visible { outline: 2px solid var(--ideal); outline-offset: 1px; }
+input[type=range] { flex: 1 1 10rem; min-width: 8rem; accent-color: var(--ideal); }
+.clock { font-family: var(--mono); font-size: .8rem; color: var(--ink-2); min-width: 5.2rem;
+         font-variant-numeric: tabular-nums; }
+.grid { display: grid; gap: 1.1rem; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); }
+.rung { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; overflow: hidden;
+        min-width: 0; display: flex; flex-direction: column; }
+.rhead { padding: .6rem .75rem .5rem; border-bottom: 1px solid var(--line); }
+.rname { font-family: var(--display); font-size: 1.15rem; font-weight: 600; letter-spacing: .01em; }
+.rname b { font-family: var(--mono); font-size: .78rem; font-weight: 500; color: var(--muted);
+           margin-left: .45rem; letter-spacing: 0; }
+.rwhy { font-size: .8rem; color: var(--ink-2); margin-top: .1rem; }
+canvas { display: block; width: 100%; height: auto; background: #070a11; }
+.strip { padding: .5rem .75rem .2rem; }
+.striplabel { font-family: var(--mono); font-size: .64rem; color: var(--muted); text-transform: uppercase;
+              letter-spacing: .07em; display: flex; justify-content: space-between; }
+.facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: .3rem .5rem; padding: .55rem .75rem .75rem;
+         font-family: var(--mono); font-size: .7rem; font-variant-numeric: tabular-nums; }
+.facts div span { display: block; color: var(--muted); font-size: .62rem; text-transform: uppercase;
+                  letter-spacing: .05em; }
+.outcome { display: flex; gap: .9rem; padding: 0 .75rem .6rem; font-family: var(--mono); font-size: .72rem; }
+.outcome b { font-weight: 500; }
+.arrived { color: var(--good); } .missed { color: var(--bad); }
+h2 { font-family: var(--display); font-size: 1.6rem; margin: 2.6rem 0 .3rem; font-weight: 600; }
+p { margin: .7rem 0; }
+.note { color: var(--ink-2); max-width: 46rem; }
+.tablewrap { overflow-x: auto; margin: 1.2rem 0; }
+table { border-collapse: collapse; width: 100%; min-width: 34rem; font-family: var(--mono);
+        font-size: .74rem; font-variant-numeric: tabular-nums; }
+th { text-align: left; color: var(--muted); font-weight: 500; text-transform: uppercase; font-size: .63rem;
+     letter-spacing: .06em; border-bottom: 1px solid var(--line); padding: .35rem .5rem; white-space: nowrap; }
+td { padding: .3rem .5rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+@media (max-width: 30rem) { .facts { grid-template-columns: repeat(2, 1fr); } }
+@media (prefers-reduced-motion: reduce) { canvas { outline: none; } }
+</style>
+
+<div class="wrap">
+<h1>Two Routes Per Rung</h1>
+<p class="sub">Every panel is one level on the difficulty curve. Both ships ran the same search with the same
+budget and the same number of control segments — the only difference is what the planner was allowed to know
+about the forces while planning.</p>
+<p class="meta" id="meta"></p>
+
+<div class="legend">
+  <span class="key"><i style="background:var(--approx)"></i> approximate — planned with patched conics, one dominant body</span>
+  <span class="key"><i style="background:var(--ideal)"></i> idealised — planned with the whole field</span>
+  <span class="key" style="color:var(--muted)">○ waypoint &nbsp; · bodies drift</span>
+</div>
+
+<div class="bar">
+  <button id="play">Pause</button>
+  <button id="restart">Restart</button>
+  <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="time">
+  <span class="clock" id="clock">0.0 s</span>
+  <button class="sp" data-s="0.5">0.5×</button>
+  <button class="sp on" data-s="1">1×</button>
+  <button class="sp" data-s="2">2×</button>
+  <button class="sp" data-s="4">4×</button>
+  <button id="trails" class="on">Trails</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<h2>What it shows</h2>
+<p class="note" id="headline"></p>
+
+<h2>The control</h2>
+<p class="note">Before reading anything into the curve: on easy ordinary missions, where a one-body model
+<em>is</em> accurate (&eta; around 0.005), both routes arrive 100% of the time. That tie is the control. It had
+to be earned — at 12 control segments the approximate route scored 83% against the idealised route's 83%, and at
+24 segments 83% against 100%, not because the coarse model was wrong but because the search was too coarse to
+fly either plan well. Only at 48 segments (about 3 s each) do the two tie where theory says they must. Any gap
+below is therefore a gap between the models, not between search budgets.</p>
+
+<h2>What the curve is made of</h2>
+<p class="note">Rungs are set by <b>D = η / A</b>: how wrong a one-body model is where the ship has to go,
+divided by how easily the tank can absorb being wrong. η comes from waypoint placement, A from the fuel and
+engine. Both are closed-form at sampling time, so each rung was <em>solved for</em> rather than found by
+trial — the expensive planning below ran only on the levels already known to sit where they were wanted.</p>
+<p class="note"><b>MDL</b> is the fewest piecewise-constant segments that still arrive, found by coarsening the
+idealised plan rather than re-searching it: control description length in a fixed basis. <b>Switches</b> counts
+changes in the plan after snapping it to the nine controls a person actually has. A level whose answer is one
+long burn is not interesting however hard it is, and one that arrives with the engine off is a free ride.</p>
+
+<p class="note">Demand on its own does not make a level worth playing, and neither does a busy control strip.
+The two together separate the cases that matter — and the easy one to miss is the bottom-left corner, a single
+decisive burn that scores as dull on action count alone:</p>
+<div class="tablewrap"><table>
+<thead><tr><th>structure</th><th>D low — a coarse model suffices</th><th>D high — it does not</th></tr></thead>
+<tbody>
+<tr><td>arrives while coasting</td><td>free ride: pretty, empty</td><td>cannot happen</td></tr>
+<tr><td>one burn (mdl 1)</td><td>point and burn</td><td><b style="color:var(--ideal)">one impulse only the
+  numbers reveal</b></td></tr>
+<tr><td>many burns (mdl high)</td><td>busywork: corrections, each obvious</td><td>rich and demanding</td></tr>
+</tbody>
+</table></div>
+<div class="tablewrap"><table id="tbl"></table></div>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const CT = DATA.ctrl_dt * DATA.stride;         // seconds between stored samples
+const RUNG_WHY = {
+  negligible: "A one-body picture is right to within a rounding error.",
+  faint: "The discarded force is real but the tank never notices.",
+  slight: "A coarse plan drifts; a mid-course correction covers it.",
+  noticeable: "Correcting the model error costs a visible slice of the tank.",
+  costly: "Most of the budget would go on fixing the wrong model.",
+  prohibitive: "The coarse plan cannot be paid for at all.",
+};
+const TURN_CH = ["⟲", "", "⟳"];      // left, straight, right
+
+const app = { t: 0, playing: true, speed: 1, trails: true, panels: [] };
+// only the animated levels carry trajectories; the rest were trimmed at render time
+const ANIM = DATA.levels.filter(L => L.rep !== false && L.routes.ideal.path);
+const T_END = Math.max(...ANIM.map(L =>
+  Math.max(L.routes.approx.path.length, L.routes.ideal.path.length) - 1)) * CT;
+const maxT = () => T_END;
+// group every probed level by the rung it was tuned to, so outcomes are rates
+const BY_RUNG = DATA.rungs.map((target, i) => {
+  const g = DATA.levels.filter(L => L.target_D === target);
+  return { target, name: DATA.rung_names[i], levels: g };
+}).filter(r => r.levels.length);
+
+function fmt(v, d = 2) { return v === null || v === undefined ? "—" : (+v).toFixed(d); }
+
+// ---- build the panels
+const grid = document.getElementById("grid");
+for (const L of ANIM) {
+  const el = document.createElement("div");
+  el.className = "rung";
+  const a = L.routes.approx, b = L.routes.ideal;
+  const cls = r => r.arrived ? "arrived" : "missed";
+  el.innerHTML = `
+    <div class="rhead">
+      <div class="rname">${L.rung_name}<b>D = ${(+L.D).toPrecision(2)}</b></div>
+      <div class="rwhy">${RUNG_WHY[L.rung_name] || ""}</div>
+    </div>
+    <canvas></canvas>
+    <div class="strip">
+      <div class="striplabel"><span>controls · approximate</span><span>${a.switches} changes</span></div>
+      <canvas class="sa" height="14"></canvas>
+      <div class="striplabel"><span>controls · idealised</span><span>${b.switches} changes</span></div>
+      <canvas class="sb" height="14"></canvas>
+    </div>
+    <div class="outcome">
+      <span class="${cls(a)}"><b>approx</b> ${a.status}${a.arrived ? "" : ` (gap ${fmt(a.gap, 1)})`}</span>
+      <span class="${cls(b)}"><b>ideal</b> ${b.status}${b.arrived ? "" : ` (gap ${fmt(b.gap, 1)})`}</span>
+    </div>
+    <div class="facts">
+      <div><span>eta</span>${fmt(L.eta, 3)}</div>
+      <div><span>A</span>${fmt(L.A, 2)}</div>
+      <div><span>mdl</span>${L.mdl || "—"} seg</div>
+      <div><span>coast</span>${L.coast_ok ? "free ride" : "no"}</div>
+      <div><span>family</span>${L.family}</div>
+      <div><span>mission</span>${L.spec}</div>
+      <div><span>dv</span>${fmt(L.dv, 1)}</div>
+      <div><span>g·T</span>${fmt(L.impulse, 2)}</div>
+    </div>`;
+  grid.appendChild(el);
+
+  // frame everything that moves or must be reached, at uniform depth: a mixed-depth
+  // flatten would split coordinate pairs into loose numbers
+  const cv = el.querySelector("canvas");
+  const pts = [];
+  for (const bd of L.geometry.bodies) pts.push(...bd.path);
+  pts.push(...a.path, ...b.path, L.geometry.start);
+  for (const w of L.geometry.waypoints) { pts.push(w.pos); if (w.path) pts.push(...w.path); }
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const q of pts) {
+    if (!q || !isFinite(q[0]) || !isFinite(q[1])) continue;
+    x0 = Math.min(x0, q[0]); x1 = Math.max(x1, q[0]);
+    y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]);
+  }
+  const pad = 0.08 * Math.max(x1 - x0, y1 - y0, 1);
+  app.panels.push({ L, cv, sa: el.querySelector(".sa"), sb: el.querySelector(".sb"),
+                    box: [x0 - pad, y0 - pad, x1 + pad, y1 + pad] });
+}
+
+// ---- the table
+const med = xs => { const a = [...xs].sort((p, q) => p - q); return a[a.length >> 1]; };
+const pct = x => `${Math.round(100 * x)}%`;
+const tbl = document.getElementById("tbl");
+tbl.innerHTML = `<thead><tr><th>rung</th><th>D</th><th>n</th><th>eta</th><th>A</th>
+  <th>approximate arrives</th><th>idealised arrives</th><th>mdl</th><th>switches a/i</th>
+  <th>free rides</th></tr></thead><tbody>` +
+  BY_RUNG.map(R => {
+    const ls = R.levels;
+    const ar = ls.filter(L => L.routes.approx.arrived).length / ls.length;
+    const ir = ls.filter(L => L.routes.ideal.arrived).length / ls.length;
+    const cls = v => v >= 0.99 ? "arrived" : v <= 0.01 ? "missed" : "";
+    return `<tr><td>${R.name}</td><td>${(+R.target).toPrecision(2)}</td><td>${ls.length}</td>
+      <td>${fmt(med(ls.map(L => L.eta)), 3)}</td><td>${fmt(med(ls.map(L => L.A)), 2)}</td>
+      <td class="${cls(ar)}">${pct(ar)}</td><td class="${cls(ir)}">${pct(ir)}</td>
+      <td>${med(ls.map(L => L.mdl)) || "—"}</td>
+      <td>${med(ls.map(L => L.routes.approx.switches))}/${med(ls.map(L => L.routes.ideal.switches))}</td>
+      <td>${ls.filter(L => L.coast_ok).length}</td></tr>`;
+  }).join("") + "</tbody>";
+
+// ---- drawing
+function sizeAll() {
+  for (const p of app.panels) {
+    const w = p.cv.clientWidth || 300;
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    p.cv.width = w * dpr; p.cv.height = Math.round(w * 0.78) * dpr;
+    p.cv.style.height = Math.round(w * 0.78) + "px";
+    for (const s of [p.sa, p.sb]) { s.width = w * dpr; s.height = 14 * dpr; s.style.height = "14px"; }
+    p.dpr = dpr;
+  }
+  draw();
+}
+
+function proj(p, x, y) {
+  const [x0, y0, x1, y1] = p.box;
+  const s = Math.min(p.cv.width / (x1 - x0), p.cv.height / (y1 - y0));
+  return [(x - x0) * s + (p.cv.width - (x1 - x0) * s) / 2,
+          p.cv.height - ((y - y0) * s + (p.cv.height - (y1 - y0) * s) / 2)];
+}
+
+function at(path, i) { return path[Math.max(0, Math.min(path.length - 1, i))]; }
+
+function drawPanel(p) {
+  const g = p.cv.getContext("2d"), L = p.L, geo = L.geometry;
+  g.clearRect(0, 0, p.cv.width, p.cv.height);
+  const bodyStep = geo.body_stride * DATA.ctrl_dt;      // seconds between body samples
+  const bi = app.t / bodyStep;
+  const scale = Math.min(p.cv.width / (p.box[2] - p.box[0]), p.cv.height / (p.box[3] - p.box[1]));
+
+  // bodies, at their drifted positions
+  for (const b of geo.bodies) {
+    const q = at(b.path, Math.round(bi));
+    const [cx, cy] = proj(p, q[0], q[1]);
+    const r = Math.max(1.5 * p.dpr, b.radius * scale);
+    if (b.atmo > 0) {
+      g.fillStyle = "rgba(90,130,190,0.13)";
+      g.beginPath(); g.arc(cx, cy, Math.max(r, (b.radius + b.atmo) * scale), 0, 7); g.fill();
+    }
+    g.fillStyle = b.lum > 0 ? "#f2c75a" : "#56657f";
+    g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
+  }
+  // waypoints
+  for (const w of geo.waypoints) {
+    const q = w.path ? at(w.path, Math.round(bi)) : w.pos;
+    const [cx, cy] = proj(p, q[0], q[1]);
+    g.strokeStyle = "#8ea0bd"; g.lineWidth = 1.2 * p.dpr; g.setLineDash([3 * p.dpr, 3 * p.dpr]);
+    g.beginPath(); g.arc(cx, cy, Math.max(4 * p.dpr, w.radius * scale), 0, 7); g.stroke();
+    g.setLineDash([]);
+  }
+  // start
+  const [sx, sy] = proj(p, geo.start[0], geo.start[1]);
+  g.strokeStyle = "#5b6a82"; g.lineWidth = p.dpr;
+  g.beginPath(); g.moveTo(sx - 4 * p.dpr, sy); g.lineTo(sx + 4 * p.dpr, sy);
+  g.moveTo(sx, sy - 4 * p.dpr); g.lineTo(sx, sy + 4 * p.dpr); g.stroke();
+
+  // the two routes
+  for (const [name, colour] of [["approx", "#e0862f"], ["ideal", "#52d8c4"]]) {
+    const r = L.routes[name], n = r.path.length;
+    const i = Math.min(n - 1, Math.floor(app.t / CT));
+    if (app.trails) {
+      g.strokeStyle = colour; g.lineWidth = 1.6 * p.dpr; g.globalAlpha = 0.85;
+      g.beginPath();
+      for (let k = 0; k <= i; k++) {
+        const [px, py] = proj(p, r.path[k][0], r.path[k][1]);
+        k ? g.lineTo(px, py) : g.moveTo(px, py);
+      }
+      g.stroke(); g.globalAlpha = 1;
+    }
+    const q = at(r.path, i), [cx, cy] = proj(p, q[0], q[1]);
+    const burning = (r.actions[Math.min(i, r.actions.length - 1)] % 3) > 0;
+    g.fillStyle = colour;
+    g.beginPath(); g.arc(cx, cy, (burning ? 3.6 : 2.4) * p.dpr, 0, 7); g.fill();
+    if (burning) {
+      g.globalAlpha = 0.3;
+      g.beginPath(); g.arc(cx, cy, 7 * p.dpr, 0, 7); g.fill();
+      g.globalAlpha = 1;
+    }
+    if (i >= n - 1 && r.arrived) {
+      g.strokeStyle = colour; g.lineWidth = 1.3 * p.dpr;
+      g.beginPath(); g.arc(cx, cy, 8 * p.dpr, 0, 7); g.stroke();
+    }
+  }
+  drawStrip(p.sa, L.routes.approx, "#e0862f", p.dpr);
+  drawStrip(p.sb, L.routes.ideal, "#52d8c4", p.dpr);
+}
+
+// the action strip: one column per stored sample, lit where the engine is on,
+// taller where the turn is held — the discrete decisions, laid out in time
+function drawStrip(cv, r, colour, dpr) {
+  const g = cv.getContext("2d"), n = r.actions.length;
+  g.clearRect(0, 0, cv.width, cv.height);
+  g.fillStyle = "#151c28"; g.fillRect(0, 0, cv.width, cv.height);
+  const w = cv.width / n;
+  for (let k = 0; k < n; k++) {
+    const a = r.actions[k], thr = a % 3, turn = Math.floor(a / 3);
+    if (!thr && turn === 1) continue;
+    g.globalAlpha = thr === 2 ? 0.95 : thr === 1 ? 0.5 : 0.22;
+    g.fillStyle = colour;
+    const h = cv.height * (turn === 1 ? 0.55 : 1);
+    g.fillRect(k * w, (cv.height - h) / 2, Math.max(w, 1), h);
+  }
+  g.globalAlpha = 1;
+  const i = Math.min(n - 1, Math.floor(app.t / CT));
+  g.fillStyle = "#e4ebf5"; g.fillRect(i * w, 0, Math.max(1, dpr), cv.height);
+}
+
+function draw() { for (const p of app.panels) drawPanel(p); }
+
+// ---- clock
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  if (app.playing) {
+    app.t += dt * app.speed;
+    if (app.t > maxT()) app.t = 0;
+    document.getElementById("scrub").value = Math.round(1000 * app.t / maxT());
+  }
+  document.getElementById("clock").textContent = app.t.toFixed(1) + " s";
+  draw();
+  requestAnimationFrame(frame);
+}
+
+document.getElementById("play").onclick = (e) => {
+  app.playing = !app.playing; e.target.textContent = app.playing ? "Pause" : "Play";
+};
+document.getElementById("restart").onclick = () => { app.t = 0; };
+document.getElementById("scrub").oninput = (e) => {
+  app.t = maxT() * e.target.value / 1000; app.playing = false;
+  document.getElementById("play").textContent = "Play";
+};
+for (const b of document.querySelectorAll(".sp")) b.onclick = () => {
+  app.speed = +b.dataset.s;
+  for (const o of document.querySelectorAll(".sp")) o.classList.toggle("on", o === b);
+};
+document.getElementById("trails").onclick = (e) => {
+  app.trails = !app.trails; e.target.classList.toggle("on", app.trails);
+};
+// pooled outcome either side of the point where a one-body model stops paying
+(() => {
+  const split = 0.1;
+  const tally = (pred) => {
+    const ls = DATA.levels.filter(L => pred(L.target_D));
+    return { n: ls.length,
+             a: ls.filter(L => L.routes.approx.arrived).length,
+             i: ls.filter(L => L.routes.ideal.arrived).length };
+  };
+  const lo = tally(d => d < split), hi = tally(d => d >= split);
+  const r = (x, n) => n ? `${x}/${n} (${Math.round(100 * x / n)}%)` : "—";
+  document.getElementById("headline").innerHTML =
+    `Where a one-body model is adequate (D below ${split}), the two routes are interchangeable: ` +
+    `approximate ${r(lo.a, lo.n)} against idealised ${r(lo.i, lo.n)}. Where it is not (D at or above ` +
+    `${split}), they separate: approximate ${r(hi.a, hi.n)} against idealised ${r(hi.i, hi.n)}, and on the ` +
+    `top rung the approximate route arrives on none of its levels. The demand that predicts this was ` +
+    `computed before any of it was flown.<br><br>Absolute rates are low on both sides because these are ` +
+    `hard missions — contested geometry in comparable-mass systems — and the planner is a cross-entropy ` +
+    `search, not a human. The comparison is between two routes found the same way on the same level, so ` +
+    `what matters is the gap, not the height.`;
+})();
+
+document.getElementById("meta").textContent =
+  `${BY_RUNG.length} rungs · ${DATA.levels.length} levels flown · ${DATA.config.segments} control ` +
+  `segments · ${DATA.config.samples}x${DATA.config.iters} cross-entropy search per route · spacenav`;
+
+addEventListener("resize", sizeAll);
+sizeAll();
+requestAnimationFrame(frame);
+</script>

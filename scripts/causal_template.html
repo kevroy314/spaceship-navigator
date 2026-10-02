@@ -1,0 +1,401 @@
+<title>What Each Level Forces</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Saira+Semi+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Single-theme by intent: an instrument atlas. Every colour explicit. */
+:root {
+  color-scheme: dark;
+  --ground: #0b0d12; --panel: #12151d; --line: #222835;
+  --ink: #e7eaf2; --ink-2: #a7b0c2; --muted: #6f7a8d;
+  --win: #58d6b4;        /* winning burns */
+  --need: #e8863c;       /* causal effect of a decision */
+  --chaos: #b57fe0;      /* fractal / unresolvable */
+  --good: #49cf72; --bad: #ef6f72;
+  --display: "Saira Semi Condensed", "Helvetica Neue", Arial, sans-serif;
+  --sans: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+body { background: var(--ground); color: var(--ink); font-family: var(--sans); line-height: 1.55; }
+.wrap { max-width: 62rem; margin: 0 auto; padding-block: 2rem 4rem; padding-left: 16px; padding-right: 16px; }
+h1 { font-family: var(--display); font-size: clamp(2rem, 6vw, 3rem); line-height: 1.04; margin: 0 0 .5rem;
+     font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+.sub { color: var(--ink-2); max-width: 44rem; margin: 0 0 .3rem; }
+.meta { font-family: var(--mono); font-size: .7rem; color: var(--muted); letter-spacing: .05em;
+        text-transform: uppercase; margin-bottom: 1.5rem; }
+h2 { font-family: var(--display); font-size: 1.5rem; margin: 2.4rem 0 .3rem; font-weight: 600; }
+p { margin: .7rem 0; } .note { color: var(--ink-2); max-width: 44rem; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: rgba(11,13,18,.95);
+       border: 1px solid var(--line); border-radius: 4px; padding: .6rem .75rem; margin-bottom: 1.4rem;
+       display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; backdrop-filter: blur(6px); }
+.bar label { font-family: var(--mono); font-size: .72rem; color: var(--ink-2); }
+input[type=range] { flex: 1 1 11rem; min-width: 8rem; accent-color: var(--win); }
+.dvv { font-family: var(--mono); font-size: .78rem; color: var(--win); min-width: 7.5rem;
+       font-variant-numeric: tabular-nums; }
+.lesson { background: var(--panel); border: 1px solid var(--line); border-radius: 4px;
+          margin: 1rem 0; overflow: hidden; }
+.lhead { padding: .75rem .9rem .6rem; border-bottom: 1px solid var(--line); }
+.step { font-family: var(--mono); font-size: .68rem; color: var(--muted); letter-spacing: .08em;
+        text-transform: uppercase; }
+.lname { font-family: var(--display); font-size: 1.35rem; font-weight: 600; }
+.lname .pill { font-family: var(--mono); font-size: .62rem; font-weight: 500; text-transform: uppercase;
+               letter-spacing: .07em; padding: .12rem .4rem; border-radius: 2px; margin-left: .5rem;
+               vertical-align: .14em; }
+.pill.branch { background: #3a2a18; color: #e8a33d; }
+.pill.excl { background: #2e1d2e; color: var(--chaos); }
+.pill.nohuman { background: #351c1f; color: var(--bad); }
+.teaches { font-size: .98rem; margin-top: .15rem; }
+.sig { font-family: var(--mono); font-size: .74rem; color: var(--ink-2); margin-top: .3rem; }
+.instr { font-size: .86rem; color: var(--ink-2); margin-top: .45rem; }
+.instr b { color: var(--win); font-weight: 500; }
+.panels { display: grid; grid-template-columns: 1.35fr 1fr; gap: .9rem; padding: .9rem; }
+@media (max-width: 46rem) { .panels { grid-template-columns: 1fr; } }
+.cell { min-width: 0; }
+.clabel { font-family: var(--mono); font-size: .66rem; color: var(--muted); text-transform: uppercase;
+          letter-spacing: .06em; display: flex; justify-content: space-between; margin-bottom: .25rem; }
+canvas { display: block; width: 100%; height: auto; background: #080a0f; border: 1px solid var(--line); }
+.facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: .35rem .6rem; padding: 0 .9rem .9rem;
+         font-family: var(--mono); font-size: .72rem; font-variant-numeric: tabular-nums; }
+.facts div span { display: block; color: var(--muted); font-size: .6rem; text-transform: uppercase;
+                  letter-spacing: .05em; }
+.cap { font-family: var(--mono); font-size: .62rem; color: var(--muted); line-height: 1.4;
+       margin-top: .25rem; }
+.cap.warn { color: var(--chaos); }
+.empty { background: #0e1016; border: 1px dashed var(--line); border-radius: 4px;
+         margin: 1rem 0; padding: .75rem .9rem; }
+.empty .lname { font-size: 1.1rem; color: var(--ink-2); }
+.empty .why { font-family: var(--mono); font-size: .68rem; color: var(--chaos); margin-top: .3rem; }
+@media (max-width: 34rem) { .facts { grid-template-columns: repeat(2, 1fr); } }
+.tablewrap { overflow-x: auto; margin: 1rem 0; }
+table { border-collapse: collapse; width: 100%; min-width: 40rem; font-family: var(--mono);
+        font-size: .72rem; font-variant-numeric: tabular-nums; }
+th { text-align: left; color: var(--muted); font-weight: 500; text-transform: uppercase; font-size: .61rem;
+     letter-spacing: .06em; border-bottom: 1px solid var(--line); padding: .35rem .45rem; white-space: nowrap; }
+td { padding: .28rem .45rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.dim { color: var(--muted); }
+</style>
+
+<div class="wrap">
+<h1>What Each Level Forces</h1>
+<p class="sub">The continuous difficulty space, cut into named skills. Each lesson is defined by something
+measured about its solutions, not by the generator that made it — and each comes with the cockpit instrument
+that makes its lesson legible.</p>
+<p class="meta" id="meta"></p>
+
+<div class="bar">
+  <label for="dv">delta-v spent on the burn</label>
+  <input type="range" id="dv" min="0" max="5" value="2" step="1">
+  <span class="dvv" id="dvv"></span>
+</div>
+
+<p class="note">The left panel of each lesson is its <b>causal map</b>: every single burn the ship could make,
+as <em>when</em> (horizontal) against <em>which way</em> (vertical), brightness being the fraction of that cell
+that arrives. Slide the delta-v above to move through the volume and watch regions appear, widen and merge.
+A broad patch means many sufficient options. A thin sliver means one necessary action. Separate patches are
+genuinely different strategies, and a <em>diagonal</em> stripe is leading: burn later, aim further ahead.</p>
+<p class="note">Cells hold a win <em>fraction</em> over jittered samples rather than a yes or no. An n-body
+basin boundary can be fractal, and a binary grid would report its own spacing as structure. The right panel
+pairs the per-decision causal effect — randomise one segment of a working plan, see how often it still
+arrives — with the boundary's uncertainty exponent.</p>
+<p class="note">Read the exponent with its caption, not on its own. α is fitted to how often a
+perturbation of size ε flips the outcome, and it is only a measurement in a middle band: if the flip rate
+at the smallest ε already sits at the independence ceiling 2p(1−p) — the rate at which two unrelated
+parameter points disagree — the slope is sampling noise dressed as structure, and if almost nothing flips
+at all the fit is reading a handful of binomial counts. Each card states the flip counts behind its own α
+and says which of the two is happening. <span id="alphaverdict"></span></p>
+
+<div id="lessons"></div>
+
+<h2>Everything measured</h2>
+<p class="note">All candidates, including the ones that matched no lesson. A level is labelled from these
+numbers; nothing here is assigned by which generator produced it.</p>
+<div class="tablewrap"><table id="survey"></table></div>
+<p class="note" id="svnote"></p>
+</div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const fmt = (v, d = 2) => (v === null || v === undefined ? "—" : (+v).toFixed(d));
+let dvIndex = 2;
+
+// How many trials went into each flip rate, so a fitted exponent can be shown
+// with the count it rests on instead of as a bare number.
+const NEPS = (DATA.need_config || {}).eps_samples || 96;
+
+// Is a fitted alpha a measurement, or an artefact?  Two ways it can be neither:
+//   * saturation -- two points eps apart already differ as often as two
+//     independent points would, 2p(1-p).  The slope then measures the sampling,
+//     not the boundary.
+//   * starvation -- so few trials flip at all that the log-log fit is reading
+//     binomial noise.  With 96 trials a cell, a handful of flips is noise.
+function alphaTrust(L) {
+  const A = L.alpha_curve || {};
+  const flip = (A.flip || []).map(f => f || 0);
+  const counts = flip.map(f => Math.round(f * NEPS));
+  const tot = counts.reduce((a, b) => a + b, 0);
+  const nfit = flip.filter(f => f > 0).length;
+  const p = A.win_rate || 0, sat = 2 * p * (1 - p);
+  let why = null;
+  if (L.features.alpha === null || L.features.alpha === undefined)
+    why = tot === 0
+      ? `nothing flipped in ${flip.length * NEPS} trials — no boundary was sampled`
+      : `only ${tot} flip${tot === 1 ? "" : "s"} in ${flip.length * NEPS} trials, at ` +
+        `${nfit} of ${flip.length} ε — too few to fit a slope through`;
+  else if (sat <= 0)
+    why = "win rate 0: there is no win/lose boundary inside the single-burn box";
+  else if (flip.length && flip[0] >= 0.5 * sat)
+    why = `flip rate at the smallest ε is already ${(100 * flip[0] / sat).toFixed(0)}% of the ` +
+          `independence ceiling 2p(1−p)=${sat.toFixed(3)} — the slope is sampling, not structure`;
+  else if (nfit < 3 || Math.max(0, ...counts) < 10)
+    why = `fitted on ${nfit} of ${flip.length} ε, from ${tot} flips in ` +
+          `${flip.length * NEPS} trials — noise-limited, not a resolved exponent`;
+  return { counts, tot, nfit, sat, trusted: !why, why };
+}
+
+const ORDER = [...DATA.syllabus.path.map(d => d.key), ...DATA.syllabus.branches.map(d => d.key),
+               ...DATA.syllabus.excluded.map(d => d.key)];
+const rows = [...DATA.lessons].sort((a, b) => ORDER.indexOf(a.lesson) - ORDER.indexOf(b.lesson));
+
+// ---- build a card per lesson
+const host = document.getElementById("lessons");
+const cards = [];
+rows.forEach((L, i) => {
+  const el = document.createElement("div");
+  el.className = "lesson";
+  const pills = [];
+  if (L.is_branch) pills.push(`<span class="pill branch">challenge branch</span>`);
+  if (L.excluded) pills.push(`<span class="pill excl">not taught</span>`);
+  if (!L.human_viable) pills.push(`<span class="pill nohuman">beyond human limits</span>`);
+  const n = L.necessity || {};
+  const at = alphaTrust(L);
+  const ahdr = (L.features.alpha === null || L.features.alpha === undefined)
+    ? "α unmeasured" : `α = ${fmt(L.features.alpha)}${at.trusted ? "" : " · noise-limited"}`;
+  el.innerHTML = `
+    <div class="lhead">
+      <div class="step">${L.excluded ? "excluded" : L.is_branch ? "branch" : "lesson " + (i + 1)}</div>
+      <div class="lname">${L.name}${pills.join("")}</div>
+      <div class="teaches">${L.teaches}</div>
+      <div class="sig">signature &middot; ${L.signature}</div>
+      <div class="instr">instrument &middot; <b>${(L.instrument || {}).name || "none"}</b>
+        ${(L.instrument || {}).shows || ""}</div>
+    </div>
+    <div class="panels">
+      <div class="cell">
+        <div class="clabel"><span>causal map &middot; when (s) × heading (°)</span>
+          <span class="volinfo"></span></div>
+        <canvas class="vol"></canvas>
+      </div>
+      <div class="cell">
+        <div class="clabel"><span>causal effect per decision</span>
+          <span>${n.concentration === undefined ? "" : "concentration " + fmt(n.concentration)}</span></div>
+        <canvas class="ace" height="70"></canvas>
+        <div class="clabel" style="margin-top:.5rem"><span>boundary: flip rate vs ε</span>
+          <span>${ahdr}</span></div>
+        <canvas class="alpha" height="70"></canvas>
+        <div class="cap${at.trusted ? "" : " warn"}">flips ${at.counts.join("/")}
+          of ${NEPS} per ε &middot; win rate ${fmt((L.alpha_curve || {}).win_rate, 3)}
+          ${at.why ? "<br>" + at.why : "<br>fit spans enough flips to read as an exponent"}</div>
+      </div>
+    </div>
+    <div class="facts">
+      <div><span>D = η/A</span>${fmt(L.D, 3)}</div>
+      <div><span>η</span>${fmt(L.eta, 3)}</div>
+      <div><span>A</span>${fmt(L.A)}</div>
+      <div><span>sufficiency</span>${fmt(L.features.sufficiency, 3)}</div>
+      <div><span>window</span>${fmt(L.features.window_s, 1)} s</div>
+      <div><span>leading</span>${fmt(L.features.leading)}</div>
+      <div><span>family</span>${L.family}</div>
+      <div><span>mission</span>${L.spec}</div>
+    </div>`;
+  host.appendChild(el);
+  cards.push({ L, vol: el.querySelector(".vol"), ace: el.querySelector(".ace"),
+               alpha: el.querySelector(".alpha"), info: el.querySelector(".volinfo") });
+});
+
+// A lesson no generator reached is a result, not an absence: showing only the
+// filled slots would read as complete coverage of the syllabus.
+const SYL = [...DATA.syllabus.path, ...DATA.syllabus.branches, ...DATA.syllabus.excluded];
+const filled = new Set(rows.map(r => r.lesson));
+const missing = SYL.filter(d => !filled.has(d.key));
+missing.forEach(d => {
+  const el = document.createElement("div");
+  el.className = "empty";
+  el.innerHTML = `
+    <div class="step">${d.excluded ? "excluded" : d.is_branch ? "branch" : "lesson"} &middot; no example</div>
+    <div class="lname">${d.name}</div>
+    <div class="teaches">${d.teaches}</div>
+    <div class="sig">signature &middot; ${d.signature}</div>
+    <div class="why">No candidate in this survey matched this signature, so there is nothing
+      to show. The slot is left open rather than filled with a near miss.</div>`;
+  host.appendChild(el);
+});
+
+// ---- the survey table
+const sv = DATA.survey;
+document.getElementById("survey").innerHTML =
+  `<thead><tr><th>episode</th><th>mission</th><th>family</th><th>D</th><th>A</th><th>η</th>
+   <th>suff</th><th>lead</th><th>window</th><th>α</th><th>lesson</th></tr></thead><tbody>` +
+  sv.map(r => `<tr><td class="dim">${r.id}</td><td>${r.spec}</td><td>${r.family}</td>
+    <td>${fmt(r.D, 3)}</td><td>${fmt(r.A)}</td><td>${fmt(r.eta, 3)}</td>
+    <td>${fmt(r.sufficiency, 3)}</td><td>${fmt(r.leading)}</td><td>${fmt(r.window_s, 1)}</td>
+    <td>${r.alpha === null ? '<span class="dim">n/a</span>' : fmt(r.alpha)}</td>
+    <td>${r.lesson || '<span class="dim">none</span>'}</td></tr>`).join("") + "</tbody>";
+
+// How much of the single-burn family actually wins anything.  If sufficiency is
+// near zero across the survey, the family is too weak to resolve these levels
+// and the causal maps are nearly empty by construction, not by design.
+{
+  const nonCoast = sv.filter(r => r.spec !== "coast");
+  const s = nonCoast.map(r => r.sufficiency || 0).sort((a, b) => a - b);
+  const med = s.length ? s[s.length >> 1] : 0;
+  const thin = s.filter(v => v < 0.01).length, zero = s.filter(v => v <= 0).length;
+  const cs = sv.filter(r => r.spec === "coast").map(r => r.sufficiency || 0);
+  const nA = sv.filter(r => r.alpha !== null && r.alpha !== undefined).length;
+  document.getElementById("svnote").textContent =
+    `Sufficiency is the share of the whole single-burn box that arrives, so it is also ` +
+    `the win rate the exponent above is fitted against. Across the ${nonCoast.length} ` +
+    `non-coasting levels the median is ${med.toFixed(4)}; ${thin} are below 0.01 and ` +
+    `${zero} never win at all. ` +
+    (cs.length ? `The ${cs.length} coasting levels run ` +
+      `${Math.min(...cs).toFixed(2)}–${Math.max(...cs).toFixed(2)}. ` : "") +
+    `Where sufficiency is that small the one-burn family is simply too weak to fly the ` +
+    `level: the causal map is near-empty and α is starved of flips, so both panels are ` +
+    `reporting the limits of the probe rather than the shape of the level. ` +
+    `α is fitted at all on ${nA} of ${sv.length} levels.`;
+}
+
+// ---- drawing
+function drawVolume(c) {
+  const { L, vol, info } = c, V = L.volume;
+  const nt = V.times.length, nd = V.dirs.length;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const w = vol.clientWidth || 320, h = Math.round(w * 0.62);
+  vol.width = w * dpr; vol.height = h * dpr; vol.style.height = h + "px";
+  const g = vol.getContext("2d");
+  g.clearRect(0, 0, vol.width, vol.height);
+  const pad = 26 * dpr, cw = (vol.width - pad) / nt, ch = (vol.height - pad) / nd;
+  let best = 0;
+  for (let i = 0; i < nt; i++) for (let j = 0; j < nd; j++) {
+    const p = V.win[i][j][dvIndex];
+    best = Math.max(best, p);
+    if (p <= 0) continue;
+    const a = 0.12 + 0.88 * p;
+    g.fillStyle = `rgba(88,214,180,${a})`;
+    g.fillRect(pad + i * cw, (nd - 1 - j) * ch, Math.ceil(cw), Math.ceil(ch));
+  }
+  // axes
+  g.strokeStyle = "#222835"; g.lineWidth = dpr;
+  g.beginPath(); g.moveTo(pad, 0); g.lineTo(pad, vol.height - pad);
+  g.lineTo(vol.width, vol.height - pad); g.stroke();
+  g.fillStyle = "#6f7a8d"; g.font = `${9 * dpr}px ui-monospace, monospace`;
+  g.fillText(`${V.times[0]}s`, pad + 2 * dpr, vol.height - 8 * dpr);
+  g.fillText(`${V.times[nt - 1]}s`, vol.width - 34 * dpr, vol.height - 8 * dpr);
+  g.save(); g.translate(10 * dpr, vol.height - pad); g.rotate(-Math.PI / 2);
+  g.fillText(`${V.dirs[0]}°`, 2 * dpr, 0); g.restore();
+  g.save(); g.translate(10 * dpr, 34 * dpr); g.rotate(-Math.PI / 2);
+  g.fillText(`${V.dirs[nd - 1]}°`, 0, 0); g.restore();
+  info.textContent = best > 0 ? `peak ${(100 * best).toFixed(0)}% at this Δv` : "nothing wins at this Δv";
+}
+
+function drawAce(c) {
+  const { L, ace } = c;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const w = ace.clientWidth || 240;
+  ace.width = w * dpr; ace.height = 70 * dpr; ace.style.height = "70px";
+  const g = ace.getContext("2d");
+  g.clearRect(0, 0, ace.width, ace.height);
+  if (!L.ace) {
+    g.fillStyle = "#6f7a8d"; g.font = `${10 * dpr}px ui-monospace, monospace`;
+    g.fillText("no arriving plan to intervene on", 6 * dpr, 38 * dpr);
+    return;
+  }
+  const n = L.ace.length, bw = ace.width / n;
+  for (let i = 0; i < n; i++) {
+    const v = Math.max(0, L.ace[i]);
+    const hh = v * (ace.height - 4 * dpr);
+    g.fillStyle = `rgba(232,134,60,${0.35 + 0.65 * v})`;
+    g.fillRect(i * bw, ace.height - hh, Math.max(bw - dpr, 1), hh);
+  }
+  g.strokeStyle = "#2b3242"; g.lineWidth = dpr;
+  g.beginPath(); g.moveTo(0, ace.height / 2); g.lineTo(ace.width, ace.height / 2); g.stroke();
+}
+
+function drawAlpha(c) {
+  const { L, alpha } = c, A = L.alpha_curve;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const w = alpha.clientWidth || 240;
+  alpha.width = w * dpr; alpha.height = 70 * dpr; alpha.style.height = "70px";
+  const g = alpha.getContext("2d");
+  g.clearRect(0, 0, alpha.width, alpha.height);
+  if (!A || !A.eps) return;
+  const lx = A.eps.map(e => Math.log10(e)), ly = A.flip.map(f => f || 0);
+  const x0 = Math.min(...lx), x1 = Math.max(...lx);
+  const px = (v) => 22 * dpr + (Math.log10(v) - x0) / Math.max(x1 - x0, 1e-9)
+                    * (alpha.width - 30 * dpr);
+  // saturation: two independent points differ this often, so a curve sitting at
+  // this height is telling you nothing about the boundary
+  const sat = 2 * (A.win_rate || 0) * (1 - (A.win_rate || 0));
+  // Scale to the data, not to a fixed 0..0.5.  Observed flip rates here are a
+  // few percent, and a fixed axis crushed every curve onto the baseline where a
+  // flat line and a rising one looked identical.
+  const yMax = Math.min(1, Math.max(0.02, Math.max(...ly) * 1.35, sat * 1.08));
+  const py = (v) => alpha.height - 14 * dpr
+                    - Math.min(1, v / yMax) * (alpha.height - 22 * dpr);
+  g.fillStyle = "#6f7a8d"; g.font = `${8 * dpr}px ui-monospace, monospace`;
+  g.fillText((100 * yMax).toFixed(1) + "%", 1 * dpr, 9 * dpr);
+  if (sat > 0 && sat <= yMax) {
+    g.strokeStyle = "rgba(181,127,224,0.5)"; g.setLineDash([3 * dpr, 3 * dpr]);
+    g.beginPath(); g.moveTo(22 * dpr, py(sat)); g.lineTo(alpha.width, py(sat)); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = "rgba(181,127,224,0.8)";
+    g.fillText(`independent 2p(1−p)=${sat.toFixed(3)}`, 24 * dpr, py(sat) - 3 * dpr);
+  } else if (sat > 0) {
+    g.fillStyle = "rgba(181,127,224,0.8)";
+    g.fillText(`independence ceiling ${sat.toFixed(3)} is off-scale above`,
+               24 * dpr, 9 * dpr);
+  }
+  g.strokeStyle = A.measurable ? "#58d6b4" : "#6f7a8d"; g.lineWidth = 1.6 * dpr;
+  g.beginPath();
+  A.eps.forEach((e, i) => { const X = px(e), Y = py(ly[i]); i ? g.lineTo(X, Y) : g.moveTo(X, Y); });
+  g.stroke();
+  g.fillStyle = A.measurable ? "#58d6b4" : "#6f7a8d";
+  A.eps.forEach((e, i) => { g.beginPath(); g.arc(px(e), py(ly[i]), 2.4 * dpr, 0, 7); g.fill(); });
+  g.fillStyle = "#6f7a8d"; g.font = `${8.5 * dpr}px ui-monospace, monospace`;
+  g.fillText("ε →", alpha.width - 22 * dpr, alpha.height - 3 * dpr);
+}
+
+function drawAll() { for (const c of cards) { drawVolume(c); drawAce(c); drawAlpha(c); } }
+
+const dvs = rows.length ? rows[0].volume.dvs : [0];
+const dv = document.getElementById("dv");
+dv.max = String(dvs.length - 1);
+dv.value = String(Math.min(dvIndex, dvs.length - 1));
+function syncDv() {
+  dvIndex = +dv.value;
+  document.getElementById("dvv").textContent =
+    `${(100 * dvs[dvIndex]).toFixed(0)}% of tank`;
+  drawAll();
+}
+dv.oninput = syncDv;
+// Say out loud how many of the rendered exponents survive their own trust test,
+// so the page cannot read as more conclusive than the run behind it.
+const trust = rows.map(L => alphaTrust(L));
+const nTrust = trust.filter(t => t.trusted).length;
+document.getElementById("alphaverdict").textContent = nTrust === rows.length
+  ? `On this run all ${rows.length} fitted exponents pass that test.`
+  : `On this run ${nTrust} of ${rows.length} rendered exponents pass that test` +
+    (nTrust === 0
+      ? ", so the resolvable-versus-fractal split is not established by this data: "
+      : ", so treat the split with care: ") +
+    `every α here rests on at most ${Math.max(0, ...trust.map(t => t.tot))} flipped trials ` +
+    `out of ${DATA.need_config.eps.length * NEPS}.`;
+
+const nAlpha = DATA.survey.filter(r => r.alpha !== null && r.alpha !== undefined).length;
+document.getElementById("meta").textContent =
+  `${rows.length} of ${SYL.length} lessons have an example · ${DATA.survey.length} levels measured · ` +
+  `volume ${DATA.need_config.n_time}×${DATA.need_config.n_dir}×${DATA.need_config.n_dv} ` +
+  `at ${DATA.need_config.cell_samples} samples a cell · ` +
+  `α measurable on ${nAlpha}/${DATA.survey.length} · spacenav`;
+addEventListener("resize", drawAll);
+syncDv();
+</script>
