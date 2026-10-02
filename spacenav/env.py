@@ -288,6 +288,14 @@ def _sample_waypoint(key, level, bp, bv, cfg, prev_pos, used):
     offset = jnp.where(chaotic, ch_off, offset)
     take_station = take_station & ~chaotic
     take_body = take_body | chaotic
+    # Recompute: `moving` was bound above, before the contested override, so a
+    # contested waypoint used to be computed and then silently thrown away --
+    # `anchor`/`pos` below read the stale flag and fell back to a free-space
+    # point.  p_contested was therefore a no-op whenever `want_moving` came out
+    # False, i.e. always at p_station=0 and (1 - p_station) of the time
+    # otherwise.  With p_contested=0 `chaotic` is always False, so this line
+    # leaves every non-contested mission bit-identical.
+    moving = take_station | take_body
 
     free, free_ok = _sample_point(k5, level, bp, bv, cfg, center=prev_pos,
                                   dmin=jnp.maximum(cfg.min_dist, cfg.min_leg), dmax=cfg.max_dist)
@@ -302,7 +310,10 @@ def _sample_waypoint(key, level, bp, bv, cfg, prev_pos, used):
 
 def sample_tour(key, level: Level, start: Start, cfg: TaskConfig = TaskConfig()):
     """Waypoints, objective weights and the ship loadout for one mission."""
-    keys = jax.random.split(key, K + 5)
+    # K + 7, not K + 5: the waypoint loop consumes keys[2 .. K+1], so the loadout
+    # draws have to start at K+2 or the ship's engine and tank become a
+    # deterministic function of where the last two waypoints landed.
+    keys = jax.random.split(key, K + 7)
     bp, bv = snapshot_state(level, start.snapshot)
 
     # the upper bound may be a traced float from the training curriculum
@@ -344,10 +355,11 @@ def sample_tour(key, level: Level, start: Start, cfg: TaskConfig = TaskConfig())
     legs = jnp.where(actives, legs, 0.0)
     total = jnp.sum(legs)
 
-    accel = jnp.exp(jax.random.uniform(keys[K], minval=jnp.log(cfg.accel_range[0]),
+    accel = jnp.exp(jax.random.uniform(keys[K + 5], minval=jnp.log(cfg.accel_range[0]),
                                        maxval=jnp.log(cfg.accel_range[1])))
     dv_needed = deltav_estimate(legs, v_tols, accel)
-    budget = jax.random.uniform(keys[K + 1], minval=cfg.deltav_budget[0], maxval=cfg.deltav_budget[1])
+    budget = jax.random.uniform(keys[K + 6], minval=cfg.deltav_budget[0],
+                                maxval=cfg.deltav_budget[1])
     fuel = jnp.clip(budget * dv_needed / accel, *C.SHIP_FUEL_LIMITS)
 
     t_ref = jnp.sum(jnp.where(actives, 2.0 * jnp.sqrt(legs / accel), 0.0))

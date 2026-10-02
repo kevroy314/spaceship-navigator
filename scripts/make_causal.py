@@ -164,6 +164,31 @@ def main():
               f"  {c['lesson']}", flush=True)
     print(f"volumes + alpha in {time.time()-t0:.0f}s", flush=True)
 
+    # stage 2b: the intervention profile, only where it can decide a lesson.
+    # `one-exact-boost` needs concentration and n_critical, and a window under a
+    # human reaction time is a necessary condition for it -- so measure necessity
+    # on exactly those candidates rather than all of them. Without this the
+    # lesson can never match, which is why it never appeared.
+    tight = [c for c in cands
+             if 0 < c["feats"]["window_s"] < HUMAN.window_min and c["feats"]["mdl"] < 99]
+    print(f"\n{len(tight)} candidates with a window under {HUMAN.window_min}s; "
+          f"measuring per-decision necessity", flush=True)
+    for c in tight:
+        lv, tk = c["level"], c["task"]
+        st = E.reset(lv, tk)
+        seg = cem(lv, tk, st, jax.random.PRNGKey(5), pcfg, pcfg.ticks, 0)
+        final, *_ = fly_from(lv, tk, st, expand(seg, pcfg.ticks), 0)
+        if int(final.status) != ARRIVED:
+            print(f"  {c['eid']:30s} no arriving plan; necessity undefined", flush=True)
+            continue
+        a = np.asarray(ace_profile(lv, tk, seg, jax.random.PRNGKey(6), ncfg))
+        nsc = {k2: float(v) for k2, v in necessity_scalars(jax.numpy.asarray(a)).items()}
+        c["feats"].update(concentration=nsc["concentration"], n_critical=nsc["n_critical"])
+        c["ace_pre"] = [fin(x) for x in a]
+        c["lesson"], c["tags"] = LS.classify(c["feats"]), LS.tags(c["feats"])
+        print(f"  {c['eid']:30s} concentration {nsc['concentration']:.2f} "
+              f"n_critical {int(nsc['n_critical'])}  -> {c['lesson']}", flush=True)
+
     # stage 3: re-planning, where it changes the answer
     chaotic = [c for c in cands if not LS.resolvable(c["feats"])]
     print(f"\n{len(chaotic)} chaotic candidates (alpha < {LS.ALPHA_RESOLVABLE}); "

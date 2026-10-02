@@ -22,3 +22,6 @@ with no evidence behind it is a preference, and should say so.
 | [0010](0010-planner-as-teacher.md) | Search over the true simulator, distil the policy |
 | [0011](0011-callouts-and-legibility.md) | Hand-designed callout vocabulary; legible trajectories |
 | [0012](0012-evaluation-statistics.md) | Evaluation statistics we actually need |
+| [0013](0013-longer-episodes.md) | Longer episodes as the keystone |
+| [0014](0014-sampler-bugs.md) | Four measurement bugs the test suite found |
+| [0015](0015-architecture-pick.md) | Search the true simulator with mctx; reduce the horizon |

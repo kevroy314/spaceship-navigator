@@ -188,26 +188,50 @@ def test_topk_zero_is_the_full_field():
                                   np.asarray(P.gravity_at(pts, bp, lv)))
 
 
-def test_topk_approaches_the_full_field_as_k_rises():
-    """A coarse model is a truncation, so its error must shrink monotonically and
-    vanish once k covers every attractor."""
+def test_topk_truncation_error_is_bounded_by_what_it_discards():
+    """A coarse model is a truncated *vector* sum, so the quantity that falls
+    monotonically is the discarded force **budget**, not the residual.
+
+    The residual |g_k - g_full| is not pointwise monotone in k, and that is real
+    rather than numerical: the bodies a k=2 model throws away can partly cancel
+    each other, so a k=2 model is occasionally *more* accurate than k=3.
+    Measured on this level, exactly one of 24 probe points does it -- at r = 226
+    the residual rises from 3.12e-5 to 3.36e-5 going from k=2 to k=3.  Asserting
+    pointwise monotonicity would therefore be asserting something false.
+
+    What does hold, and is what `opt.probe`'s model ladder relies on:
+      * sum of |a_j| over the discarded bodies falls strictly with k, to zero;
+      * the residual is bounded by that budget (triangle inequality);
+      * k = n_active reproduces the full field exactly.
+    """
     lv = hierarchy_level()
     pts = _probe_points(lv)
     bp = lv.snap_pos[0]
     full = np.asarray(P.gravity_at(pts, bp, lv, 0))
     n_active = int(np.sum(np.asarray(lv.active)))
-    errs = []
-    for k in range(1, n_active + 1):
-        g = np.asarray(P.gravity_at(pts, bp, lv, k))
-        errs.append(np.linalg.norm(g - full, axis=-1))
-    errs = np.stack(errs)                      # (k, M)
-    # per point, non-increasing in k (the magnitudes in a hierarchy are well
-    # separated, so adding the next attractor cannot make the residual grow)
-    assert np.all(np.diff(errs, axis=0) <= 1e-6), np.max(np.diff(errs, axis=0))
-    assert np.all(errs[-1] < 1e-6), errs[-1].max()
+
+    errs = np.stack([np.linalg.norm(np.asarray(P.gravity_at(pts, bp, lv, k)) - full, axis=-1)
+                     for k in range(1, n_active + 1)])
+
+    # per-body acceleration magnitudes, so the discarded budget is exact
+    d = np.asarray(bp)[None, :, :] - np.asarray(pts)[:, None, :]
+    r = np.linalg.norm(d, axis=-1)
+    soft = np.maximum(np.maximum(r, np.asarray(lv.radius)[None, :]), P.EPS)
+    m = np.where(np.asarray(lv.active), np.asarray(lv.mass), 0.0)
+    desc = -np.sort(-(m[None, :] / soft ** 2), axis=1)          # per point, descending
+    budget = np.stack([desc[:, k:].sum(1) for k in range(1, n_active + 1)])
+
+    assert np.all(np.diff(budget, axis=0) <= 1e-9), np.max(np.diff(budget, axis=0))
+    assert np.all(errs <= budget + 1e-5), np.max(errs - budget)
+    assert np.all(errs[-1] == 0.0), errs[-1].max()
+    # it does converge, just in the mean rather than pointwise: ~60x per rung here
+    assert errs.mean(1)[0] > 20 * errs.mean(1)[1]
+    assert list(errs.mean(1)) == sorted(errs.mean(1), reverse=True), errs.mean(1)
     # and k=1 is genuinely coarse somewhere: eta is not uniformly negligible
-    scale = np.linalg.norm(full, axis=-1)
-    assert np.max(errs[0] / scale) > 0.01
+    assert np.max(errs[0] / np.linalg.norm(full, axis=-1)) > 0.01
+    # the one non-monotone point is small, because the budget bounds it
+    rise = np.max(np.diff(errs, axis=0))
+    assert rise < 0.01 * budget[0].max(), rise
 
 
 def test_topk_never_exceeds_the_available_bodies():
@@ -242,20 +266,22 @@ def test_step_topk_restricts_only_the_ship():
                      start_vel=(0.0, 3.0), target=(900.0, 0.0), accel=1.0, fuel=10.0)
     s0 = E.reset(lv, task)
     act = jnp.array([0.0, 0.0])
-    full = s0
-    coarse = s0
+    # jit each ladder rung: calling E.step eagerly in a loop rebuilds the substep
+    # fori_loop body every iteration and recompiles it, which turned 180 steps
+    # into four minutes of XLA time
+    run = {k: jax.jit(lambda s, k=k: E.step(lv, task, s, act, topk=k)[0]) for k in (0, 1)}
+    dflt = jax.jit(lambda s: E.step(lv, task, s, act)[0])
+    full, coarse, again = s0, s0, s0
     for _ in range(60):
-        full, _, _ = E.step(lv, task, full, act, topk=0)
-        coarse, _, _ = E.step(lv, task, coarse, act, topk=1)
+        full = run[0](full)
+        coarse = run[1](coarse)
+        again = dflt(again)
     np.testing.assert_allclose(np.asarray(full.body_pos), np.asarray(coarse.body_pos), atol=1e-4)
     # on the giant's equal-pull surface the star is as strong as the giant, so
     # dropping it must visibly move the ship
     sep = np.linalg.norm(np.asarray(full.ship.pos - coarse.ship.pos))
     assert sep > 1.0, sep
     # topk=0 is the default path
-    again = s0
-    for _ in range(60):
-        again, _, _ = E.step(lv, task, again, act)
     np.testing.assert_array_equal(np.asarray(again.ship.pos), np.asarray(full.ship.pos))
 
 
@@ -274,15 +300,28 @@ def test_ship_accel_and_substep_pass_topk_through():
     a_dom = P.ship_accel(lv, bp, bv, x, v, thrust, 1)
     np.testing.assert_allclose(np.asarray(a_full),
                                np.asarray(P.ship_accel(lv, bp, bv, x, v, thrust)), atol=0)
-    # equal pull means dropping the star changes the felt force a lot
-    assert np.linalg.norm(np.asarray(a_full - a_dom)) > 0.5 * np.linalg.norm(np.asarray(a_full))
+    # Dropping the star costs ~45% of the felt force here, not 50%: the
+    # equal-pull radius d = a*sqrt(m/M) is derived with the star at distance a,
+    # but a point d *outside* the giant is at a + d from the star, so the star's
+    # pull there is (a/(a+d))^2 of the giant's.  With a = 400, d = 39.9 that is
+    # 0.827, giving a discarded share of 0.827/1.827 = 0.453 (the moon trims it
+    # to 0.449).  Asserting > 0.5 would be asserting the wrong geometry.
+    share = (np.linalg.norm(np.asarray(a_full - a_dom))
+             / np.linalg.norm(np.asarray(a_full)))
+    assert 0.40 < share < 0.50, share
 
-    _, _, x_full, _ = P.substep(lv, bp, bv, x, v, thrust, topk=0)
-    _, bv_dom, x_dom, _ = P.substep(lv, bp, bv, x, v, thrust, topk=1)
-    assert not np.allclose(np.asarray(x_full), np.asarray(x_dom))
+    bp_full, _, x_full, v_full = P.substep(lv, bp, bv, x, v, thrust, topk=0)
+    bp_dom, _, x_dom, v_dom = P.substep(lv, bp, bv, x, v, thrust, topk=1)
+    # One substep is h = 1/60 s, so the *position* difference is second order,
+    # 0.5*da*h^2 = 3.5e-5 u -- below np.allclose's default tolerance at x ~ 435,
+    # which is why the 60-tick accumulation test above is the one that sees it.
+    # The plumbing shows up at first order in the velocity: dv = da*h.
+    da = float(np.linalg.norm(np.asarray(a_full - a_dom)))
+    dv = float(np.linalg.norm(np.asarray(v_full - v_dom)))
+    assert dv == pytest.approx(da * C.PHYS_DT, rel=0.05), (dv, da * C.PHYS_DT)
+    assert np.linalg.norm(np.asarray(x_full - x_dom)) < 1e-3
+
     # the bodies are integrated with the full field whatever the ship is told
-    bp_full, _, _, _ = P.substep(lv, bp, bv, x, v, thrust, topk=0)
-    bp_dom, _, _, _ = P.substep(lv, bp, bv, x, v, thrust, topk=1)
     np.testing.assert_array_equal(np.asarray(bp_full), np.asarray(bp_dom))
     np.testing.assert_array_equal(np.asarray(P.bodies_step(bp, bv, lv)[0]),
                                   np.asarray(bp_dom))
