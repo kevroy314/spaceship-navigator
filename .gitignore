@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+node_modules/
+data/
+!data/.gitkeep
+legacy/data/
+*.log
+.DS_Store
+
+# Research media: 54 MB of video frames and transcripts, regenerable from source
+research/braintruffle/frames/
+research/braintruffle/*.mp4
+research/out/
+research/__pycache__/
+# Legacy prototype's recorded episodes
+legacy/data/
