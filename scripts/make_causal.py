@@ -121,7 +121,7 @@ def main():
     args = ap.parse_args()
 
     rng = np.random.default_rng(args.seed)
-    ncfg = NeedConfig(n_time=24, n_dir=24, n_dv=6, cell_samples=3)
+    ncfg = NeedConfig(n_time=20, n_dir=24, n_dv=6, cell_samples=3)
     fine = ncfg._replace(cell_samples=5)          # for the representatives
     pcfg = ProbeConfig()
     ccfg = CoastConfig(targets=6, candidates=48)

@@ -103,7 +103,11 @@ class NeedConfig(NamedTuple):
     # uncertainty exponent: how far apart two parameter points are, as a fraction
     # of the whole parameter box, when asking whether their outcomes differ
     eps: tuple = (0.002, 0.005, 0.012, 0.03, 0.07)
-    eps_samples: int = 96
+    # 96 gave flip rates that were tiny integer counts (0/1/3/5/5), so every
+    # fitted alpha had a bootstrap CI straddling the resolvable threshold and none
+    # was trustworthy (docs/decisions/0009). This is a parallelism problem, not a
+    # speed one.
+    eps_samples: int = 768
 
 
 # ---------------------------------------------------------------------------

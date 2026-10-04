@@ -13,14 +13,22 @@ Everything that shapes game feel lives here so tuning happens in one place.
 PHYS_DT = 1.0 / 60.0          # physics substep (s); one render frame at 60 fps
 SUBSTEPS = 4                  # physics substeps per control tick
 CTRL_DT = PHYS_DT * SUBSTEPS  # agent / player decision interval (15 Hz)
-MAX_EPISODE_TIME = 150.0      # s (tours on a tight fuel budget coast a long way)
+# 600 s, not 150: at lambda ~ 0.007 1/s a 150 s episode spans about one e-folding,
+# which is why the chaos machinery found nothing (docs/decisions/0008, 0013). 600 s
+# spans ~4.2, and gives a single burn time to actually reach a target -- the
+# single-burn strategy family was winning in under 0.3% of its own parameter box.
+MAX_EPISODE_TIME = 600.0      # s (tours on a tight fuel budget coast a long way)
 MAX_EPISODE_TICKS = int(round(MAX_EPISODE_TIME / CTRL_DT))
 
 # --- padding ---------------------------------------------------------------
 MAX_BODIES = 32               # bodies incl. massless tracers (stations, cloud centres)
 MAX_ZONES = 12
 SNAPSHOT_INTERVAL = 20.0      # s between stored level snapshots (episode start epochs)
-LEVEL_HORIZON = 300.0         # s a level must stay well-behaved for
+# Must exceed MAX_EPISODE_TIME with room for snapshot variety: N_SNAPSHOTS is
+# (LEVEL_HORIZON - MAX_EPISODE_TIME)/SNAPSHOT_INTERVAL + 1, which goes negative if
+# the horizon is shorter than an episode. Levels are validated 3x longer now, so
+# acceptance drops and the surviving population is more stable than before.
+LEVEL_HORIZON = 900.0         # s a level must stay well-behaved for
 
 # --- ship ------------------------------------------------------------------
 # Thrust and fuel are per-mission (see env.sample_loadout): a ship whose delta-v

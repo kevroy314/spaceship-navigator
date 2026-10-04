@@ -27,3 +27,4 @@ with no evidence behind it is a preference, and should say so.
 | [0015](0015-architecture-pick.md) | Search the true simulator with mctx; reduce the horizon |
 | [0016](0016-communication-is-equilibrium-selection.md) | Communication is equilibrium selection (corrects 0015) |
 | [0017](0017-no-pre-play.md) | No pre-play; coordination is in-band (corrects 0016) |
+| [0018](0018-chaos-needs-close-encounters.md) | Longer episodes do not produce chaos (corrects 0013) |

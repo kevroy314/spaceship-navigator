@@ -62,7 +62,12 @@ class ProbeConfig(NamedTuple):
     # every route as still running: a weak-engine tour needs 40-130 s, so a 40 s
     # search measures nothing at all (it cost a whole build to learn that).
     ticks: int = C.MAX_EPISODE_TICKS
-    segments: int = 12
+    # Segment duration is what matters, not the count: 12 segments over a 600 s
+    # episode is 50 s of constant thrust each, and the capacity sweep at 150 s
+    # showed ~3 s segments were needed for a plan to arrive at all. 48 keeps each
+    # segment at 12.5 s, which is also about the granularity at which a burn is a
+    # recognisable manoeuvre rather than a tick.
+    segments: int = 48
     samples: int = 96
     elites: int = 12
     iters: int = 7

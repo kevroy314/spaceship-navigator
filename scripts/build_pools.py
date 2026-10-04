@@ -40,14 +40,27 @@ def main():
     ap.add_argument("--train", type=int, default=2000)
     ap.add_argument("--val", type=int, default=200)
     ap.add_argument("--holdout", type=int, default=300)
+    ap.add_argument("--only", choices=["train", "val_seen", "val_holdout", "long"],
+                    help="build a single pool instead of all three")
+    ap.add_argument("--n", type=int, help="level count per family, for --only")
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
-    report = {
-        "train": build("train", TRAIN_FAMILIES, args.train, 0),
-        "val_seen": build("val_seen", TRAIN_FAMILIES, args.val, 10_000_000),
-        "val_holdout": build("val_holdout", HOLDOUT_FAMILIES, args.holdout, 20_000_000),
+
+    # `long` is a smaller pool for measurement at the long episode clock, so the
+    # 18k-level train pool need not be rebuilt to explore it.
+    jobs = {
+        "train": (TRAIN_FAMILIES, args.train, 0),
+        "val_seen": (TRAIN_FAMILIES, args.val, 10_000_000),
+        "val_holdout": (HOLDOUT_FAMILIES, args.holdout, 20_000_000),
+        "long": (TRAIN_FAMILIES, args.n or 200, 30_000_000),
     }
-    (OUT / "report.json").write_text(json.dumps(report, indent=2))
+    picked = [args.only] if args.only else ["train", "val_seen", "val_holdout"]
+    report = {}
+    for name in picked:
+        fams, n, seed0 = jobs[name]
+        report[name] = build(name, fams, args.n or n, seed0)
+    path = OUT / ("report.json" if not args.only else f"report_{args.only}.json")
+    path.write_text(json.dumps(report, indent=2))
 
 
 if __name__ == "__main__":

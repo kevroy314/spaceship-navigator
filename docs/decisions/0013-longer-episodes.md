@@ -1,6 +1,11 @@
 # 0013 — Longer episodes
 
-**Date** 2026-10-02 · **Status** proposed
+**Date** 2026-10-02 · **Status** partly superseded by [0018](0018-chaos-needs-close-encounters.md)
+
+> **The chaos premise below is wrong.** Measured at 600 s, lambda *falls* to
+> -0.0001–0.0013 and growth is sub-linear: these are bound systems, so a
+> perturbation oscillates with the orbital period instead of growing. Longer
+> episodes were adopted anyway, for the sufficiency reason, not this one.
 
 ## Context
 Requested as a direction to explore, on the grounds that players will enjoy
