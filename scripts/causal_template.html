@@ -51,6 +51,7 @@ input[type=range] { flex: 1 1 11rem; min-width: 8rem; accent-color: var(--win); 
 .panels { display: grid; grid-template-columns: 1.35fr 1fr; gap: .9rem; padding: .9rem; }
 @media (max-width: 46rem) { .panels { grid-template-columns: 1fr; } }
 .cell { min-width: 0; }
+button.on { border-color: var(--win); color: var(--win); }
 .clabel { font-family: var(--mono); font-size: .66rem; color: var(--muted); text-transform: uppercase;
           letter-spacing: .06em; display: flex; justify-content: space-between; margin-bottom: .25rem; }
 canvas { display: block; width: 100%; height: auto; background: #080a0f; border: 1px solid var(--line); }
@@ -91,16 +92,19 @@ that makes its lesson legible.</p>
 <div id="findings" class="findings"></div>
 
 <div class="bar">
-  <label for="dv">delta-v spent on the burn</label>
+  <button id="view" class="on">Stacked planes</button>
+  <label for="dv">one slice:</label>
   <input type="range" id="dv" min="0" max="5" value="2" step="1">
   <span class="dvv" id="dvv"></span>
 </div>
 
-<p class="note">The left panel of each lesson is its <b>causal map</b>: every single burn the ship could make,
-as <em>when</em> (horizontal) against <em>which way</em> (vertical), brightness being the fraction of that cell
-that arrives. Slide the delta-v above to move through the volume and watch regions appear, widen and merge.
-A broad patch means many sufficient options. A thin sliver means one necessary action. Separate patches are
-genuinely different strategies, and a <em>diagonal</em> stripe is leading: burn later, aim further ahead.</p>
+<p class="note">The left panel of each lesson is its <b>causal map</b>: every single burn the ship could make.
+Each stacked plane is one delta-v budget; within a plane, <em>when</em> runs left to right and <em>which way</em>
+runs back-right, and a lit cell is the fraction of that cell which arrives. Empty cells are transparent, so the
+winning regions read as clusters floating in the volume. A broad patch means many sufficient options; a thin
+sliver means one necessary action; separate patches are genuinely different strategies; and a <em>diagonal</em>
+stripe is leading — burn later, aim further ahead. Use <b>One slice</b> and the slider to read a single plane
+in detail.</p>
 <p class="note">Cells hold a win <em>fraction</em> over jittered samples rather than a yes or no. An n-body
 basin boundary can be fractal, and a binary grid would report its own spacing as structure. The right panel
 pairs the per-decision causal effect — randomise one segment of a working plan, see how often it still
@@ -125,6 +129,7 @@ numbers; nothing here is assigned by which generator produced it.</p>
 const DATA = /*__DATA__*/null;
 const fmt = (v, d = 2) => (v === null || v === undefined ? "—" : (+v).toFixed(d));
 let dvIndex = 2;
+let view3d = true;      // stacked planes by default; the slider drops to one slice
 
 // How many trials went into each flip rate, so a fitted exponent can be shown
 // with the count it rests on instead of as a bare number.
@@ -273,36 +278,141 @@ document.getElementById("survey").innerHTML =
 }
 
 // ---- drawing
+// The causal volume as planes in space: one plane per delta-v, stacked along the
+// vertical, each plane carrying the (burn time x heading) win fractions. Empty
+// cells are left transparent so the winning regions read as clusters floating in
+// the volume rather than as a mostly-black square -- which matters here, because
+// the winning set is a few percent of the box at best.
+function isoCell(P, i, j, k) {
+  const x = P.x0 + i * P.cw + j * P.sh;
+  const y = P.y0 - k * P.gap - j * P.cj;
+  return [x, y];
+}
+
+function volGeom(cv, nt, nd, nk, dpr) {
+  const W = cv.width, H = cv.height;
+  const padL = 34 * dpr, padR = 10 * dpr, padT = 14 * dpr, padB = 26 * dpr;
+  // shear is half the heading cell height; solve the cell sizes to fit the box
+  const availW = W - padL - padR, availH = H - padT - padB;
+  let cj = Math.max(2 * dpr, Math.min(9 * dpr, availH / (nd + (nk - 1) * 3.0)));
+  const gap = cj * 3.0;
+  const sh = cj * 0.55;
+  const cw = Math.max(2 * dpr, (availW - nd * sh) / nt);
+  const stackH = nd * cj + (nk - 1) * gap;
+  return { x0: padL, y0: padT + stackH, cw, cj, sh, gap, nt, nd, nk };
+}
+
 function drawVolume(c) {
   const { L, vol, info } = c, V = L.volume;
-  const nt = V.times.length, nd = V.dirs.length;
+  const nt = V.times.length, nd = V.dirs.length, nk = V.dvs.length;
   const dpr = Math.min(devicePixelRatio || 1, 2);
-  const w = vol.clientWidth || 320, h = Math.round(w * 0.62);
+  const w = vol.clientWidth || 320;
+  const h = Math.round(w * (view3d ? 0.92 : 0.62));
   vol.width = w * dpr; vol.height = h * dpr; vol.style.height = h + "px";
   const g = vol.getContext("2d");
   g.clearRect(0, 0, vol.width, vol.height);
-  const pad = 26 * dpr, cw = (vol.width - pad) / nt, ch = (vol.height - pad) / nd;
+
+  if (!view3d) { drawFlat(c, g, dpr); return; }
+
+  const P = volGeom(vol, nt, nd, nk, dpr);
+  let best = 0, bestK = 0;
+  for (let k = 0; k < nk; k++) for (let i = 0; i < nt; i++) for (let j = 0; j < nd; j++) {
+    const p = V.win[i][j][k];
+    if (p > best) { best = p; bestK = k; }
+  }
+
+  // back to front: the highest delta-v plane sits furthest back
+  for (let k = nk - 1; k >= 0; k--) {
+    const quad = (i, j) => {
+      const [ax, ay] = isoCell(P, i, j, k);
+      g.beginPath();
+      g.moveTo(ax, ay);
+      g.lineTo(ax + P.cw, ay);
+      g.lineTo(ax + P.cw + P.sh, ay - P.cj);
+      g.lineTo(ax + P.sh, ay - P.cj);
+      g.closePath();
+    };
+    // the plane's footprint, so an empty slice still reads as a plane
+    const c0 = isoCell(P, 0, 0, k), c1 = isoCell(P, nt, 0, k);
+    const c2 = isoCell(P, nt, nd, k), c3 = isoCell(P, 0, nd, k);
+    g.beginPath();
+    g.moveTo(c0[0], c0[1]); g.lineTo(c1[0], c1[1]);
+    g.lineTo(c2[0], c2[1]); g.lineTo(c3[0], c3[1]); g.closePath();
+    g.fillStyle = "rgba(14,18,26,0.72)";
+    g.fill();
+    g.strokeStyle = "rgba(46,56,72,0.9)";
+    g.lineWidth = dpr; g.stroke();
+
+    let any = 0;
+    for (let i = 0; i < nt; i++) for (let j = 0; j < nd; j++) {
+      const p = V.win[i][j][k];
+      if (p <= 0) continue;
+      any++;
+      quad(i, j);
+      // a wide alpha floor: a 1-in-3 cell must not look like a 1-in-100 one
+      g.fillStyle = `rgba(88,214,180,${0.35 + 0.65 * Math.min(1, p)})`;
+      g.fill();
+      if (p > 0.5) { g.strokeStyle = "rgba(170,255,230,0.85)"; g.lineWidth = dpr; g.stroke(); }
+    }
+    // delta-v label, and an explicit note when a plane is empty
+    g.fillStyle = any ? "#a7b0c2" : "#5a6475";
+    g.font = `${9 * dpr}px ui-monospace, monospace`;
+    g.textAlign = "right";
+    g.fillText(`${(100 * V.dvs[k]).toFixed(0)}%`, P.x0 - 5 * dpr, c3[1] + P.cj * 1.2);
+    if (!any) {
+      g.textAlign = "left"; g.fillStyle = "#4a5464";
+      g.fillText("none", c0[0] + 6 * dpr, c0[1] - P.cj * 0.4);
+    }
+  }
+
+  // axis cues on the front plane
+  g.textAlign = "left"; g.fillStyle = "#6f7a8d";
+  g.font = `${9 * dpr}px ui-monospace, monospace`;
+  const f0 = isoCell(P, 0, 0, 0);
+  g.fillText(`${V.times[0]}s`, f0[0], f0[1] + 13 * dpr);
+  g.textAlign = "right";
+  g.fillText(`${V.times[nt - 1]}s  burn time \u2192`, f0[0] + nt * P.cw, f0[1] + 13 * dpr);
+  g.save();
+  g.translate(P.x0 - 22 * dpr, P.y0 - (P.nd * P.cj + (nk - 1) * P.gap) / 2);
+  g.rotate(-Math.PI / 2); g.textAlign = "center";
+  g.fillText("\u0394v of tank \u2191", 0, 0); g.restore();
+  g.textAlign = "left";
+  const hdr = isoCell(P, nt, nd, 0);
+  g.fillText(`heading \u2197 ${V.dirs[0]}\u2192${V.dirs[nd - 1]}\u00b0`, hdr[0] + 4 * dpr, hdr[1]);
+
+  info.textContent = best > 0
+    ? `peak ${(100 * best).toFixed(0)}% at ${(100 * V.dvs[bestK]).toFixed(0)}% of tank`
+    : "no single burn wins anywhere in this volume";
+}
+
+// the flat view is kept for reading one slice in detail
+function drawFlat(c, g, dpr) {
+  const { L, vol, info } = c, V = L.volume;
+  const nt = V.times.length, nd = V.dirs.length;
+  const pad = 30 * dpr, cw = (vol.width - pad) / nt, ch = (vol.height - pad) / nd;
   let best = 0;
   for (let i = 0; i < nt; i++) for (let j = 0; j < nd; j++) {
     const p = V.win[i][j][dvIndex];
     best = Math.max(best, p);
-    if (p <= 0) continue;
-    const a = 0.12 + 0.88 * p;
-    g.fillStyle = `rgba(88,214,180,${a})`;
+    g.fillStyle = p > 0 ? `rgba(88,214,180,${0.35 + 0.65 * Math.min(1, p)})`
+                        : "rgba(18,23,32,0.9)";
     g.fillRect(pad + i * cw, (nd - 1 - j) * ch, Math.ceil(cw), Math.ceil(ch));
   }
-  // axes
   g.strokeStyle = "#222835"; g.lineWidth = dpr;
   g.beginPath(); g.moveTo(pad, 0); g.lineTo(pad, vol.height - pad);
   g.lineTo(vol.width, vol.height - pad); g.stroke();
   g.fillStyle = "#6f7a8d"; g.font = `${9 * dpr}px ui-monospace, monospace`;
+  g.textAlign = "left";
   g.fillText(`${V.times[0]}s`, pad + 2 * dpr, vol.height - 8 * dpr);
-  g.fillText(`${V.times[nt - 1]}s`, vol.width - 34 * dpr, vol.height - 8 * dpr);
-  g.save(); g.translate(10 * dpr, vol.height - pad); g.rotate(-Math.PI / 2);
-  g.fillText(`${V.dirs[0]}°`, 2 * dpr, 0); g.restore();
-  g.save(); g.translate(10 * dpr, 34 * dpr); g.rotate(-Math.PI / 2);
-  g.fillText(`${V.dirs[nd - 1]}°`, 0, 0); g.restore();
-  info.textContent = best > 0 ? `peak ${(100 * best).toFixed(0)}% at this Δv` : "nothing wins at this Δv";
+  g.textAlign = "right";
+  g.fillText(`${V.times[nt - 1]}s`, vol.width - 2 * dpr, vol.height - 8 * dpr);
+  g.textAlign = "left";
+  g.save(); g.translate(11 * dpr, vol.height - pad); g.rotate(-Math.PI / 2);
+  g.fillText(`${V.dirs[0]}\u00b0`, 2 * dpr, 0); g.restore();
+  g.save(); g.translate(11 * dpr, 36 * dpr); g.rotate(-Math.PI / 2);
+  g.fillText(`${V.dirs[nd - 1]}\u00b0`, 0, 0); g.restore();
+  info.textContent = best > 0
+    ? `peak ${(100 * best).toFixed(0)}% at this \u0394v` : "nothing wins at this \u0394v";
 }
 
 function drawAce(c) {
@@ -384,7 +494,15 @@ function syncDv() {
     `${(100 * dvs[dvIndex]).toFixed(0)}% of tank`;
   drawAll();
 }
-dv.oninput = syncDv;
+dv.oninput = () => { view3d = false; vbtn.classList.remove("on");
+                     vbtn.textContent = "One slice"; syncDv(); };
+const vbtn = document.getElementById("view");
+vbtn.onclick = () => {
+  view3d = !view3d;
+  vbtn.classList.toggle("on", view3d);
+  vbtn.textContent = view3d ? "Stacked planes" : "One slice";
+  drawAll();
+};
 // Say out loud how many of the rendered exponents survive their own trust test,
 // so the page cannot read as more conclusive than the run behind it.
 const trust = rows.map(L => alphaTrust(L));
