@@ -260,9 +260,10 @@ def main():
         syllabus=LS.syllabus(),
         human=dict(window_min=HUMAN.window_min, jitter_pass=HUMAN.jitter_pass,
                    timing_sd=HUMAN.timing_sd, reaction=HUMAN.reaction),
-        need_config=ncfg._asdict(), ctrl_dt=C.CTRL_DT, lessons=rows,
+        need_config=ncfg._asdict(), ctrl_dt=C.CTRL_DT,
+        episode_seconds=C.MAX_EPISODE_TIME, pool=args.pool, lessons=rows,
         survey=[dict(id=c["eid"], spec=c["spec"], family=c["family"], lesson=c["lesson"],
-                     tags=list(c["tags"]),
+                     tags=list(c["tags"]), alpha_curve=c["alpha_curve"],
                      **{k2: (fin(v2) if isinstance(v2, float) else v2)
                         for k2, v2 in c["feats"].items()}) for c in cands]), indent=1))
     print(f"\nwrote {path} ({path.stat().st_size // 1024} KB, {len(rows)} lessons)")

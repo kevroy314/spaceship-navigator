@@ -67,7 +67,11 @@ class ProbeConfig(NamedTuple):
     # showed ~3 s segments were needed for a plan to arrive at all. 48 keeps each
     # segment at 12.5 s, which is also about the granularity at which a burn is a
     # recognisable manoeuvre rather than a tick.
-    segments: int = 48
+    # Measured on easy 600 s episodes: 48 segments (12.5 s) arrives 83%, 96
+    # segments (6.2 s) arrives 100% -- at the same wall time, because the cost is
+    # dominated by the 9000-tick rollouts rather than the parameter count. A plan
+    # that cannot arrive makes the necessity profile undefined, so take the 100%.
+    segments: int = 96
     samples: int = 96
     elites: int = 12
     iters: int = 7

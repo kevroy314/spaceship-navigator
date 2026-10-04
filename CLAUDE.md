@@ -46,6 +46,7 @@ variance from episode variance. See `docs/decisions/0012-evaluation-statistics.m
 |---|---|
 | `conda run` buffers all stdout until exit, so a long job looks hung | Call `/home/kevin/anaconda3/envs/spaceship/bin/python` directly, with `-u` when redirecting |
 | `pkill -f` / `pgrep -f` match the killing shell's own argv and kill the session (happened 5x) | **Never type those letters.** Use `ps -eo pid,args \| grep "scrip[t].py" \| awk '{print $1}'` |
+| The bracketed-`ps` trick still killed the session once | It fails if the *same command* also mentions the target unbracketed — e.g. killing a job and relaunching it in one line. **Kill and relaunch in separate calls**, always |
 | Two JAX processes on one GPU trigger an out-of-memory reap | One GPU job at a time; poll `nvidia-smi --query-compute-apps=pid --format=csv,noheader` before launching |
 | Python block-buffers stdout to a file | `python -u` |
 | JAX silently ran CPU-only on Pascal | `jax[cuda12]`; suspect it whenever throughput looks wrong |

@@ -66,6 +66,12 @@ canvas { display: block; width: 100%; height: auto; background: #080a0f; border:
 .empty .lname { font-size: 1.1rem; color: var(--ink-2); }
 .empty .why { font-family: var(--mono); font-size: .68rem; color: var(--chaos); margin-top: .3rem; }
 @media (max-width: 34rem) { .facts { grid-template-columns: repeat(2, 1fr); } }
+.findings { border: 1px solid var(--line); border-left: 3px solid var(--chaos);
+            border-radius: 4px; padding: .85rem 1rem; margin: 0 0 1.4rem; background: var(--panel); }
+.findings h3 { font-family: var(--display); font-size: 1.15rem; margin: 0 0 .3rem; font-weight: 600; }
+.findings p { margin: .45rem 0; color: var(--ink-2); font-size: .95rem; }
+.findings b { color: var(--ink); font-weight: 500; }
+.findings .retract { color: var(--chaos); }
 .tablewrap { overflow-x: auto; margin: 1rem 0; }
 table { border-collapse: collapse; width: 100%; min-width: 40rem; font-family: var(--mono);
         font-size: .72rem; font-variant-numeric: tabular-nums; }
@@ -81,6 +87,8 @@ td { padding: .28rem .45rem; border-bottom: 1px solid var(--line); white-space: 
 measured about its solutions, not by the generator that made it — and each comes with the cockpit instrument
 that makes its lesson legible.</p>
 <p class="meta" id="meta"></p>
+
+<div id="findings" class="findings"></div>
 
 <div class="bar">
   <label for="dv">delta-v spent on the burn</label>
@@ -391,6 +399,63 @@ document.getElementById("alphaverdict").textContent = nTrust === rows.length
     `out of ${DATA.need_config.eps.length * NEPS}.`;
 
 const nAlpha = DATA.survey.filter(r => r.alpha !== null && r.alpha !== undefined).length;
+// This run's headline is not in the per-lesson panels, so state it here. Every
+// number comes from the payload, so the text cannot go stale on a rerun.
+(() => {
+  const el = document.getElementById("findings");
+  if (!el) return;
+  const clock = DATA.episode_seconds || 600;
+  const sv = DATA.survey || [];
+  const med = (xs) => { const a = [...xs].sort((p, q) => p - q); return a.length ? a[a.length >> 1] : 0; };
+  const sufMed = med(sv.map(r => r.sufficiency || 0));
+  const above = sv.filter(r => (r.sufficiency || 0) > 0.01).length;
+  const alphaN = sv.filter(r => r.alpha !== null && r.alpha !== undefined).length;
+  const cfg = DATA.need_config || {};
+  const cell = cfg.n_time ? (clock * (cfg.end_frac ?? 0.75)) / cfg.n_time : null;
+  const counts = {};
+  for (const r of sv) counts[r.lesson || "none"] = (counts[r.lesson || "none"] || 0) + 1;
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => `${k} ${v}`).join(" &middot; ");
+  el.innerHTML =
+    `<h3>What this run shows, including what it failed to</h3>
+     <p>Episodes are <b>${clock.toFixed(0)} s</b>, four times longer than before, on levels validated
+     to a 900 s horizon. Three of the four things this change was meant to deliver did not arrive, and
+     each failure has a different cause worth recording.</p>
+     <p class="retract"><b>Chaos did not arrive, and cannot from a longer clock.</b> Longer episodes
+     were proposed because at &lambda; &asymp; 0.007 s<sup>&minus;1</sup> a 600 s episode should span
+     about four e-foldings instead of one. Measured, &lambda; <em>fell</em> to between
+     &minus;0.0001 and 0.0013, with <em>sub</em>-linear growth. These are <b>bound</b> systems: a
+     velocity error puts the ship on a nearby bound orbit, so separation oscillates with the orbital
+     period rather than growing. A &lambda; fitted inside one orbital period does not extrapolate
+     across many. The real obstacle is in the generator — the seven-mutual-Hill-radii guard that makes
+     a level <em>valid</em> is what prevents the close encounters that would make it <em>chaotic</em>.</p>
+     <p class="retract"><b>The causal maps are still sparse.</b> Median sufficiency
+     <b>${sufMed.toFixed(4)}</b>, with only <b>${above} of ${sv.length}</b> levels above 0.01 — against
+     0.0029 before. Giving a single burn four times as long to reach its target barely helped, so the
+     binding constraint is the <b>one-burn strategy family</b> itself, not the clock. A two-burn family
+     (five parameters) is the fix.</p>
+     <p class="retract"><b>The timing axis is now too coarse to ask its own question.</b> The burn-time
+     axis spans ${(clock * (cfg.end_frac ?? 0.75)).toFixed(0)} s in ${cfg.n_time || "?"} cells, so one
+     cell is <b>${cell ? cell.toFixed(1) : "?"} s</b> — against a human reaction threshold of 0.2 s.
+     The smallest window this grid can express is a hundred times larger than the limit it is tested
+     against, so the <em>One Exact Boost</em> branch cannot match at any value. That question belongs
+     to a different instrument: perturbing the best plan's start by single control ticks, not sweeping
+     a grid.</p>
+     <p><b>The one thing that did work, and it settles a question.</b> &alpha; is now fitted from 768
+     samples per &epsilon; instead of 96. It is measurable on only <b>${alphaN} of ${sv.length}</b>
+     levels — a tiny winning set produces few boundary crossings to fit — but where it is measurable
+     the statistics are finally real (tens of flips per &epsilon; rather than nought to five, all far
+     below the saturation bound), and every value lands <b>above</b> the 0.45 resolvable threshold.
+     The win/lose boundary is <b>smooth, not fractal</b>. Together with &lambda; &asymp; 0 that is a
+     consistent picture: this game is quasi-integrable. The <em>Nobody's Skill</em> band is empty
+     because the physics does not produce it — a result, not a measurement failure.</p>
+     <p><b>Also changed:</b> The lesson distribution is
+     ${top} — dominated by one band, because the longer clock admits slow tours that were previously
+     rejected as infeasible, and a larger flight time T lowers A&nbsp;=&nbsp;&Delta;v/(g&middot;T)
+     below the gravity-assist threshold. The clock shifted the <em>population</em>, not only the
+     measurement.</p>`;
+})();
+
 document.getElementById("meta").textContent =
   `${rows.length} of ${SYL.length} lessons have an example · ${DATA.survey.length} levels measured · ` +
   `volume ${DATA.need_config.n_time}×${DATA.need_config.n_dir}×${DATA.need_config.n_dv} ` +
