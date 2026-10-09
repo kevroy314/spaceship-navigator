@@ -67,6 +67,22 @@ neither flies them, the two-stop tours are genuinely infeasible at these fuel
 budgets and the *task* needs recalibrating — which would be the most important
 of the three answers.
 
+## Corroboration from the eval suites (added during the ppo_v4 launch)
+Rebuilding the frozen suites at the current task shape gives scripted-pilot
+success of **85 / 35 / 8 / 32 %** across easy / medium / hard / blind, against the
+design targets of ~90 / 50 / 15 / 40 % recorded in the `training-run` skill. Every
+tier is harder than intended and `hard` is at 8%.
+
+That is a second, independent route to the same conclusion. `ppo_v3` scored 21%
+on `hard` — above the reflex pilot's 8%, and plausibly above a planner that flies
+one two-stop tour in ten. So the agent was **beating both baselines** on that
+tier, which inverts the reading in
+[0003](0003-task-rebuilt-around-gravity.md) that treated 21% as falling short.
+
+Consequence for the curriculum: the tier thresholds need resetting against
+measured baselines rather than intentions, and "the agent is weak on hard tours"
+should not be asserted again without a baseline beside it.
+
 ## Evidence
 `data/curriculum/causal_v4.json`; artifact *What Each Level Forces* (v3).
 Alpha was measurable on 3 of 23 and read 0.79, 0.86, 1.02, with flip counts in
