@@ -27,6 +27,10 @@ Two things make this worth more than a diagnostic:
   *solve* for the tank that puts a level on a chosen rung (`retune`), rather than
   sampling and hoping.  That is what makes a difficulty curve constructible.
 
+The clock matters: T is clipped to the episode length, so measuring on a longer
+clock mechanically lowers A and pushes levels toward the gravity-assist band.
+Pass `episode_s` explicitly rather than inheriting the global constant.
+
 It also absorbs thrust authority, which is otherwise a separate knob.  Writing
 A = dv_total / (|g| T) — the ship's budget measured in units of the total impulse
 gravity delivers over the flight — the whole thing collapses to
@@ -80,7 +84,7 @@ class Terms(NamedTuple):
     authority: jnp.ndarray  # engine acceleration over local gravity (instantaneous)
 
 
-def terms(level: Level, task: Task) -> Terms:
+def terms(level: Level, task: Task, episode_s: float = C.MAX_EPISODE_TIME) -> Terms:
     """Closed-form model demand for a task.  No rollout, no planning."""
     bp, _ = E.snapshot_state(level, task.snapshot)
     wpos, _ = E.waypoint_states(task, bp, bp * 0.0)
@@ -102,12 +106,12 @@ def terms(level: Level, task: Task) -> Terms:
     # the flight cannot last longer than the episode, however slow the ship is:
     # a tour whose own estimate overruns the clock is infeasible, not difficult
     t_est = task.ref_scale[0]
-    T = jnp.clip(t_est, C.CTRL_DT, C.MAX_EPISODE_TIME)
+    T = jnp.clip(t_est, C.CTRL_DT, episode_s)
     dv = jnp.maximum(task.fuel * task.accel, 1e-6)
     impulse = jnp.maximum(g_bar * T, 1e-9)
     A = dv / impulse
     return Terms(eta=eta_bar, g=g_bar, T=T, dv=dv, D=eta_bar / A, A=A, impulse=impulse,
-                 feasible=t_est < 0.85 * C.MAX_EPISODE_TIME,
+                 feasible=t_est < 0.85 * episode_s,
                  authority=task.accel / jnp.maximum(g_bar, 1e-9))
 
 
@@ -130,9 +134,17 @@ def rung(D):
     return int(sum(1 for r in RUNGS if float(D) > r))
 
 
-def survey(level: Level, task: Task):
-    """Terms as plain floats, for logging and reports."""
-    t = jax.tree.map(float, terms(level, task))
+def survey(level: Level, task: Task, episode_s: float = C.MAX_EPISODE_TIME):
+    """Terms as plain floats, for logging and reports.
+
+    `episode_s` is the clock the *measurement* runs on, which need not be the
+    global `MAX_EPISODE_TIME`: a 600 s game clock admits slow tours that a 150 s
+    measurement would reject as infeasible, and a larger flight time T lowers
+    A = dv/(g*T) below the gravity-assist threshold for most of them -- which is
+    how the lesson taxonomy collapsed into one band
+    (docs/decisions/0019-revert-the-clock-for-measurement.md).
+    """
+    t = jax.tree.map(float, terms(level, task, episode_s))
     return dict(D=t.D, eta=t.eta, g=t.g, T=t.T, dv=t.dv, A=t.A, impulse=t.impulse,
                 feasible=bool(t.feasible), authority=t.authority, rung=rung(t.D),
                 rung_name=RUNG_NAMES[min(rung(t.D), len(RUNG_NAMES) - 1)])

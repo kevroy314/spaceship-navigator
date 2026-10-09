@@ -37,7 +37,12 @@ Four distinct failures, each with its own cause:
    `probe.delay_window`, which perturbs the best plan's start by single control
    ticks (0.07–0.8 s). Putting `window_s` in the volume scalars conflated "how
    many strategies exist" with "how tight is the timing".
-4. **The taxonomy collapsed into one band.** The longer clock admits slow tours
+4. **The taxonomy collapsed into one band.**
+   > **Wrong — corrected by [0020](0020-the-clock-was-not-the-cause.md).** A is
+   > *identical* at both clocks for all eight specs; T sits below both clips. The
+   > cause is the candidate mix: four of seven sources were low-thrust specs
+   > where A < 1 occurs 45–80% of the time.
+ The longer clock admits slow tours
    that `feasible` previously rejected, and a larger flight time T lowers
    A = dv/(g*T): median A is now 0.30, with 16 of 24 below 1, which is the
    `gravity-assist` signature. The clock shifted the candidate *population*, not

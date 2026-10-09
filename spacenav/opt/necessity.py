@@ -178,6 +178,66 @@ def one_burn_actions(task: Task, t_start: int, heading, dv_frac, ticks: int):
                       jnp.where(burning, 1.0, 0.0)], axis=-1)
 
 
+def two_burn_actions(task: Task, t1, h1, dv1, t2, h2, dv2, ticks: int):
+    """Coast, turn, burn, coast, turn again, burn again, coast.
+
+    The second heading is reachable analytically because the ship is already
+    holding `h1` when the first burn ends, so the turn between burns is a known
+    arc.  Turning costs time but no fuel.
+    """
+    t = jnp.arange(ticks)
+    rate = C.SHIP_TURN_RATE * C.CTRL_DT
+
+    e1 = (h1 - task.start_angle + jnp.pi) % (2 * jnp.pi) - jnp.pi
+    turn1 = t < jnp.minimum(jnp.abs(e1) / rate, t1)
+    n1 = dv1 * task.fuel / C.CTRL_DT
+    burn1 = (t >= t1) & (t < t1 + n1)
+
+    e2 = (h2 - h1 + jnp.pi) % (2 * jnp.pi) - jnp.pi
+    s2 = t1 + n1                                   # the ship is holding h1 from here
+    turn2 = (t >= s2) & (t < s2 + jnp.minimum(jnp.abs(e2) / rate,
+                                              jnp.maximum(t2 - s2, 0.0)))
+    n2 = dv2 * task.fuel / C.CTRL_DT
+    burn2 = (t >= t2) & (t < t2 + n2)
+
+    turn = jnp.where(turn1, jnp.sign(e1), jnp.where(turn2, jnp.sign(e2), 0.0))
+    return jnp.stack([turn, jnp.where(burn1 | burn2, 1.0, 0.0)], axis=-1)
+
+
+def two_burn_sufficiency(level: Level, task: Task, key, cfg: NeedConfig = NeedConfig(),
+                         samples: int = 4096):
+    """How often a *two*-burn plan wins, by Monte Carlo over its six parameters.
+
+    The one-burn family wins in under 0.3% of its own parameter box on most
+    levels, which left three of five causal maps effectively blank — they were
+    reporting the limits of the probe, not the shape of the level
+    (docs/decisions/0019). Two burns is six parameters, so a grid is out; a
+    sampled win fraction is the honest estimate and costs one rollout per draw.
+
+    Returned alongside the one-burn fraction so the two are comparable: if the
+    gap is large, the family was the constraint.
+    """
+    lo = _bearing(level, task) - cfg.dir_span / 2
+    st = E.reset(level, task)
+
+    def one(k):
+        u = jax.random.uniform(k, (6,))
+        t1 = u[0] * 0.5 * cfg.ticks
+        dv1 = cfg.dv_lo + u[2] * (cfg.dv_hi - cfg.dv_lo) * 0.6
+        # the second burn starts after the first ends, and leaves room to arrive
+        s2 = t1 + dv1 * task.fuel / C.CTRL_DT
+        t2 = s2 + u[3] * jnp.maximum(cfg.end_frac * cfg.ticks - s2, 1.0)
+        dv2 = cfg.dv_lo + u[5] * jnp.maximum(cfg.dv_hi - dv1 - cfg.dv_lo, 0.0)
+        acts = two_burn_actions(task, t1.astype(jnp.int32), lo + u[1] * cfg.dir_span, dv1,
+                                t2.astype(jnp.int32), lo + u[4] * cfg.dir_span, dv2,
+                                cfg.ticks)
+        final, *_ = fly_from(level, task, st, acts, 0)
+        return final.status == ARRIVED
+
+    wins = jax.lax.map(lambda k: one(k), jax.random.split(key, samples))
+    return jnp.mean(wins.astype(jnp.float32))
+
+
 def strategy_volume(level: Level, task: Task, cfg: NeedConfig = NeedConfig(), key=None):
     """Win fraction for single burns over (when, which way, how much delta-v).
 

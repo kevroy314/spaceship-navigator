@@ -49,6 +49,7 @@ variance from episode variance. See `docs/decisions/0012-evaluation-statistics.m
 | The bracketed-`ps` trick still killed the session once | It fails if the *same command* also mentions the target unbracketed — e.g. killing a job and relaunching it in one line. **Kill and relaunch in separate calls**, always |
 | Two JAX processes on one GPU trigger an out-of-memory reap | One GPU job at a time; poll `nvidia-smi --query-compute-apps=pid --format=csv,noheader` before launching |
 | Python block-buffers stdout to a file | `python -u` |
+| A `python - <<'PY'` heredoc job that gets backgrounded loses stdin and dies silently, leaving a zero-byte log | Write long jobs to a file in the scratchpad and run the file. Heredocs are for edits and quick checks only |
 | JAX silently ran CPU-only on Pascal | `jax[cuda12]`; suspect it whenever throughput looks wrong |
 
 ## Invariants

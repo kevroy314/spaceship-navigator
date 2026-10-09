@@ -29,3 +29,4 @@ with no evidence behind it is a preference, and should say so.
 | [0017](0017-no-pre-play.md) | No pre-play; coordination is in-band (corrects 0016) |
 | [0018](0018-chaos-needs-close-encounters.md) | Longer episodes do not produce chaos (corrects 0013) |
 | [0019](0019-revert-the-clock-for-measurement.md) | The 600 s clock hurt the atlas; fix the instruments |
+| [0020](0020-the-clock-was-not-the-cause.md) | The candidate mix, not the clock (corrects 0019) |

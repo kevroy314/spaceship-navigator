@@ -93,9 +93,15 @@ LESSONS = (
     Lesson(
         "gravity-assist", "All About Fuel",
         "Let the field accelerate you; the engine cannot afford the whole trip.",
-        "the tank holds less delta-v than gravity delivers over the flight (A < 1)",
+        "the tank holds less delta-v than gravity delivers (A < 1), and a one-body "
+        "model of that field is good enough (low eta) -- so fuel is the binding "
+        "constraint, not knowledge",
         "cut the tank further, until only an assist closes the trip",
-        lambda f: _g(f, "A", 1e9) < 1.0,
+        # The eta condition makes this mutually exclusive with `conics` on the
+        # (A, eta) plane. Without it, A < 1 pre-empted `conics` and `leading` by
+        # match order alone, so neither could appear on any fuel-tight level --
+        # which is most of them (docs/decisions/0020).
+        lambda f: _g(f, "A", 1e9) < 1.0 and _g(f, "eta", 1e9) < 0.1,
     ),
     Lesson(
         "conics", "Thinking In Conics",
