@@ -21,7 +21,7 @@ def feat(**kw):
     """
     base = dict(coast_ok=False, alpha=A_OK, replanned=False, open_loop=True,
                 sufficiency=0.0, concentration=0.0, n_critical=99, window_s=1e9,
-                A=1e9, D=0.0, leading=0.0, moving_frac=0.0, mdl=99)
+                A=1e9, D=0.0, eta=0.0, leading=0.0, moving_frac=0.0, mdl=99)
     base.update(kw)
     return base
 
@@ -56,12 +56,31 @@ def test_conics_on_demand():
     assert L.classify(feat(D=0.05)) is None
 
 
-def test_gravity_assist_beats_conics():
-    """A < 1 means the engine cannot pay for the trip at all, which is the more
-    specific statement, so it is matched first."""
-    f = feat(A=0.5, D=0.4)
-    assert L.classify(f) == "gravity-assist"
-    assert set(L.tags(f)) == {"gravity-assist", "conics"}
+def test_fuel_and_model_are_separated_by_eta():
+    """`gravity-assist` and `conics` are mutually exclusive, decided by eta.
+
+    They used to be decided by match order: A < 1 came first, so any fuel-tight
+    level was `gravity-assist` and `conics` could never appear on one -- which is
+    most levels (docs/decisions/0020). Now the question is *which constraint
+    binds*: a tight tank over a field one body explains is a fuel lesson, and a
+    tight tank where the field itself is the problem is a conics lesson.
+
+    Both cases keep D = eta / A consistent, so the features describe a level that
+    could exist.
+    """
+    fuel = feat(A=0.5, eta=0.02, D=0.04)          # tight tank, simple field
+    assert L.classify(fuel) == "gravity-assist"
+    assert set(L.tags(fuel)) == {"gravity-assist"}
+
+    model = feat(A=0.5, eta=0.45, D=0.90)         # tight tank, contested field
+    assert L.classify(model) == "conics"
+    assert set(L.tags(model)) == {"conics"}
+
+
+def test_gravity_assist_needs_a_simple_field():
+    """A < 1 alone is not the signature any more; a contested field overrides it."""
+    assert L.classify(feat(A=0.5, eta=0.02, D=0.04)) == "gravity-assist"
+    assert L.classify(feat(A=0.5, eta=0.50, D=1.00)) != "gravity-assist"
 
 
 def test_rolling_with_it():
