@@ -156,7 +156,13 @@ def cem(level: Level, task: Task, state, key, cfg: ProbeConfig, ticks: int, topk
     def it(carry, k):
         mu, sigma, best, best_score = carry
         s = mu[None] + sigma[None] * jax.random.normal(k, (cfg.samples,) + shape)
-        s = s.at[0].set(mu).at[1].set(best)
+        # Always carry three explicit candidates: the current mean, the incumbent
+        # best, and *doing nothing*. Throttle is sigmoid(raw) with raw ~ N(mu, sigma),
+        # so an all-zero-throttle plan is essentially never drawn -- and on a
+        # Level-0 coast level that plan is the optimum, so the search failed on the
+        # easiest levels in the game (docs/decisions/0022).
+        s = s.at[0].set(mu).at[1].set(best).at[2].set(
+            jnp.stack([jnp.zeros(cfg.segments), jnp.full(cfg.segments, -5.0)], -1))
         sc = jax.vmap(run)(s)
         order = jnp.argsort(sc)
         elite = s[order[: cfg.elites]]

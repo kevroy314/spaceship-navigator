@@ -20,7 +20,8 @@ def feat(**kw):
     empty dict every `_g` default fires at once and the match is accidental.
     """
     base = dict(coast_ok=False, alpha=A_OK, replanned=False, open_loop=True,
-                sufficiency=0.0, concentration=0.0, n_critical=99, window_s=1e9,
+                sufficiency=0.0, sufficiency_1burn=0.0, plan_arrived=True,
+                concentration=0.0, n_critical=99, window_s=1e9,
                 A=1e9, D=0.0, eta=0.0, leading=0.0, moving_frac=0.0, mdl=99)
     base.update(kw)
     return base
@@ -162,3 +163,40 @@ def test_human_viable():
     assert L.human_viable(feat(window_s=0.0)) is True
     assert L.human_viable(dict(feat(), jitter_1tick=HUMAN.jitter_pass - 0.1)) is False
     assert L.human_viable(dict(feat(), jitter_1tick=None)) is True
+
+
+# --- the solvability gate -------------------------------------------------
+
+
+def test_unflown_levels_get_no_lesson():
+    """A level nobody has flown teaches nothing, whatever its parameters say.
+
+    Without this gate `conics` fires on D >= 0.1 alone, and 8 of 23 candidates in
+    the v3 survey were unsolvable yet labelled `conics` -- a third of that band.
+    """
+    flown = feat(D=0.9, eta=0.45, A=0.5, plan_arrived=True)
+    assert L.classify(flown) == "conics"
+
+    unflown = feat(D=0.9, eta=0.45, A=0.5, plan_arrived=False,
+                   sufficiency=0.0, sufficiency_1burn=0.0)
+    assert L.classify(unflown) is None
+    assert not L.solvable(unflown)
+
+
+def test_a_winning_burn_counts_as_flown():
+    """The plan may fail while the strategy family still contains a winner."""
+    f = feat(D=0.9, eta=0.45, A=0.5, plan_arrived=False, sufficiency=0.004)
+    assert L.solvable(f)
+    assert L.classify(f) == "conics"
+
+
+def test_free_ride_is_exempt_from_the_gate():
+    """A coast that arrives is its own proof of solvability."""
+    f = feat(coast_ok=True, plan_arrived=False, sufficiency=0.0, sufficiency_1burn=0.0)
+    assert L.classify(f) == "free-ride"
+
+
+def test_dead_heading_threshold_is_one_in_a_hundred():
+    """Calibrated to the measured distribution, not guessed (docs/decisions/0021)."""
+    assert L.classify(feat(mdl=2, sufficiency=0.02)) == "dead-heading"
+    assert L.classify(feat(mdl=2, sufficiency=0.005)) != "dead-heading"

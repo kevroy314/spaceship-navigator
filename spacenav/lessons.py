@@ -120,9 +120,14 @@ LESSONS = (
     Lesson(
         "dead-heading", "Dead Heading",
         "Point at it and burn. The simplest thing that works.",
-        "one burn wins, from a broad spread of times and directions",
+        "one burn wins from at least one per cent of the strategy box",
         "shrink the spread until the burn has to be timed",
-        lambda f: _g(f, "mdl", 99) <= 4 and _g(f, "sufficiency") > 0.04,
+        # "Broad" has to be relative to what is achievable. Measured over the v3
+        # survey, non-coast sufficiency has a median near 0.001 and a maximum of
+        # 0.044 (docs/decisions/0021: ~1% is the honest win rate, not a defect),
+        # so the old 0.04 fired on one level in 23. The rule is stated rather
+        # than tuned: at least one guess in a hundred arrives.
+        lambda f: _g(f, "mdl", 99) <= 4 and _g(f, "sufficiency") > 0.01,
     ),
 )
 
@@ -171,15 +176,38 @@ PREDICTION_FAN = dict(
           "tell you which branch you are on.")
 
 
+def solvable(features: dict):
+    """Did anything fly this level at all?
+
+    A cross-entropy plan that arrived, or any winning member of the strategy
+    family. Without this check `conics` fires on D >= 0.1 alone, so a level
+    nobody can fly gets a lesson label: 8 of 23 candidates in the v3 run were
+    unsolvable and labelled `conics`, which is a third of that band
+    (docs/decisions/0022).
+    """
+    return (bool(features.get("plan_arrived"))
+            or _g(features, "sufficiency") > 0.0
+            or _g(features, "sufficiency_1burn") > 0.0)
+
+
 def tags(features: dict):
     """Every lesson whose signature this level satisfies."""
     return tuple(ls.key for ls in LESSONS if ls.test(features))
 
 
 def classify(features: dict):
-    """The lesson a level belongs to, or None when it teaches nothing nameable."""
+    """The lesson a level belongs to, or None when it teaches nothing nameable.
+
+    A level nobody has flown teaches nothing, whatever its parameters say, so it
+    is unclassified rather than assigned. `free-ride` is exempt: it is defined by
+    a coast arriving, which is its own proof of solvability.
+    """
     t = tags(features)
-    return t[0] if t else None
+    if not t:
+        return None
+    if t[0] != "free-ride" and not solvable(features):
+        return None
+    return t[0]
 
 
 def human_viable(features: dict, human=HUMAN):

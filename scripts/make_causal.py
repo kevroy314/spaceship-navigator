@@ -190,7 +190,7 @@ def main():
             moving_frac=c["moving_frac"],
             sufficiency=suf2, sufficiency_1burn=float(vs["sufficiency"]),
             leading=float(vs["leading"]), min_dv=float(vs["min_dv"]),
-            window_s=window if arrived else 0.0,
+            window_s=window if arrived else 0.0, plan_arrived=arrived,
             concentration=float(pf["concentration"]) if arrived else None,
             n_critical=float(pf["n_critical"]) if arrived else None,
             mdl=1 if bool(vs["win_any"]) else 99,
