@@ -32,3 +32,4 @@ with no evidence behind it is a preference, and should say so.
 | [0020](0020-the-clock-was-not-the-cause.md) | The candidate mix, not the clock (corrects 0019) |
 | [0021](0021-sparsity-is-the-answer.md) | A ~1% win rate is the measurement, not a defect |
 | [0022](0022-solvability-gate.md) | A level nobody can fly gets no lesson |
+| [0023](0023-planner-fails-multi-stop.md) | The planner flies one stop, not two |

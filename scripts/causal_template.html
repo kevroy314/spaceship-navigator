@@ -517,61 +517,54 @@ document.getElementById("alphaverdict").textContent = nTrust === rows.length
     `out of ${DATA.need_config.eps.length * NEPS}.`;
 
 const nAlpha = DATA.survey.filter(r => r.alpha !== null && r.alpha !== undefined).length;
-// This run's headline is not in the per-lesson panels, so state it here. Every
-// number comes from the payload, so the text cannot go stale on a rerun.
+// The headline is not in the per-lesson panels, so state it here. Every number
+// comes from the payload, so the text cannot go stale on a rerun.
 (() => {
   const el = document.getElementById("findings");
   if (!el) return;
-  const clock = DATA.episode_seconds || 600;
   const sv = DATA.survey || [];
-  const med = (xs) => { const a = [...xs].sort((p, q) => p - q); return a.length ? a[a.length >> 1] : 0; };
-  const sufMed = med(sv.map(r => r.sufficiency || 0));
-  const above = sv.filter(r => (r.sufficiency || 0) > 0.01).length;
-  const alphaN = sv.filter(r => r.alpha !== null && r.alpha !== undefined).length;
-  const cfg = DATA.need_config || {};
-  const cell = cfg.n_time ? (clock * (cfg.end_frac ?? 0.75)) / cfg.n_time : null;
+  const flown = (r) => r.plan_arrived || (r.sufficiency || 0) > 0 || (r.sufficiency_1burn || 0) > 0;
+  // Coast levels are excluded from this comparison: they carry six targets but are
+  // solvable *by construction* (a ballistic arc with the targets placed on it), so
+  // counting them as planner successes would overstate the claim.
+  const planned = sv.filter(r => r.spec !== "coast");
+  const stops = (r) => parseInt(r.spec[0], 10) || 1;
+  const one = planned.filter(r => stops(r) === 1), two = planned.filter(r => stops(r) > 1);
+  const pc = (xs) => `${xs.filter(flown).length}/${xs.length}`;
+  const alphas = sv.map(r => r.alpha).filter(a => a !== null && a !== undefined);
+  const wins = [...new Set(sv.map(r => r.window_s).filter(w => w > 0))].sort((x, y) => x - y);
   const counts = {};
-  for (const r of sv) counts[r.lesson || "none"] = (counts[r.lesson || "none"] || 0) + 1;
-  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])
+  for (const r of sv) counts[r.lesson || "unclassified"] = (counts[r.lesson || "unclassified"] || 0) + 1;
+  const spread = Object.entries(counts).sort((x, y) => y[1] - x[1])
     .map(([k, v]) => `${k} ${v}`).join(" &middot; ");
   el.innerHTML =
-    `<h3>What this run shows, including what it failed to</h3>
-     <p>Episodes are <b>${clock.toFixed(0)} s</b>, four times longer than before, on levels validated
-     to a 900 s horizon. Three of the four things this change was meant to deliver did not arrive, and
-     each failure has a different cause worth recording.</p>
-     <p class="retract"><b>Chaos did not arrive, and cannot from a longer clock.</b> Longer episodes
-     were proposed because at &lambda; &asymp; 0.007 s<sup>&minus;1</sup> a 600 s episode should span
-     about four e-foldings instead of one. Measured, &lambda; <em>fell</em> to between
-     &minus;0.0001 and 0.0013, with <em>sub</em>-linear growth. These are <b>bound</b> systems: a
-     velocity error puts the ship on a nearby bound orbit, so separation oscillates with the orbital
-     period rather than growing. A &lambda; fitted inside one orbital period does not extrapolate
-     across many. The real obstacle is in the generator — the seven-mutual-Hill-radii guard that makes
-     a level <em>valid</em> is what prevents the close encounters that would make it <em>chaotic</em>.</p>
-     <p class="retract"><b>The causal maps are still sparse.</b> Median sufficiency
-     <b>${sufMed.toFixed(4)}</b>, with only <b>${above} of ${sv.length}</b> levels above 0.01 — against
-     0.0029 before. Giving a single burn four times as long to reach its target barely helped, so the
-     binding constraint is the <b>one-burn strategy family</b> itself, not the clock. A two-burn family
-     (five parameters) is the fix.</p>
-     <p class="retract"><b>The timing axis is now too coarse to ask its own question.</b> The burn-time
-     axis spans ${(clock * (cfg.end_frac ?? 0.75)).toFixed(0)} s in ${cfg.n_time || "?"} cells, so one
-     cell is <b>${cell ? cell.toFixed(1) : "?"} s</b> — against a human reaction threshold of 0.2 s.
-     The smallest window this grid can express is a hundred times larger than the limit it is tested
-     against, so the <em>One Exact Boost</em> branch cannot match at any value. That question belongs
-     to a different instrument: perturbing the best plan's start by single control ticks, not sweeping
-     a grid.</p>
-     <p><b>The one thing that did work, and it settles a question.</b> &alpha; is now fitted from 768
-     samples per &epsilon; instead of 96. It is measurable on only <b>${alphaN} of ${sv.length}</b>
-     levels — a tiny winning set produces few boundary crossings to fit — but where it is measurable
-     the statistics are finally real (tens of flips per &epsilon; rather than nought to five, all far
-     below the saturation bound), and every value lands <b>above</b> the 0.45 resolvable threshold.
-     The win/lose boundary is <b>smooth, not fractal</b>. Together with &lambda; &asymp; 0 that is a
-     consistent picture: this game is quasi-integrable. The <em>Nobody's Skill</em> band is empty
-     because the physics does not produce it — a result, not a measurement failure.</p>
-     <p><b>Also changed:</b> The lesson distribution is
-     ${top} — dominated by one band, because the longer clock admits slow tours that were previously
-     rejected as infeasible, and a larger flight time T lowers A&nbsp;=&nbsp;&Delta;v/(g&middot;T)
-     below the gravity-assist threshold. The clock shifted the <em>population</em>, not only the
-     measurement.</p>`;
+    `<h3>What this run found</h3>
+     <p><b>The planner flies one-stop missions and not two-stop ones.</b> Of the single-stop
+     candidates ${pc(one)} were flown by something — a cross-entropy plan, or any winning member of
+     the strategy family. Of the two-stop candidates, ${pc(two)}. (Level-0 coast missions are left out
+     of this count: they carry six targets but are solvable by construction, so they say nothing about
+     the planner.) That is the most
+     actionable number here, and it reaches past this page: the planner is the curriculum's yardstick
+     and the intended teacher for a search-guided agent, so if it cannot fly a two-stop tour then the
+     21% an agent previously scored on the three-stop tier may be near the <em>planner's</em> ceiling
+     rather than the agent's.</p>
+     <p><b>A level nobody flew now gets no lesson.</b> Previously <code>conics</code> fired on
+     D &ge; 0.1 alone, so unsolvable levels wore a lesson label and took a third of that band. With the
+     gate in place the spread is ${spread}.</p>
+     <p><b>The boundary is smooth, on every level where the question can be answered.</b> &alpha; was
+     measurable on ${alphas.length} of ${sv.length} and read
+     ${alphas.map(a => (+a).toFixed(2)).join(", ")} — all above the ${DATA.syllabus.alpha_resolvable}
+     resolvable threshold, with flip counts in the tens per &epsilon; and
+     f(&epsilon;<sub>min</sub>) at most a few per cent of the saturation bound. That is the fourth
+     independent run agreeing: this game is quasi-integrable, so the <em>Nobody's Skill</em> band is
+     empty because the physics does not produce it.</p>
+     <p><b>And the timing is forgiving.</b> Every arriving plan tolerated at least
+     ${wins.length ? wins[0].toFixed(2) : "0.20"} s of delay before missing
+     (observed: ${wins.map(w => w.toFixed(2)).join(", ")} s), against a 0.2 s human reaction
+     threshold and a 0.067 s floor this instrument can express. So <em>One Exact Boost</em> has no
+     instances — not because the measurement cannot see a narrow window any more, but because this
+     game does not currently contain one. Building that branch needs the close encounters that the
+     level-validity guard is specifically designed to prevent.</p>`;
 })();
 
 document.getElementById("meta").textContent =

@@ -13,11 +13,15 @@ Everything that shapes game feel lives here so tuning happens in one place.
 PHYS_DT = 1.0 / 60.0          # physics substep (s); one render frame at 60 fps
 SUBSTEPS = 4                  # physics substeps per control tick
 CTRL_DT = PHYS_DT * SUBSTEPS  # agent / player decision interval (15 Hz)
-# 600 s, not 150: at lambda ~ 0.007 1/s a 150 s episode spans about one e-folding,
-# which is why the chaos machinery found nothing (docs/decisions/0008, 0013). 600 s
-# spans ~4.2, and gives a single burn time to actually reach a target -- the
-# single-burn strategy family was winning in under 0.3% of its own parameter box.
-MAX_EPISODE_TIME = 600.0      # s (tours on a tight fuel budget coast a long way)
+# Back to 150 s. The 600 s experiment is recorded in docs/decisions/0013, 0018 and
+# 0021: it did not deliver chaos (bound orbits, so a perturbation oscillates
+# rather than diverging) and did not fix the sparse strategy maps (a two-burn
+# family wins 1.5x, within noise). What settles it is pool validity -- `train` and
+# `val_seen` carry 8 snapshots to 140 s and were validated to 300 s, so a 600 s
+# episode from the last epoch ends at 740 s, well past where the level was checked
+# to be well behaved. A longer game clock needs its own pool and a per-pool clock
+# (docs/decisions/0019); it is not a global constant we can simply raise.
+MAX_EPISODE_TIME = 150.0      # s (tours on a tight fuel budget coast a long way)
 MAX_EPISODE_TICKS = int(round(MAX_EPISODE_TIME / CTRL_DT))
 
 # --- padding ---------------------------------------------------------------
