@@ -216,6 +216,8 @@ def two_burn_sufficiency(level: Level, task: Task, key, cfg: NeedConfig = NeedCo
 
     Returned alongside the one-burn fraction so the two are comparable: if the
     gap is large, the family was the constraint.
+
+    `samples` is rounded down to a multiple of the internal chunk width.
     """
     lo = _bearing(level, task) - cfg.dir_span / 2
     st = E.reset(level, task)
@@ -234,7 +236,14 @@ def two_burn_sufficiency(level: Level, task: Task, key, cfg: NeedConfig = NeedCo
         final, *_ = fly_from(level, task, st, acts, 0)
         return final.status == ARRIVED
 
-    wins = jax.lax.map(lambda k: one(k), jax.random.split(key, samples))
+    # jax.lax.map is scan-based and therefore SEQUENTIAL: 4096 draws of 2250 ticks
+    # that way is 9.2M sequential steps, about an hour for one level. Chunk it so
+    # each step of the outer map carries `width` rollouts in parallel, which puts
+    # the sequential depth back at one episode per chunk.
+    width = 256
+    n = max(1, samples // width)
+    keys = jax.random.split(key, n * width).reshape(n, width, 2)
+    wins = jax.lax.map(lambda ks: jax.vmap(one)(ks), keys)
     return jnp.mean(wins.astype(jnp.float32))
 
 

@@ -50,7 +50,10 @@ variance from episode variance. See `docs/decisions/0012-evaluation-statistics.m
 | Two JAX processes on one GPU trigger an out-of-memory reap | One GPU job at a time; poll `nvidia-smi --query-compute-apps=pid --format=csv,noheader` before launching |
 | Python block-buffers stdout to a file | `python -u` |
 | A `python - <<'PY'` heredoc job that gets backgrounded loses stdin and dies silently, leaving a zero-byte log | Write long jobs to a file in the scratchpad and run the file. Heredocs are for edits and quick checks only |
-| JAX silently ran CPU-only on Pascal | `jax[cuda12]`; suspect it whenever throughput looks wrong |
+| JAX silently ran CPU-only on Pascal | `jax[cuda12]`; suspect it whenever throughput looks wrong. Check with `jax.default_backend()`, not `nvidia-smi` |
+| `nvidia-smi` is not on PATH in every shell | It lives at `/usr/lib/wsl/lib/nvidia-smi`; absence there is not absence of a GPU |
+| One big `jax.jit` around a whole measurement costs minutes of XLA | Compiling the pieces separately took 58 s where the monolith took 8 min for the same coverage. Jit the inner functions, not the orchestration |
+| `jax.lax.map` reads like a parallel map and is a **sequential** scan | 4096 rollouts of 2250 ticks that way is 9.2M sequential steps — about an hour for one level. Chunk it: `lax.map` over N chunks, `vmap` inside each |
 
 ## Invariants
 

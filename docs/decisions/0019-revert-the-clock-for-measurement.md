@@ -25,7 +25,12 @@ Four distinct failures, each with its own cause:
 
 1. **Chaos: impossible from a longer clock.** Bound orbits, so a perturbation
    oscillates rather than diverging — [0018](0018-chaos-needs-close-encounters.md).
-2. **Sparse causal maps: the one-burn family, not the clock.** Four times the
+2. **Sparse causal maps: the one-burn family, not the clock.**
+   > **Wrong — corrected by [0021](0021-sparsity-is-the-answer.md).** A two-burn
+   > family wins 0.0098 against the one-burn 0.0064: 1.5x, within noise at
+   > n=1024. A ~1% win rate is the honest answer to "what fraction of random
+   > burns arrive", not a probe defect.
+ Four times the
    flight time moved median sufficiency from 0.0029 to 0.0024, i.e. not at all,
    and six levels now win *nowhere* in their own parameter box. A two-burn family
    (five parameters) is the fix.
