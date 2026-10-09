@@ -53,6 +53,7 @@ variance from episode variance. See `docs/decisions/0012-evaluation-statistics.m
 | JAX silently ran CPU-only on Pascal | `jax[cuda12]`; suspect it whenever throughput looks wrong. Check with `jax.default_backend()`, not `nvidia-smi` |
 | `nvidia-smi` is not on PATH in every shell | It lives at `/usr/lib/wsl/lib/nvidia-smi`; absence there is not absence of a GPU |
 | One big `jax.jit` around a whole measurement costs minutes of XLA | Compiling the pieces separately took 58 s where the monolith took 8 min for the same coverage. Jit the inner functions, not the orchestration |
+| Backticks inside a double-quoted `git commit -m` are command substitution and silently delete the word | Write the message to a file and use `git commit -F`. One commit here lost "opaque" to this |
 | `jax.lax.map` reads like a parallel map and is a **sequential** scan | 4096 rollouts of 2250 ticks that way is 9.2M sequential steps — about an hour for one level. Chunk it: `lax.map` over N chunks, `vmap` inside each |
 
 ## Invariants
