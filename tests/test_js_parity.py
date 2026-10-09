@@ -45,5 +45,15 @@ def test_js_matches_jax(eid, bodies, tmp_path):
     err = np.linalg.norm(a[:n] - b[:n], axis=-1).max()
     assert err < 0.05, f"max position error {err:.4f} over {n} ticks"
     assert js["status"] == ref["status"], (js["status"], ref["status"])
-    for k in ("time", "fuel"):
-        assert js["costs"][k] == pytest.approx(ref["costs"][k], rel=1e-3, abs=1e-3)
+    # Fuel is bounded by the tank, so it stays tight. Termination *time* is not:
+    # the two sims run in float64 (JS) and float32 (JAX), and that difference is
+    # amplified by the dynamics, so they stop a few ticks apart on a long flight.
+    # Measured on val_seen-900-5-t (304 s, ends `lost`): position error grows
+    # smoothly 0.0013 -> 0.041 -> 9.74 u with no step change, largest single-tick
+    # jump 0.0087 u, and the two terminate 5 ticks apart. That is drift, not a
+    # port bug -- a genuine port bug diverges *early*, which the position check
+    # above catches at 0.05 u, or changes the outcome, which the status check
+    # catches. So allow a second of terminal slack and keep the strict checks
+    # where they mean something.
+    assert js["costs"]["fuel"] == pytest.approx(ref["costs"]["fuel"], rel=1e-3, abs=1e-3)
+    assert js["costs"]["time"] == pytest.approx(ref["costs"]["time"], abs=1.0)

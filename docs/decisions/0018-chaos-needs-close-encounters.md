@@ -53,6 +53,16 @@ levels are being generated, rarely, in the loosely-bound families. Selecting on
 measured p90 divergence is a cheaper route to a chaotic subset than changing the
 generator.
 
+## Scope of the lambda measurement (added 2026-10-09)
+These numbers are for a **coasting ship in a bound orbit**, which is what the
+probe rolls. A *thrusting* flight that escapes diverges far faster: a JS/JAX
+parity diagnostic on `val_seen-900-5-t` -- a 304 s pilot flight ending `lost` --
+shows float32-vs-float64 differences amplifying at about **0.036 1/s**, five
+times the coasting figure, with the two implementations terminating 5 ticks
+apart. So lambda here is trajectory-dependent and 0.007 1/s should not be quoted
+as "the game's lambda"; it is the bound-coasting value, which is the right one
+for the claim this record makes and the wrong one for anything about escapes.
+
 ## Consequences
 - The `rolling-with-it` and `lottery` lessons will stay empty at 600 s. They were
   never blocked by episode length.
