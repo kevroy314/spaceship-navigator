@@ -16,6 +16,8 @@ Actions are (turn in [-1, 1], throttle in [0, 1]) held for one control tick
 
 from typing import NamedTuple
 
+import os
+
 import jax
 import jax.numpy as jnp
 
@@ -33,7 +35,7 @@ K = C.MAX_WAYPOINTS
 # really are the right abstractions, an agent that can see them should learn
 # faster than one that cannot.  Set False to zero the channels for that ablation,
 # which keeps the observation shape identical so the two runs stay comparable.
-INSTRUMENTS = True
+INSTRUMENTS = os.environ.get("SPACENAV_INSTRUMENTS", "1") != "0"
 
 
 class TaskConfig(NamedTuple):
