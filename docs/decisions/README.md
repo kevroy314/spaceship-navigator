@@ -37,5 +37,5 @@ with no evidence behind it is a preference, and should say so.
 | [0025](0025-two-stop-is-infeasible-not-hard.md) | Two-stop tours are infeasible at 150 s, not hard (revises 0023) |
 | [0026](0026-the-1080-cannot-buy-both.md) | Scale and steps compete for one card; 285k params is the budget, not the design |
 | [0027](0027-the-prng-collision-did-not-shift-the-distribution.md) | The PRNG collision did not shift the training distribution (p=0.997) |
-| [0028](0028-the-solvability-test-was-underpowered.md) | The pilot-solvability test failed on a 32-episode draw, not a regression (proposed) |
+| [0028](0028-the-solvability-test-was-underpowered.md) | The pilot-solvability test was underpowered (superseded by 0030) |
 | [0029](0029-the-regression-was-two-things-and-one-was-not-a-regression.md) | The v4 regression was two effects; the larger was a deliberate difficulty increase |

@@ -1,6 +1,11 @@
 # 0028 — The pilot-solvability test failed on a 32-episode draw, not on a regression
 
-**Date** 2026-10-14 · **Status** proposed
+**Date** 2026-10-14 · **Status** superseded by 0030
+
+> **Superseded by [0030](0030-the-pilot-crashes-and-the-threshold-was-the-wrong-thing.md).**
+> At n=384 the rate is 0.633 with CI [0.585, 0.681], so the threshold is wrong
+> rather than the draw unlucky, and the dominant failure is collision (21.6%),
+> not fuel. The power argument below stands; the mechanism does not.
 
 ## Context
 `tests/test_levels.py::test_tasks_are_solvable_by_pilot` fails on `main` at

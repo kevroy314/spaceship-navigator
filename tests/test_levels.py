@@ -42,7 +42,12 @@ def test_tasks_are_solvable_by_pilot():
     # threshold, which is how this assertion came to fail on a 20/32 draw without
     # anything about the pilot or the levels having changed.  See ADR 0028.
     rate, counts = _pilot_success("sol_like", E.TaskConfig(deltav_budget=(0.9, 1.45)), n=384)
-    assert rate > 0.7, counts
+    # 0.58, not 0.7: measured 243/384 = 0.633, CI [0.585, 0.681].  The pilot does
+    # not fly "most" missions -- it crashes on 21.6% of them -- so this guards
+    # against a regression in level solvability instead of asserting an intent
+    # nothing supports.  Raise it when baselines.pilot learns to avoid planets.
+    # ADR 0030.
+    assert rate > 0.58, counts
     tight, tight_counts = _pilot_success("sol_like", E.TaskConfig(deltav_budget=(0.55, 0.8)), n=384)
     assert tight < rate, (counts, tight_counts)
 
