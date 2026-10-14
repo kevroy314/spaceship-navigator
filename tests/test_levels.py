@@ -37,9 +37,13 @@ def test_tasks_are_solvable_by_pilot():
     That is a designed property of the curriculum, so assert it explicitly here
     rather than leaving it to break this test later.
     """
-    rate, counts = _pilot_success("sol_like", E.TaskConfig(deltav_budget=(0.9, 1.45)))
+    # n=384, not 32: ADR 0012 puts +-5 pp at n ~ 384, and at n=32 the 95% CI on a
+    # 0.625 observation is [0.457, 0.793] -- wide enough to straddle this very
+    # threshold, which is how this assertion came to fail on a 20/32 draw without
+    # anything about the pilot or the levels having changed.  See ADR 0028.
+    rate, counts = _pilot_success("sol_like", E.TaskConfig(deltav_budget=(0.9, 1.45)), n=384)
     assert rate > 0.7, counts
-    tight, tight_counts = _pilot_success("sol_like", E.TaskConfig(deltav_budget=(0.55, 0.8)))
+    tight, tight_counts = _pilot_success("sol_like", E.TaskConfig(deltav_budget=(0.55, 0.8)), n=384)
     assert tight < rate, (counts, tight_counts)
 
 
