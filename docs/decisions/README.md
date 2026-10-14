@@ -33,3 +33,7 @@ with no evidence behind it is a preference, and should say so.
 | [0021](0021-sparsity-is-the-answer.md) | A ~1% win rate is the measurement, not a defect |
 | [0022](0022-solvability-gate.md) | A level nobody can fly gets no lesson |
 | [0023](0023-planner-fails-multi-stop.md) | The planner flies one stop, not two |
+| [0024](0024-arm-b-was-void.md) | An A/B between runs of different length is void; pin the schedules |
+| [0025](0025-two-stop-is-infeasible-not-hard.md) | Two-stop tours are infeasible at 150 s, not hard (revises 0023) |
+| [0026](0026-the-1080-cannot-buy-both.md) | Scale and steps compete for one card; 285k params is the budget, not the design |
+| [0027](0027-the-prng-collision-did-not-shift-the-distribution.md) | The PRNG collision did not shift the training distribution (p=0.997) |

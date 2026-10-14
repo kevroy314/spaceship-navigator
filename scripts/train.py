@@ -50,16 +50,28 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--resume", action="store_true",
                     help="continue from state_latest.msgpack in the run directory")
+    ap.add_argument("--schedule-updates", type=int, default=0,
+                    help="write the schedules against this horizon instead of --updates, so a "
+                         "short arm sees the same curriculum/entropy/lr as a long baseline at "
+                         "the same update number.  0 = follow --updates (the default). "
+                         "Needed for any A/B against a run of a different length: see "
+                         "docs/decisions/0024-arm-b-void.md")
     for f in dataclasses.fields(PPOConfig):
         ap.add_argument(f"--{f.name.replace('_', '-')}", type=type(f.default), default=f.default)
     args = ap.parse_args()
     cfg = PPOConfig(**{f.name: getattr(args, f.name) for f in dataclasses.fields(PPOConfig)})
-    cfg = dataclasses.replace(cfg, total_updates=args.updates)   # schedules follow the real run length
+    # Schedules are written against total_updates; `frac = u / total_updates` drives the
+    # curriculum, the entropy anneal and the lr anneal.  Tying it to the real run length
+    # means two runs of different length are at different curriculum points for the same
+    # u, which silently voids any A/B between them (ADR 0024).
+    horizon = args.schedule_updates or args.updates
+    cfg = dataclasses.replace(cfg, total_updates=horizon)
 
     out = ROOT / "data" / "rl" / args.run
     out.mkdir(parents=True, exist_ok=True)
     (out / "config.json").write_text(json.dumps(dict(dataclasses.asdict(cfg), updates=args.updates,
-                                                     seed=args.seed), indent=2))
+                                                     seed=args.seed,
+                                                     schedule_updates=horizon), indent=2))
     if not SUITES_PATH.exists():
         build_suites()
 
@@ -123,7 +135,7 @@ def main():
         checkpoint(0, 0)
     t0 = time.time()
     for u in range(start + 1, args.updates + 1):
-        frac = u / args.updates
+        frac = u / horizon
         cur, ent = cfg.curriculum(frac), cfg.entropy_coef(frac)
         runner, m = update(runner, cur["p_rdv"], ent, cur["wp_max"], cur["p_order_free"],
                            cur["budget"], cur["accel"], cur["p_contested"])

@@ -2,6 +2,11 @@
 
 **Date** 2026-10-09 · **Status** accepted
 
+> **Revised by [0025](0025-two-stop-is-infeasible-not-hard.md).** The 1/10 result
+> here was read as a planner-capacity limit. 4x the search budget buys 0/12, so
+> the two-stop family is infeasible at 150 s rather than hard. The
+> miscalibration finding stands.
+
 ## Measurement
 Atlas v4, 23 candidates, 150 s clock, pool `long`. A level counts as flown if a
 cross-entropy plan arrived **or** any member of the one- or two-burn strategy
