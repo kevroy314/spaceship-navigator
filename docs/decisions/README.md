@@ -39,3 +39,4 @@ with no evidence behind it is a preference, and should say so.
 | [0027](0027-the-prng-collision-did-not-shift-the-distribution.md) | The PRNG collision did not shift the training distribution (p=0.997) |
 | [0028](0028-the-solvability-test-was-underpowered.md) | The pilot-solvability test was underpowered (superseded by 0030) |
 | [0029](0029-the-regression-was-two-things-and-one-was-not-a-regression.md) | The v4 regression was two effects; the larger was a deliberate difficulty increase |
+| [0031](0031-the-instrument-channels-cost-seven-points.md) | The instrument channels cost ~7 pp as policy inputs; two of four are redundant |

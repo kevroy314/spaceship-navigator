@@ -57,6 +57,7 @@ variance from episode variance. See `docs/decisions/0012-evaluation-statistics.m
 | One big `jax.jit` around a whole measurement costs minutes of XLA | Compiling the pieces separately took 58 s where the monolith took 8 min for the same coverage. Jit the inner functions, not the orchestration |
 | Backticks inside a double-quoted `git commit -m` are command substitution and silently delete the word | Write the message to a file and use `git commit -F`. One commit here lost "opaque" to this |
 | `jax.lax.map` reads like a parallel map and is a **sequential** scan | 4096 rollouts of 2250 ticks that way is 9.2M sequential steps — about an hour for one level. Chunk it: `lax.map` over N chunks, `vmap` inside each |
+| Flipping `SPACENAV_INSTRUMENTS` changes what an existing checkpoint *sees*, without changing the observation shape | The default is now **off** (ADR 0031). To evaluate a checkpoint trained with instruments on — `ppo_v3` aside, which never had them — set `SPACENAV_INSTRUMENTS=1`. Nothing errors if you forget; the policy just reads four zeros and looks broken |
 
 ## Invariants
 

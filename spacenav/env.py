@@ -35,7 +35,10 @@ K = C.MAX_WAYPOINTS
 # really are the right abstractions, an agent that can see them should learn
 # faster than one that cannot.  Set False to zero the channels for that ablation,
 # which keeps the observation shape identical so the two runs stay comparable.
-INSTRUMENTS = os.environ.get("SPACENAV_INSTRUMENTS", "1") != "0"
+# Default off for training: as policy inputs these four channels cost ~7 pp on
+# medium and blind (ADR 0031).  They remain a player-facing readout; set
+# SPACENAV_INSTRUMENTS=1 to put them back in the observation vector.
+INSTRUMENTS = os.environ.get("SPACENAV_INSTRUMENTS", "0") != "0"
 
 
 class TaskConfig(NamedTuple):

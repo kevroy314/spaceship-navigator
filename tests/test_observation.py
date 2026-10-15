@@ -3,7 +3,15 @@
 `env.INSTRUMENTS = False` is the ablation that makes the "these are the right
 abstractions" claim falsifiable: it must zero the four readouts and touch
 *nothing else*, because otherwise the two training runs are not comparable.
+
+The ablation won: as policy inputs the four channels cost ~7 pp on medium and
+blind (ADR 0031), so `INSTRUMENTS` now defaults to *off*.  These tests therefore
+set the flag explicitly in both directions and restore whatever the default is,
+rather than assuming it -- a test that hardcodes the restore value silently
+leaks state into every test that follows it.
 """
+
+import contextlib
 
 import jax.numpy as jnp
 import numpy as np
@@ -18,6 +26,17 @@ from helpers import body_index, hierarchy_level
 SELF_HEAD = 31          # 2 vel + 2 g + 2 + 2 + 1 + 2 tgt + 12 scalars + 4 weights + 4 panel
 WP_BLOCK = 13
 PANEL = 4               # the instrument_panel channels, last in the head block
+
+
+@contextlib.contextmanager
+def instruments(on: bool):
+    """Force the flag and put back whatever it was, default or not."""
+    was = E.INSTRUMENTS
+    E.INSTRUMENTS = on
+    try:
+        yield
+    finally:
+        E.INSTRUMENTS = was
 
 
 @pytest.fixture(scope="module")
@@ -61,7 +80,8 @@ def test_self_width_tracks_max_waypoints(setup):
 
 def test_instrument_panel_is_live_on_a_contested_level(setup):
     lvl, task, st = setup
-    panel = np.asarray(E.instrument_panel(lvl, task, st))
+    with instruments(True):
+        panel = np.asarray(E.instrument_panel(lvl, task, st))
     assert panel.shape == (PANEL,)
     # eta is positive, and below 1 at this point because the star's and the
     # giant's pulls add rather than cancel here (near a saddle eta exceeds 1 --
@@ -73,13 +93,11 @@ def test_instrument_panel_is_live_on_a_contested_level(setup):
 
 def test_instruments_off_zeroes_exactly_four_channels(setup):
     lvl, task, st = setup
-    on = {k: np.asarray(v) for k, v in E.observe(lvl, task, st).items()}
-    try:
-        E.INSTRUMENTS = False
+    with instruments(True):
+        on = {k: np.asarray(v) for k, v in E.observe(lvl, task, st).items()}
+    with instruments(False):
         off = {k: np.asarray(v) for k, v in E.observe(lvl, task, st).items()}
         panel_off = np.asarray(E.instrument_panel(lvl, task, st))
-    finally:
-        E.INSTRUMENTS = True
 
     assert np.all(panel_off == 0.0)
     # identical shape, so an ablated run stays comparable with a full one
@@ -101,11 +119,9 @@ def test_instruments_flag_does_not_change_the_dynamics(setup):
     """The panel is a readout, not a force: flipping it must not move the ship."""
     lvl, task, st = setup
     act = jnp.array([0.4, 0.7])
-    a, _, _ = E.step(lvl, task, st, act)
-    try:
-        E.INSTRUMENTS = False
+    with instruments(True):
+        a, _, _ = E.step(lvl, task, st, act)
+    with instruments(False):
         b, _, _ = E.step(lvl, task, st, act)
-    finally:
-        E.INSTRUMENTS = True
     np.testing.assert_array_equal(np.asarray(a.ship.pos), np.asarray(b.ship.pos))
     np.testing.assert_array_equal(np.asarray(a.ship.vel), np.asarray(b.ship.vel))
