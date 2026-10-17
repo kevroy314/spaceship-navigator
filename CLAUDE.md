@@ -58,6 +58,7 @@ variance from episode variance. See `docs/decisions/0012-evaluation-statistics.m
 | Backticks inside a double-quoted `git commit -m` are command substitution and silently delete the word | Write the message to a file and use `git commit -F`. One commit here lost "opaque" to this |
 | `jax.lax.map` reads like a parallel map and is a **sequential** scan | 4096 rollouts of 2250 ticks that way is 9.2M sequential steps — about an hour for one level. Chunk it: `lax.map` over N chunks, `vmap` inside each |
 | Flipping `SPACENAV_INSTRUMENTS` changes what an existing checkpoint *sees*, without changing the observation shape | The default is now **off** (ADR 0031). To evaluate a checkpoint trained with instruments on — `ppo_v3` aside, which never had them — set `SPACENAV_INSTRUMENTS=1`. Nothing errors if you forget; the policy just reads four zeros and looks broken |
+| JAX preallocates ~75% of VRAM at startup no matter how small the job, and the 1080 Ti also drives Kevin's Tunarr/Buffy TV stream | **Always** set `XLA_PYTHON_CLIENT_PREALLOCATE=false` (and a `XLA_PYTHON_CLIENT_MEM_FRACTION` cap) on any local GPU job. A 2-minute probe once held 9.8 of 11.2 GB and every nvenc `ffmpeg` died with `CUDA_ERROR_OUT_OF_MEMORY`; a peer session had to come ask for the card back |
 
 ## Invariants
 

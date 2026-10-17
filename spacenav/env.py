@@ -33,12 +33,68 @@ K = C.MAX_WAYPOINTS
 # lesson (see `spacenav.lessons.INSTRUMENTS`); an agent simply gets them as extra
 # observation channels.  That makes the whole framing falsifiable -- if these
 # really are the right abstractions, an agent that can see them should learn
-# faster than one that cannot.  Set False to zero the channels for that ablation,
-# which keeps the observation shape identical so the two runs stay comparable.
-# Default off for training: as policy inputs these four channels cost ~7 pp on
-# medium and blind (ADR 0031).  They remain a player-facing readout; set
-# SPACENAV_INSTRUMENTS=1 to put them back in the observation vector.
-INSTRUMENTS = os.environ.get("SPACENAV_INSTRUMENTS", "0") != "0"
+# faster than one that cannot.  Zeroing a channel keeps the observation shape
+# identical, so two runs stay comparable.
+# Default off for training: as policy inputs all four cost ~7 pp on medium and
+# blind (ADR 0031).  They remain a player-facing readout; `web/js/sim.js`
+# computes its own panel for display and is unaffected by this flag.
+#
+# SPACENAV_INSTRUMENTS accepts, in order of specificity:
+#   "0" / "off" / ""      all four zeroed (the default)
+#   "1" / "on" / "all"    all four live
+#   "eta,stretch"         named subset, comma-separated
+#   "1001"                a 4-bit mask in PANEL_CHANNELS order
+# A named subset is how ADR 0031's redundancy reading gets tested: `budget` and
+# `demand` are ratios of quantities `observe` already carries, while `eta` and
+# `stretch` are not.
+PANEL_CHANNELS = ("eta", "budget", "demand", "stretch")
+
+
+def _instrument_mask(spec: str):
+    """Parse SPACENAV_INSTRUMENTS into a (4,) float mask. Unknown names raise."""
+    spec = (spec or "").strip().lower()
+    if spec in ("", "0", "off", "false", "none"):
+        return (0.0, 0.0, 0.0, 0.0)
+    if spec in ("1", "on", "true", "all"):
+        return (1.0, 1.0, 1.0, 1.0)
+    if set(spec) <= {"0", "1"} and len(spec) == len(PANEL_CHANNELS):
+        return tuple(float(c) for c in spec)
+    names = [w.strip() for w in spec.split(",") if w.strip()]
+    bad = [w for w in names if w not in PANEL_CHANNELS]
+    if bad:
+        raise ValueError(f"SPACENAV_INSTRUMENTS: unknown channel(s) {bad}; "
+                         f"expected a subset of {PANEL_CHANNELS}, a 4-bit mask, or 0/1")
+    return tuple(float(c in names) for c in PANEL_CHANNELS)
+
+
+INSTRUMENT_MASK = _instrument_mask(os.environ.get("SPACENAV_INSTRUMENTS", "0"))
+# `INSTRUMENT_MASK` is the single source of truth for what the panel emits.
+# `INSTRUMENTS` is a derived convenience for code that *reads* whether any
+# channel is live -- assigning to it does nothing, because an assignment that
+# silently failed to enable a channel would mean running an ablation arm that
+# is not the arm you think it is.  Use `set_instruments()` instead.
+INSTRUMENTS = any(INSTRUMENT_MASK)
+
+
+def set_instruments(spec):
+    """Set the panel mask from a SPACENAV_INSTRUMENTS spec (or a bool).
+
+    The only supported way to change the instruments at runtime.  Returns the
+    previous spec as a mask tuple so a caller can restore it.
+    """
+    global INSTRUMENT_MASK, INSTRUMENTS
+    was = INSTRUMENT_MASK
+    if isinstance(spec, bool):
+        spec = "all" if spec else "off"
+    elif isinstance(spec, (tuple, list)):
+        if len(spec) != len(PANEL_CHANNELS):
+            raise ValueError(f"mask must have {len(PANEL_CHANNELS)} entries")
+        INSTRUMENT_MASK = tuple(float(x) for x in spec)
+        INSTRUMENTS = any(INSTRUMENT_MASK)
+        return was
+    INSTRUMENT_MASK = _instrument_mask(spec)
+    INSTRUMENTS = any(INSTRUMENT_MASK)
+    return was
 
 
 class TaskConfig(NamedTuple):
@@ -526,7 +582,7 @@ def instrument_panel(level: Level, task: Task, state: EnvState):
     stretch = jnp.sqrt(jnp.sum(2.0 * m / r ** 3))
 
     panel = jnp.array([eta, _symlog(budget), _symlog(demand), stretch * 10.0])
-    return panel if INSTRUMENTS else jnp.zeros_like(panel)
+    return panel * jnp.asarray(INSTRUMENT_MASK, panel.dtype)
 
 
 def observe(level: Level, task: Task, state: EnvState):

@@ -1,0 +1,15 @@
+# run-name              instruments        seed
+# --- ADR 0031's redundancy hypothesis: eta/stretch carry new information,
+# --- budget/demand are ratios of quantities `observe` already has.
+abl_info_s0             eta,stretch        0
+abl_redundant_s0        budget,demand      0
+abl_info_s1             eta,stretch        1
+abl_redundant_s1        budget,demand      1
+# --- ADR 0012 wants >=5 seeds on the headline all-on / all-off contrast;
+# --- seeds 0 and 1 of each already exist as ppo_v4/_s1 and ppo_v5_noinstr/_s1.
+ppo_v5_noinstr_s2       0                  2
+ppo_v4_s2               1                  2
+ppo_v5_noinstr_s3       0                  3
+ppo_v4_s3               1                  3
+ppo_v5_noinstr_s4       0                  4
+ppo_v4_s4               1                  4

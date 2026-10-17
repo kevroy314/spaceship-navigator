@@ -1,0 +1,7 @@
+# spacenav GPU environment for the cluster's RTX 3090 (razer).
+# Pinned to the versions the 1080 Ti box runs, so results are comparable.
+jax[cuda12]==0.9.2
+flax==0.12.6
+optax==0.2.8
+numpy==2.4.3
+scipy==1.17.1

@@ -29,14 +29,17 @@ PANEL = 4               # the instrument_panel channels, last in the head block
 
 
 @contextlib.contextmanager
-def instruments(on: bool):
-    """Force the flag and put back whatever it was, default or not."""
-    was = E.INSTRUMENTS
-    E.INSTRUMENTS = on
+def instruments(on):
+    """Force the flag and put back whatever it was, default or not.
+
+    `on` is a bool for all-or-nothing, or a SPACENAV_INSTRUMENTS spec string for
+    a per-channel mask.
+    """
+    was = E.set_instruments(on)
     try:
         yield
     finally:
-        E.INSTRUMENTS = was
+        E.set_instruments(was)
 
 
 @pytest.fixture(scope="module")
@@ -122,6 +125,56 @@ def test_instruments_flag_does_not_change_the_dynamics(setup):
     with instruments(True):
         a, _, _ = E.step(lvl, task, st, act)
     with instruments(False):
+        b, _, _ = E.step(lvl, task, st, act)
+    np.testing.assert_array_equal(np.asarray(a.ship.pos), np.asarray(b.ship.pos))
+    np.testing.assert_array_equal(np.asarray(a.ship.vel), np.asarray(b.ship.vel))
+
+
+def test_instrument_mask_parses_every_accepted_spec():
+    """The ablation is driven by this parser, so a typo must fail loudly."""
+    assert E.PANEL_CHANNELS == ("eta", "budget", "demand", "stretch")
+    for spec in ("0", "off", "false", "none", ""):
+        assert E._instrument_mask(spec) == (0.0, 0.0, 0.0, 0.0), spec
+    for spec in ("1", "on", "true", "all"):
+        assert E._instrument_mask(spec) == (1.0, 1.0, 1.0, 1.0), spec
+    # named subsets and the equivalent bit masks agree
+    assert E._instrument_mask("eta,stretch") == (1.0, 0.0, 0.0, 1.0)
+    assert E._instrument_mask("1001") == (1.0, 0.0, 0.0, 1.0)
+    assert E._instrument_mask("budget,demand") == (0.0, 1.0, 1.0, 0.0)
+    assert E._instrument_mask("0110") == (0.0, 1.0, 1.0, 0.0)
+    assert E._instrument_mask(" ETA , Stretch ") == (1.0, 0.0, 0.0, 1.0)
+    # an unknown name is a silent-wrong-experiment risk, so it raises
+    with pytest.raises(ValueError):
+        E._instrument_mask("eta,velocity")
+    with pytest.raises(ValueError):
+        E._instrument_mask("101")        # wrong width is not a mask, so a name
+
+
+def test_a_partial_mask_zeroes_only_the_named_channels(setup):
+    """ADR 0031's arms: eta+stretch live, budget+demand zeroed, and back."""
+    lvl, task, st = setup
+    with instruments("all"):
+        full = np.asarray(E.instrument_panel(lvl, task, st))
+    with instruments("eta,stretch"):
+        info = np.asarray(E.instrument_panel(lvl, task, st))
+    with instruments("budget,demand"):
+        redundant = np.asarray(E.instrument_panel(lvl, task, st))
+
+    assert info.shape == full.shape == redundant.shape == (PANEL,)
+    np.testing.assert_array_equal(info[[0, 3]], full[[0, 3]])
+    assert np.all(info[[1, 2]] == 0.0)
+    np.testing.assert_array_equal(redundant[[1, 2]], full[[1, 2]])
+    assert np.all(redundant[[0, 3]] == 0.0)
+    # the two arms partition the panel: together they reconstruct it exactly
+    np.testing.assert_array_equal(info + redundant, full)
+
+
+def test_a_partial_mask_still_does_not_move_the_ship(setup):
+    lvl, task, st = setup
+    act = jnp.array([0.4, 0.7])
+    with instruments("all"):
+        a, _, _ = E.step(lvl, task, st, act)
+    with instruments("eta,stretch"):
         b, _, _ = E.step(lvl, task, st, act)
     np.testing.assert_array_equal(np.asarray(a.ship.pos), np.asarray(b.ship.pos))
     np.testing.assert_array_equal(np.asarray(a.ship.vel), np.asarray(b.ship.vel))
