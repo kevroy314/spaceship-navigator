@@ -31,12 +31,17 @@ nvidia-smi --query-gpu=index,utilization.gpu,memory.used,power.draw \
   --format=csv,noheader,nounits -l 2 > "$OUT/util_n$N.csv" 2>&1 &
 SMI=$!
 T0=$(date +%s)
+PIDS=""
 for i in $(seq 1 "$N"); do
   SPACENAV_INSTRUMENTS=0 "$PY" -u "$ROOT/scripts/train.py" --run "conc${N}_$i" \
       --updates "$UPDATES" --ckpt-every 100000 --log-every 20 --seed "$i" \
       > "$OUT/conc${N}_$i.log" 2>&1 &
+  PIDS="$PIDS $!"
 done
-wait
+# Wait on the TRAINING pids only.  A bare `wait` also waits for the nvidia-smi
+# sampler started above, which loops forever, so the script hung indefinitely
+# after the runs had already finished.
+for p in $PIDS; do wait "$p"; done
 T1=$(date +%s)
 kill $SMI 2>/dev/null
 WALL=$((T1-T0))
