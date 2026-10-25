@@ -35,9 +35,12 @@ K = C.MAX_WAYPOINTS
 # really are the right abstractions, an agent that can see them should learn
 # faster than one that cannot.  Zeroing a channel keeps the observation shape
 # identical, so two runs stay comparable.
-# Default off for training: as policy inputs all four cost ~7 pp on medium and
-# blind (ADR 0031).  They remain a player-facing readout; `web/js/sim.js`
-# computes its own panel for display and is unaffected by this flag.
+# Default `eta,stretch` for training: all four cost ~7 pp on medium and blind
+# (ADR 0031), and at 5 seeds per arm that cost sits entirely on `budget` and
+# `demand` -- ratios of quantities `observe` already carries -- while `eta` and
+# `stretch` are indistinguishable from feeding nothing (ADR 0033).  So the
+# policy gets the two physics channels and the player keeps all four dials;
+# `web/js/sim.js` computes its own panel for display and ignores this flag.
 #
 # SPACENAV_INSTRUMENTS accepts, in order of specificity:
 #   "0" / "off" / ""      all four zeroed (the default)
@@ -67,7 +70,7 @@ def _instrument_mask(spec: str):
     return tuple(float(c in names) for c in PANEL_CHANNELS)
 
 
-INSTRUMENT_MASK = _instrument_mask(os.environ.get("SPACENAV_INSTRUMENTS", "0"))
+INSTRUMENT_MASK = _instrument_mask(os.environ.get("SPACENAV_INSTRUMENTS", "eta,stretch"))
 # `INSTRUMENT_MASK` is the single source of truth for what the panel emits.
 # `INSTRUMENTS` is a derived convenience for code that *reads* whether any
 # channel is live -- assigning to it does nothing, because an assignment that

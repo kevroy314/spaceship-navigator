@@ -1,6 +1,12 @@
 # 0025 — Two-stop tours time out at every search budget: the hard tier is infeasible, not hard
 
-**Date** 2026-10-14 · **Status** accepted
+**Date** 2026-10-14 · **Status** superseded by 0032
+
+> **Superseded by [0032](0032-two-stop-is-flyable-and-the-clock-helps.md).**
+> At n=32 the rate at 150 s is 5/32 = 16%, not 0. Drawing 0 of 12 from a 16%
+> process has probability 0.14, and the three budgets here flew the *same* 12
+> candidates, so they were not three independent chances to notice. A longer
+> clock also helps, to 13/32 at 600 s. "Infeasible" was wrong.
 
 ## Context
 ADR 0023 recorded that the CEM planner flew 1 of 10 two-stop tours and read

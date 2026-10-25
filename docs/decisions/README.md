@@ -34,9 +34,11 @@ with no evidence behind it is a preference, and should say so.
 | [0022](0022-solvability-gate.md) | A level nobody can fly gets no lesson |
 | [0023](0023-planner-fails-multi-stop.md) | The planner flies one stop, not two |
 | [0024](0024-arm-b-was-void.md) | An A/B between runs of different length is void; pin the schedules |
-| [0025](0025-two-stop-is-infeasible-not-hard.md) | Two-stop tours are infeasible at 150 s, not hard (revises 0023) |
+| [0025](0025-two-stop-is-infeasible-not-hard.md) | Two-stop infeasible at 150 s — **wrong, superseded by 0032** |
 | [0026](0026-the-1080-cannot-buy-both.md) | Scale and steps compete for one card; 285k params is the budget, not the design |
 | [0027](0027-the-prng-collision-did-not-shift-the-distribution.md) | The PRNG collision did not shift the training distribution (p=0.997) |
 | [0028](0028-the-solvability-test-was-underpowered.md) | The pilot-solvability test was underpowered (superseded by 0030) |
 | [0029](0029-the-regression-was-two-things-and-one-was-not-a-regression.md) | The v4 regression was two effects; the larger was a deliberate difficulty increase |
 | [0031](0031-the-instrument-channels-cost-seven-points.md) | The instrument channels cost ~7 pp as policy inputs; two of four are redundant |
+| [0032](0032-two-stop-is-flyable-and-the-clock-helps.md) | Two-stop tours are flyable and the clock helps to 600 s (supersedes 0025) |
+| [0033](0033-the-cost-splits-exactly-on-the-redundancy-line.md) | eta and stretch are free; budget and demand cost the whole 7 pp |
