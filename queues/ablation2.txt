@@ -1,0 +1,8 @@
+# Lift the per-channel arms from n=2 to the n=5 of ADR 0012, matching the
+# headline arms.  Seeds 0 and 1 of each already ran in queues/ablation.txt.
+abl_info_s2             eta,stretch        2
+abl_redundant_s2        budget,demand      2
+abl_info_s3             eta,stretch        3
+abl_redundant_s3        budget,demand      3
+abl_info_s4             eta,stretch        4
+abl_redundant_s4        budget,demand      4
