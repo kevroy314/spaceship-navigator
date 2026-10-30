@@ -1,0 +1,115 @@
+% Appendix D. Fragment, \input by spacenav.tex inside \appendix.
+% Commands transcribed from the scripts' own usage lines; versions from
+% requirements-gpu.txt and the conda environment the runs were made in.
+
+\section{Reproduction}
+\label{app:repro}
+
+Everything reported in this paper is produced by scripts in the repository,
+from a checkout with the \code{spacenav} package installed and the GPU build
+of JAX, in the order below; \code{data/} is not under version control, and the
+level pools are regenerated from their seed blocks (seeds from 0 for the
+training pool, from $10^7$ for the seen-family validation pool, from
+$2 \times 10^7$ for the holdout pool, from $3 \times 10^7$ and
+$4 \times 10^7$ for the two long-horizon pools) so that the levels themselves
+are reproducible without being distributed.
+
+\begin{small}
+\begin{verbatim}
+# level pools: train, val_seen, val_holdout (data/pools/*.npz), then the
+# long-horizon pool used at a 600 s clock
+python scripts/build_pools.py --train 2000 --val 300 --holdout 400
+SPACENAV_EPISODE_S=600 python scripts/build_pools.py --only long --n 200
+
+# one training run at the 150 s clock; the frozen suites
+# (data/eval/suites.pkl) are built on first use
+SPACENAV_INSTRUMENTS=eta,stretch \
+  python scripts/train.py --run abl_info_s0 --updates 3000 --seed 0 --pool train
+SPACENAV_INSTRUMENTS=0 \
+  python scripts/train.py --run ppo_v5_noinstr --updates 3000 --seed 0
+SPACENAV_INSTRUMENTS=1 \
+  python scripts/train.py --run ppo_v4 --updates 3000 --seed 0
+SPACENAV_INSTRUMENTS=budget,demand \
+  python scripts/train.py --run abl_redundant_s0 --updates 3000 --seed 0
+
+# the 600 s clock: suites from the long_val pool (built here on first use),
+# then training on the long pool against them
+SPACENAV_EPISODE_S=600 python scripts/build_long_suites.py --clock 600
+SPACENAV_EPISODE_S=600 SPACENAV_SUITES=data/eval/suites_long.pkl \
+  python scripts/train.py --run long600_s0 --updates 3000 --seed 0 --pool long
+
+# the clock sweep (the reference optimizer at 150, 300, 600 and 900 s)
+bash scripts/clock_sweep.sh data/curriculum/clock
+
+# the ghost fleets: every checkpoint of one run on one instance
+python scripts/ghost_fleet.py --run ppo_v5_noinstr --suite medium --task 0 \
+  --rollouts 16 --out data/ghosts/medium_0.json
+
+# figures
+python scripts/paper_figures.py --which ghosts,ablation,clock,curves,bands,eta
+python scripts/fig_task.py --suite hard --task 63 --run ppo_v5_noinstr
+python scripts/fig_phase.py compute --pool data/pools/long.npz
+python scripts/fig_phase.py render
+\end{verbatim}
+\end{small}
+
+Two environment variables select the process-wide settings that the body of
+the paper varies. \code{SPACENAV\_EPISODE\_S} sets the episode clock in
+seconds (default \code{150.0}) and is read once, at import, by
+\code{spacenav/constants.py}, from which the tick count, the time-remaining
+entries of the observation and the number of snapshots a pool stores are all
+derived; a clock longer than the window a pool was validated over (300\,s for
+\code{train} and the two validation pools, 900\,s for the long-horizon pools)
+runs late-starting episodes past where the level was checked, which is why the
+long clock has its own pools and its own suites, selected with
+\code{SPACENAV\_SUITES}, and why \code{train.py} refuses to build a
+non-default suite file on its own. \code{SPACENAV\_INSTRUMENTS} selects which
+of the four instrument channels are live (Appendix~\ref{app:obs}), with the
+training default \code{eta,stretch}, and since every setting produces the same
+observation shape a checkpoint must be evaluated or replayed under the setting
+recorded in its run's \code{config.json}, as nothing will complain if it is
+not. Every evaluation reported here is the greedy policy (the most probable
+action at each tick) on the frozen suites, written by \code{train.py} to
+\code{eval.jsonl} at every fiftieth update, with the quoted success rate being
+the mean of a run's last three checkpoints; the ghost-fleet replays are the
+one place actions are sampled.
+
+The simulation, environment, optimizer and training loop are written in
+Python 3.12 against JAX 0.9.2 (the \code{jax[cuda12]} build), with the policy
+network in Flax 0.12.6 and the optimizer state in Optax 0.2.8; array handling
+and the statistics in the figure scripts use NumPy 2.4.3 and SciPy 1.17.1, and
+the figures are drawn with matplotlib 3.11.2, all as pinned in
+\code{requirements-gpu.txt} and installed in the conda environment the runs
+were made in. The browser client in \code{web/} is a direct port of the
+physics in JavaScript, and a parity test (\code{tests/test\_js\_parity.py})
+holds the two integrators to the same trajectories, which is what makes the
+replays on the companion site the flights that were scored rather than
+re-renderings of them.
+
+The twenty headline runs were made on two cards. Seeds 0 and 1 of the
+no-channel and all-four arms ran on an NVIDIA GeForce GTX 1080 Ti (11\,GB,
+Pascal), at about 17,000 environment steps per second averaged over a whole
+run including its checkpoint evaluations (the training loop alone measures
+31,900 steps/s at this network width), or 6.4\,h for 3,000 updates; the
+remaining sixteen runs, and all of the long-clock runs, ran on an NVIDIA
+GeForce RTX 3090 (24\,GB) at about 111,000 steps per second for a single
+process, or 67\,min per run, a card that one such process already saturates,
+so that two concurrent runs together deliver three quarters of the throughput
+of one. Within the no-channel arm, whose seeds are split across the two cards, no
+difference attributable to the card was found. The cross-entropy optimizer, the chaos probe and the phase portraits run
+on either card, with the single-burn outcome maps of Figure~\ref{fig:phase}
+being the one computation (368,640 full-episode rollouts per level) that is
+impractical on the smaller one.
+
+The reasoning behind every design choice, rejected approach and measurement
+that changed the plan is recorded in \code{docs/decisions/}, as numbered,
+append-only decision records; a reversed decision is superseded by a new
+record rather than edited, so that the wrong turns remain legible, and each
+record cites the script, sample size or paper that forced it. The records are
+the trail from which the arguments of Sections~\ref{sec:eta}
+through~\ref{sec:results} were assembled (for instance, the equal-pull surface
+replacing the resonance-overlap scale, the solvability yardstick being judged
+on sample size, the instrument channels being split along the redundancy
+line, and the clock becoming a per-process setting), and they are the place
+to look when a number in this paper and a number in the repository disagree,
+since the record will say which measurement superseded which.

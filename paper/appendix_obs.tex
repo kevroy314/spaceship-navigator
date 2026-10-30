@@ -1,0 +1,184 @@
+% Appendix A. Fragment, \input by spacenav.tex inside \appendix.
+% Every count below was measured by running observe() on task 0 of the frozen
+% medium suite (data/eval/suites.pkl, level 0 of val_seen) at reset:
+%   self (109,)  bodies (32, 24)  body_mask (32,)  zones (12, 15)  zone_mask (12,)
+% Formulas are transcribed from spacenav/env.py observe() and instrument_panel().
+
+\section{The observation vector}
+\label{app:obs}
+
+What the policy is given at each control tick is the output of
+\code{observe()} in \code{spacenav/env.py}, a dictionary of fixed-shape arrays
+rather than a single vector, so that a level with seven bodies and one with
+thirty-two produce the same shapes and can share a batch: a self block of 109
+numbers; one token of 24 numbers for each of the 32 body slots, with a 32-entry
+mask marking which slots hold a body; and one token of 15 numbers for each of
+the 12 hazard-zone slots, with a 12-entry mask, which is 1,057 numbers in all
+(109 + 32 $\times$ 24 + 12 $\times$ 15, as measured by running \code{observe()}
+on a task from the frozen medium suite). Everything is expressed in the craft's
+own frame, i.e. positions and velocities are taken relative to the craft and
+rotated so that its nose lies along $+x$, with two fixed scales, $L = 100$\,u
+for lengths and $V = 20$\,u/s for speeds, and a signed logarithmic compression
+$\mathrm{symlog}(x) = \mathrm{sign}(x)\ln(1 + |x|)$ applied wherever a quantity
+spans several orders of magnitude. Throughout the tables, $a_{\mathrm{eng}}$ is
+the task's engine acceleration, $a_{\max} = 4$\,u/s$^2$ is the fixed upper end
+of the engine range (\code{SHIP\_ACCEL}, used only as a normalizer), $R$ is the
+level radius, $T_{\max}$ is the episode clock (150\,s unless
+\code{SPACENAV\_EPISODE\_S} says otherwise, Appendix~\ref{app:repro}), and
+``the target'' is the waypoint currently being flown to, which in a fixed-order
+tour is the next unvisited one and in an order-free tour is the nearest
+unvisited one (Appendix~\ref{app:goals}).
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\begin{tabular}{p{4.3cm}p{6.6cm}r}
+\toprule
+Entry & Formula or source & Dim.\ \\
+\midrule
+\multicolumn{3}{l}{Craft and field} \\
+craft velocity & $\mathrm{rot}(v)/V$ & 2 \\
+local gravity & $\mathrm{rot}(g)/a_{\max}$, $g$ the full field at the craft & 2 \\
+\multicolumn{3}{l}{The target} \\
+relative position & $\mathrm{symlog}(\mathrm{rot}(x_t - x)/L)$ & 2 \\
+bearing & unit vector of $\mathrm{rot}(x_t - x)$ & 2 \\
+distance & $\mathrm{symlog}(\lVert x_t - x\rVert/L)$ & 1 \\
+relative velocity & $\mathrm{rot}(v_t - v)/V$ & 2 \\
+\multicolumn{3}{l}{Loadout, tour and state} \\
+fuel fraction & $\mathrm{fuel}/\mathrm{fuel}_0$, seconds of burn left over seconds carried & 1 \\
+$\Delta v$ remaining & $\mathrm{fuel}\cdot a_{\mathrm{eng}}/100$ & 1 \\
+$\Delta v$ remaining over required & $\mathrm{fuel}\cdot a_{\mathrm{eng}} / (\Delta v_{\mathrm{req}} + 10^{-3})$ & 1 \\
+$\Delta v$ required & $\mathrm{symlog}(\Delta v_{\mathrm{req}}/100)$, from \code{deltav\_estimate} over the pending legs & 1 \\
+engine & $a_{\mathrm{eng}}/a_{\max}$ & 1 \\
+health & health$/100$ & 1 \\
+time remaining & $1 - t/T_{\max}$ & 1 \\
+pending targets & number unvisited $/\,6$ & 1 \\
+order-free flag & 0 or 1 & 1 \\
+damage rate & $\mathrm{symlog}$ of the current damage rate (health/s) & 1 \\
+exposure & soft-edged membership, 0--1, of the zone the exposure objective charges for & 1 \\
+radial position & $\lVert x\rVert/R$ & 1 \\
+objective weights & time, path, fuel, exposure; sum to one & 4 \\
+instrument panel & $\eta$, $\mathrm{symlog}\,A$, $\mathrm{symlog}\,\dd$, $10\times$stretch, each times its 0/1 mask & 4 \\
+\multicolumn{3}{l}{Per waypoint slot, six slots, 13 each} \\
+relative position & $\mathrm{symlog}(\mathrm{rot}(x_k - x)/L)$ & 2 \\
+bearing & unit vector of $\mathrm{rot}(x_k - x)$ & 2 \\
+distance & $\mathrm{symlog}(\lVert x_k - x\rVert/L)$ & 1 \\
+relative velocity & $\mathrm{rot}(v_k - v)/V$ & 2 \\
+arrival radius & $r_k/L$ (always $0.12$) & 1 \\
+velocity tolerance & $\min(v^{\mathrm{tol}}_k, 50)/V$ ($0.15$ for a rendezvous, $2.5$ for a flythrough) & 1 \\
+four flags & visited; is the current target; active; anchored to a body (0/1 each) & 4 \\
+\midrule
+total & $31 + 6 \times 13$ & 109 \\
+\bottomrule
+\end{tabular}
+\caption{The self block. $x$, $v$ are the craft's position and velocity, $x_t$,
+$v_t$ the current target's, $x_k$, $v_k$ the $k$-th waypoint slot's (an
+inactive slot reports the position its sampler left in it, masked by the
+active flag), and $\mathrm{rot}$ the rotation into the craft's frame.}
+\label{tab:obs-self}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\begin{tabular}{p{4.3cm}p{6.6cm}r}
+\toprule
+Entry & Formula or source & Dim.\ \\
+\midrule
+relative position & $\mathrm{symlog}(\mathrm{rot}(x_b - x)/L)$ & 2 \\
+bearing & unit vector of $\mathrm{rot}(x_b - x)$ & 2 \\
+distance & $\mathrm{symlog}(d/L)$, $d = \lVert x_b - x\rVert$ & 1 \\
+relative velocity & $\mathrm{rot}(v_b - v)/V$ & 2 \\
+pull & $\mathrm{symlog}\big(GM_b / \max(d, r_b)^2 / a_{\mathrm{eng}}\big)$, the body's acceleration on the craft in units of the engine & 1 \\
+mass & $\ln(1 + GM_b)/10$ & 1 \\
+radius & $r_b/L$ & 1 \\
+atmosphere & thickness$/L$ (0 for none) & 1 \\
+luminosity & $\ln(1 + \mathrm{lum}_b)/10$ & 1 \\
+clearance & $(d - r_b - \text{thickness})/L$, signed & 1 \\
+carries a target & 1 if any active waypoint is anchored to this body & 1 \\
+kind & one-hot over ten kinds (none, star, rocky, giant, moon, black hole, station, asteroid, tracer, neutron star) & 10 \\
+\midrule
+total & & 24 \\
+\bottomrule
+\end{tabular}
+\caption{The body token, one per slot for 32 slots, with the mask
+\code{body\_mask} equal to the level's \code{active} flags. $x_b$, $v_b$, $GM_b$
+and $r_b$ are the body's position, velocity, gravitational parameter and
+radius. Stations and tracers are massless and have zero pull; a tracer is the
+invisible anchor of a moving zone.}
+\label{tab:obs-body}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\begin{tabular}{p{4.3cm}p{6.6cm}r}
+\toprule
+Entry & Formula or source & Dim.\ \\
+\midrule
+relative position of the center & $\mathrm{symlog}(\mathrm{rot}(x_z - x)/L)$, $x_z$ the anchor body's position (the origin for an unanchored zone) & 2 \\
+bearing & unit vector of $\mathrm{rot}(x_z - x)$ & 2 \\
+distance to the center & $\mathrm{symlog}(d_z/L)$ & 1 \\
+inner radius & $r_{\mathrm{in}}/L$ & 1 \\
+outer radius & $r_{\mathrm{out}}/L$ & 1 \\
+signed distance to the band & $\mathrm{symlog}\big(\max(r_{\mathrm{in}} - d_z,\; d_z - r_{\mathrm{out}})/L\big)$, negative inside & 1 \\
+kind & one-hot over none, debris, radiation, sensor & 4 \\
+strength & the zone's damage coefficient & 1 \\
+spin & $+1$/$-1$ if the debris circulates around the anchor, 0 if it moves with it & 1 \\
+counts as exposure & 1 if this is the zone the task's exposure objective charges for & 1 \\
+\midrule
+total & & 15 \\
+\bottomrule
+\end{tabular}
+\caption{The zone token, one per slot for 12 slots, with the mask
+\code{zone\_mask} equal to the level's \code{zone\_active} flags. A zone is an
+annulus between $r_{\mathrm{in}}$ and $r_{\mathrm{out}}$ around its anchor,
+with a soft edge of 15\% of its thickness.}
+\label{tab:obs-zone}
+\end{table}
+
+The four instrument channels occupy the last four entries of the self block
+before the waypoint slots, in the order $\eta$, $A$, $\dd$, stretch, and are
+computed by \code{instrument\_panel()} at the craft's position from the same
+quantities the body of the paper defines: $\eta$ is
+$\lVert g_{\mathrm{full}} - g_{\mathrm{dom}}\rVert / \lVert g_{\mathrm{full}}\rVert$
+with $g_{\mathrm{dom}}$ the field restricted to the single strongest attractor
+(\code{gravity\_at(topk=1)}); the authority $A$ is
+$\mathrm{fuel}\cdot a_{\mathrm{eng}} / (\lVert g_{\mathrm{full}}\rVert\,T_{\mathrm{left}})$
+with $T_{\mathrm{left}}$ the time to the clock, floored at one control tick,
+and is passed through symlog; the demand $\dd = \eta/A$ is likewise passed
+through symlog; and the stretching rate is
+$\sqrt{\sum_b 2\,GM_b / r_b^3}$ over the active bodies, i.e. the square root
+of the summed tidal gradient (a rate in 1/s, with $r_b$ floored at the body's
+radius or 1\,u), multiplied by ten so that it sits in the same range as the
+other entries. Each channel is then multiplied by a 0 or 1 taken from the
+environment variable \code{SPACENAV\_INSTRUMENTS}, which is read once when
+\code{spacenav.env} is imported and accepts, in order of specificity, \code{0}
+(or \code{off}, or the empty string) to zero all four, \code{1} (or \code{on},
+\code{all}) to pass all four, a comma-separated subset of the names
+\code{eta}, \code{budget}, \code{demand}, \code{stretch} (the names the code
+gives $\eta$, $A$, $\dd$ and the stretching rate; an unknown name raises), or a
+four-character mask of 0s and 1s in that order, with \code{eta,stretch} as the
+default (the \code{eta,stretch} arm of Table~\ref{tab:instr}; the no-channel
+arm is \code{0} and the all-four arm \code{1}). Because a zeroed channel keeps
+its slot, the observation shape, and hence the network, is identical under
+every setting, and nothing checks that a checkpoint is evaluated under the
+setting it was trained under; a policy trained with a channel live and
+evaluated with it zeroed reads a zero where it learned to expect a value, and
+the converse reads a value where it learned to expect a zero, in both cases
+without an error and with a success rate that simply looks wrong. The setting
+a run was trained with is written to its \code{config.json} under
+\code{instruments}, and \code{SPACENAV\_INSTRUMENTS} should be set to that
+string whenever the run's checkpoints are replayed or evaluated.
+
+The body and zone tokens are each passed through a two-layer embedding to a
+width of 128 and concatenated into one set of 44 tokens, which the network
+pools in two ways at once, by multi-head cross-attention (four heads) in which
+the embedded self block is the query and the tokens are keys and values, with
+the masked slots given an attention logit of $-10^9$ so that they receive no
+weight, and by an element-wise maximum over the unmasked tokens' rectified
+embeddings; the self embedding and the two pooled summaries are concatenated
+and fed to the shared policy and value trunk. Neither pooling depends on the
+number of bodies or on their order in the slots, which is what allows the same
+weights to run on every level, and it is why a level's bodies can be stored
+and presented in whatever order its generator produced them.

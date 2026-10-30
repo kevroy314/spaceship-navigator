@@ -307,10 +307,11 @@ browser client from a snapshot of about 1.5\,KB. Four physics substeps make
 one control tick, so the craft and a human player both act at 15\,Hz.
 
 A task instance is a short tour of between one and six targets, each either
-a point in free space, a station, or a point attached to a moving body, with
-an arrival radius (12\,u) and a velocity tolerance (any speed for a
-flythrough target; within 3\,u/s for a rendezvous, which is materially
-harder), in a fixed or a free order. The craft carries a tank expressed as
+a point in free space, a station, or a point carried by a moving body at a
+constant offset, with an arrival radius (12\,u) and a velocity tolerance
+(any speed for a flythrough target; within 3\,u/s of the target's own
+velocity for a rendezvous, which is materially harder and is drawn only for
+a target that moves), in a fixed or a free order. The craft carries a tank expressed as
 seconds of full-throttle burn and an engine acceleration, both drawn per
 instance from ranges chosen so that no craft can ignore gravity and fly
 straight at its target. Hazards are radiation from luminous bodies,
@@ -340,12 +341,14 @@ than training and testing on a fixed set, is the standard means of measuring
 whether a policy has learned a task or a level
 \cite{cobbe2019,cobbe2020,justesen2018}. A generated level is accepted only
 if it remains well-behaved (no collisions, no ejections, bounded energy
-drift) for 900\,s, six times a single episode, and accepted levels are
-stored as snapshots at 20\,s intervals so that an episode may begin at any
-of several epochs. Four pools are used throughout: 18,000 training levels,
-2,700 validation levels from the same families, 1,200 holdout levels from
-families never trained on, and 1,800 long-horizon levels carrying sixteen
-snapshots for experiments at extended clocks.
+drift) for a validation horizon, and accepted levels are stored as snapshots
+at 20\,s intervals so that an episode may begin at any of several epochs.
+Four pools are used throughout: 18,000 training levels, 2,700 validation
+levels from the same families, and 1,200 holdout levels from families never
+trained on, each validated to 300\,s (twice an episode) and carrying eight
+snapshots; and 1,800 long-horizon levels validated to 900\,s and carrying
+sixteen snapshots, for experiments at extended clocks
+(Section~\ref{sec:clock}).
 
 \begin{table}[t]
 \centering
@@ -362,18 +365,20 @@ Family & Regime & Why it is in the set & Median $\eta$ \\
 \code{debris\_maze}     & hierarchical & extended debris zones; the hazard, not the gravity, shapes the route & 0.0005 \\
 \code{bh\_cluster}      & intermediate & a compact massive object among lighter bodies; a steep field with a contested shell & 0.068 \\
 \code{binary\_star}     & contested & two comparable masses; no point at which one body dominates & 0.35 \\
-\code{trinary}          & contested & three comparable masses & \MEASURE{median eta, trinary} \\
+\code{trinary}          & contested & three comparable masses & 0.47$^{\dagger}$ \\
 \code{star\_cluster}    & contested & several comparable masses; contested everywhere & 0.53 \\
-\code{pulsar}           & hierarchical & a luminous body whose radiation, not its gravity, is the constraint & \MEASURE{median eta, pulsar} \\
-\code{rogue\_flyby}     & transient & one unbound body crossing the level; the dominant field changes during the episode & \MEASURE{median eta, rogue\_flyby} \\
+\code{pulsar}           & hierarchical & a luminous body whose radiation, not its gravity, is the constraint & 0.0026$^{\dagger}$ \\
+\code{rogue\_flyby}     & transient & one unbound body crossing the level; the dominant field changes during the episode & 0.061$^{\dagger}$ \\
 \bottomrule
 \end{tabular}
 \caption{The twelve level families. Median $\eta$ (the fraction of local
 gravity a one-body model discards, Section~\ref{sec:eta}) over the playable
-area of each family's levels in the long-horizon pool, computed by
-\code{scripts/paper\_figures.py}; three families are absent from that pool
-and are marked for measurement. \TODO{confirm family descriptions against
-levels/families.py}}
+area of each family's levels, computed by \code{scripts/paper\_figures.py}
+from the long-horizon pool. $^{\dagger}$The three holdout families are
+absent from that pool and were measured on the holdout pool at its first
+snapshot ($n = 30$ levels each); \code{rogue\_flyby} is transient, with the
+unbound body 1300--1600\,u out at that epoch, so its $\eta$ at later epochs
+is higher.}
 \label{tab:families}
 \end{table}
 
@@ -672,6 +677,35 @@ follow in Section~\ref{sec:results} were obtained at the 150\,s clock, and
 in progress; report what changes on each tier when it lands} will say which
 of the two the learned policy is.
 
+There is a reason the clock cannot simply be set long enough to settle the
+question, and it is worth stating because it bears on what solvability
+means. Consider a navigator that does nothing at all. The craft is a test
+particle in a bounded gravitational system, and a bounded Hamiltonian system
+is recurrent, in the sense Poincar\'e established for exactly this problem
+\cite{poincare1890}: almost every trajectory returns arbitrarily close to
+its starting state, and so, given enough time, a coasting craft will pass
+within the arrival radius of any target it can reach at all, unless an
+invariant surface of the kind that survives perturbation in a near-integrable
+system \cite{kolmogorov1954,arnold1963} happens to separate it from that
+target permanently. Thus, for a flythrough tour, the zero-action policy
+succeeds with probability approaching one as the clock lengthens, and the
+only stopping criterion that is not a choice is divergence, i.e. the craft
+leaving the system; inside it, there is always an improbable path that has
+not yet been given time to occur (in the limit of a system collapsing
+gravitationally to a point, every path is that path). A finite clock is
+therefore a definition rather than a measurement of the task, and
+solvability is relative to a time budget in the same way that
+Section~\ref{sec:eta} makes it relative to a fuel budget; the question is
+not whether 150\,s is correct but how much a given navigator's success rate
+depends on the allowance, which is answered for three navigators in this
+section and in \MEASURE{the no-op patience sweep: the cumulative fraction of
+suite tasks whose first target a coasting craft has contacted by time $t$,
+to 900\,s on the validated levels and to 9{,}000\,s on a pool validated that
+long; report whether the curve is still rising at the longest clock}. The
+same fact is what makes the exhaustive check of Section~\ref{sec:complexity}
+ill-posed even in principle: without a horizon, "has this control sequence
+failed" has no finite answer for a sequence that stays in the system.
+
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.46\textwidth]{figures/clock.pdf}
@@ -743,6 +777,9 @@ blind  & holdout    & 1--3 & 35\%     & $0.75$--$1.15\times$ & never trained & 6
 \caption{The evaluation suites. Budget is the tank as a multiple of the
 direct-flight $\Delta v$ estimate; the hard suite's budget is usually
 insufficient for a direct flight, so that gravity must do some of the work.
+Rendezvous is the probability that a target is a rendezvous given that it
+moves (a station or a target carried by a body, drawn with probability
+0.45--0.6 per target), so the unconditional share is roughly half the column.
 The blind suite's tours are order-free 30\% of the time. Pilot is the
 reference pilot's success rate on the identical instances.}
 \label{tab:suites}
@@ -1056,46 +1093,61 @@ repository's decision records were written during that process.
 
 % =====================================================================
 \appendix
-\section{The observation vector}
-\label{app:obs}
-
-\TODO{Every field of the self block (velocity, local gravity, relative
-target position and velocity, fuel fraction, remaining and required
-$\Delta v$, health, time remaining, objective weights, pending targets,
-order-free flag, damage rate, exposure, radial position), the body tokens
-(relative position and velocity, distance, contribution to local
-acceleration, mass, radius, atmosphere, luminosity, kind), the zone tokens,
-and the four instrument channels with the \code{SPACENAV\_INSTRUMENTS}
-selector. Draw from spacenav/env.py observe() lines 529--660.}
+\input{appendix_obs}
 
 \section{Theoretical notes on observation}
 \label{app:theory}
 
-\TODO{A finite speed of light: at game scale, what a light-delay of the
-order of a tick would do to the body tokens, and whether a learner could
-tell. A projected observation (body and target positions extrapolated from
-the last snapshot, as the browser client does) versus a real-time
-measurement (the true positions at the tick), and what each would mean for a
-learner: the projected observation is exactly computable because the craft
-is a test particle, which is a property most real settings lack. The formal
-home for both is the partially observable Markov decision process
-\cite{kaelbling1998}.}
+The observation of Appendix~\ref{app:obs} is exact and instantaneous: at
+every control tick the policy is handed the true position and velocity of
+every body and target as of that tick. Two departures from this are worth
+setting down, because each would change what a learner could and could not
+infer, and because the environment's construction makes one of them
+unusually clean to study.
 
-\section{Goal conditions}
-\label{app:goals}
+The first is a finite signal speed. If the craft learned of a body's state
+by light, a body at distance $r$ would be seen where it was a time $r/c$
+ago, and at game scale this is not negligible: with a signal speed chosen so
+that the far side of a 3000\,u level is one control tick away ($c \approx
+45{,}000$\,u/s, or one level-crossing per 66.7\,ms), a body at 300\,u would
+be seen one tenth of a tick late and a body across the level a full tick
+late, so that the observation would be internally inconsistent, with near
+bodies reported more recently than far ones. A learner given such an
+observation faces a problem that the present one does not pose, which is
+that the state it is handed is not the state of any single instant, and the
+correction (extrapolating each body forward by its own delay) requires the
+body's velocity, which is itself delayed. Whether a policy of the size used
+here can learn that correction implicitly, and at what cost in success, is
+an experiment the environment supports with a change to \code{observe()}
+alone, since the delayed state is available from the stored ephemeris; it
+has not been run. The formal setting for it is the partially observable
+Markov decision process \cite{kaelbling1998}, in which the delayed
+observation defines a belief over the current state.
 
-\TODO{Flythrough (12\,u radius, any speed), rendezvous (12\,u, within
-3\,u/s), station (massless, moves with its anchor), attached to a body
-(offset in the body's frame), order-free tours; how the tour's $\Delta v$
-requirement is estimated for the budget.}
+The second is the distinction between a projected observation and a
+measured one, and here the environment's design has a consequence that is
+easy to overlook. Because the craft is a test particle, the bodies' future
+is fixed by the level's initial snapshot, and a navigator that knows the
+snapshot can compute every body's position at every future tick exactly,
+which is what the browser client does when it integrates the ephemeris
+itself from 1.5\,KB of state. The observation the policy receives is
+therefore equivalent to a projection from the snapshot, and nothing in it
+is a measurement in the sense of a quantity that could have come out
+otherwise. In a real setting the two differ: a measured position carries
+sensor noise, a projected one carries model error that grows with the
+projection horizon, and a navigator must weigh one against the other. The
+present environment collapses the distinction by construction, which is a
+simplification to be aware of when reading the results, and which the
+instrument channels of Section~\ref{sec:instruments} partly reintroduce,
+since $\eta$ is exactly a measure of how wrong a one-body projection of the
+field would be. A version of the task in which the craft perturbs the bodies
+(so that the ephemeris cannot be precomputed) or in which body positions
+are observed with noise (so that projection and measurement disagree) would
+restore the distinction, and the second is cheap to add.
 
-\section{Reproduction}
-\label{app:repro}
+\input{appendix_goals}
 
-\TODO{Commands; the \code{SPACENAV\_EPISODE\_S} and
-\code{SPACENAV\_INSTRUMENTS} selectors and the warning that a checkpoint
-must be evaluated with the setting it was trained with; the decision
-records.}
+\input{appendix_repro}
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}

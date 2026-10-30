@@ -1,0 +1,10 @@
+# Does the observation-channel cost shrink at a larger embedding width?
+# Capacity account says yes; conditioning account says no.  3 seeds x 2 arms
+# at d_model 256 (ADR 0026: ~9.0 s/update on the 1080 Ti, so ~2.5 h each on
+# the 3090).  Run after queues/longclock.txt; the worker skips finished runs.
+d256_info_s0        eta,stretch        0   dmodel=256
+d256_all_s0         1                  0   dmodel=256
+d256_info_s1        eta,stretch        1   dmodel=256
+d256_all_s1         1                  1   dmodel=256
+d256_info_s2        eta,stretch        2   dmodel=256
+d256_all_s2         1                  2   dmodel=256

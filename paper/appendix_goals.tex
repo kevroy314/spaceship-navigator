@@ -1,0 +1,124 @@
+% Appendix C. Fragment, \input by spacenav.tex inside \appendix.
+% Transcribed from spacenav/env.py: _sample_waypoint, sample_tour, current_leg,
+% waypoint_states, deltav_estimate, _substep, step; spacenav/physics.py
+% hazard_terms; spacenav/constants.py.
+
+\section{Goal conditions}
+\label{app:goals}
+
+A task instance is a tour of between one and six waypoints, sampled one after
+another by \code{sample\_tour()} in \code{spacenav/env.py} so that each lies at
+least 100\,u (\code{min\_leg}) from the one before it, and each is of one of
+the three kinds in Table~\ref{tab:goal-kinds}, which differ in what the
+waypoint is attached to and therefore in how it moves. Whether a waypoint
+moves is decided first (with probability \code{p\_station}, 0.35 by default
+and set per suite), and a moving waypoint is a station when the level has a
+free one and a coin comes up heads, otherwise a point hung off a solid body; a
+waypoint that does not move is a point sampled uniformly over the playable
+disc, rejected and redrawn (up to 96 candidates) until it lies between
+\code{min\_dist} and \code{max\_dist} from the previous waypoint, inside 0.9 of
+the level radius, at least 20\,u clear of every surface and atmosphere, and at
+a point where the instantaneous damage rate is under 0.3 health/s. The
+velocity condition is drawn second and only for a moving waypoint, with
+probability \code{p\_rendezvous} (so that the rendezvous shares quoted in
+Table~\ref{tab:suites} are conditional on the waypoint moving, and a fixed
+point in free space is always a flythrough). Every waypoint has the same
+arrival radius of 12\,u (\code{TARGET\_RADIUS}), and the craft is at a waypoint
+when, at the end of a physics substep, both its distance to the waypoint's
+current position is under 12\,u and its speed relative to the waypoint's
+current velocity is under the waypoint's tolerance, which is 3\,u/s
+(\code{RENDEZVOUS\_V\_TOL}) for a rendezvous and $10^9$\,u/s, i.e. any speed,
+for a flythrough. Both conditions are evaluated against the waypoint's state
+at that substep, so a rendezvous with a station is a velocity match with the
+station's orbital motion and a rendezvous with a point hung off a giant is a
+match with the giant's.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\begin{tabular}{p{2.5cm}p{4.6cm}p{2.7cm}p{2.9cm}}
+\toprule
+Kind & Where it is & How it moves & Velocity condition \\
+\midrule
+\raggedright free-space point & \raggedright a fixed position in the level frame, sampled as above (\code{wp\_anchor} $= -1$) & \raggedright it does not; its velocity is zero & \raggedright flythrough only \tabularnewline
+\raggedright station & \raggedright the position of a station body (massless, zero radius, on its own orbit around its host) & \raggedright with the station & \raggedright flythrough or rendezvous with the station's velocity \tabularnewline
+\raggedright attached to a body & \raggedright the body's position plus a constant offset vector of length (radius + atmosphere + 35\,u) at a random angle, or, for a contested waypoint, of length $0.8$--$1.3\times$ the body's equal-pull radius (Section~\ref{sec:eta}) & \raggedright the offset translates with the body and does not rotate with it & \raggedright flythrough or rendezvous with the body's velocity \tabularnewline
+\bottomrule
+\end{tabular}
+\caption{The three waypoint kinds. Every kind has the same 12\,u arrival
+radius; black holes and tracers are never anchors, and a body that already
+carries a waypoint is not chosen again in the same tour. The figure of the
+task (Figure~\ref{fig:task}d) shows the same conditions as four cells by
+separating the velocity condition from the attachment.}
+\label{tab:goal-kinds}
+\end{table}
+
+A tour is flown in slot order unless the instance's \code{order\_free} flag is
+set (with probability \code{p\_order\_free}, zero in training until the
+curriculum raises it and 0.3 on the blind suite), and the difference between
+the two is only in which waypoint an arrival is credited to: in a fixed-order
+tour, reaching a waypoint counts only if it is the next unvisited one in slot
+order, so that passing through the third waypoint on the way to the first does
+nothing, while in an order-free tour any unvisited waypoint counts whenever its
+conditions are met. The observation's notion of the current target
+(Appendix~\ref{app:obs}) follows the same rule, being the next unvisited
+waypoint in a fixed-order tour and the nearest unvisited one in an order-free
+tour, and so does the potential used for reward shaping, which is the negative
+of the distance to the current target plus a flat allowance for each further
+waypoint still outstanding. The scoring of a completed tour is identical in
+the two cases (the same per-waypoint and completion rewards, the same weighted
+cost over time, path, fuel and exposure), so an order-free tour is neither
+easier nor harder by construction; it is different in that the navigator, and
+not the instance, chooses the sequence.
+
+The craft's loadout is drawn against the tour it has to fly. With $d_k$ the
+straight-line length of the $k$-th leg (from the start position to the first
+waypoint and then from each waypoint to the next, in slot order and ignoring
+gravity, the craft's initial velocity and any motion of the waypoints), the
+$\Delta v$ the tour is estimated to require is
+\begin{equation}
+\Delta v_{\mathrm{req}} \;=\; \sum_k
+\begin{cases}
+\sqrt{2\,a_{\mathrm{eng}}\,d_k} & \text{flythrough, i.e. accelerate across the whole leg,}\\[2pt]
+2\sqrt{a_{\mathrm{eng}}\,d_k} & \text{rendezvous, i.e. accelerate for half the leg and brake for half,}
+\end{cases}
+\end{equation}
+which \code{deltav\_estimate()} computes and which is also what the
+observation reports as the $\Delta v$ required over the legs still pending.
+The engine acceleration $a_{\mathrm{eng}}$ is drawn log-uniformly from
+$[0.6, 3]$\,u/s$^2$ (\code{SHIP\_ACCEL\_RANGE}, narrowed to $[1.5, 3]$ on the
+easy suite and $[0.8, 2]$ on the hard suite, and started generous by the
+training curriculum), the budget multiple $\beta$ is drawn uniformly from
+$[0.55, 1.35]$ (\code{DELTAV\_BUDGET\_RANGE}, narrowed per suite as
+Table~\ref{tab:suites} lists), and the tank, in seconds of full-throttle burn,
+is $\beta\,\Delta v_{\mathrm{req}} / a_{\mathrm{eng}}$ clipped to
+$[3, 60]$\,s (\code{SHIP\_FUEL\_LIMITS}), so that the tank actually carried can
+be a larger multiple of the estimate than $\beta$ on a very short tour and a
+smaller one on a very long tour. The reference scales that normalize the four
+cost terms are set from the same quantities, with the time and exposure
+references equal to $\sum_k 2\sqrt{d_k/a_{\mathrm{eng}}}$, the path reference
+equal to $\sum_k d_k$ and the fuel reference equal to half the tank, and the
+objective weights are either a single objective (with probability 0.5, drawn
+with probabilities 0.4, 0.2, 0.3 and 0.1 over time, path, fuel and exposure)
+or a Dirichlet mixture of them, with exposure available only on a level that
+has at least one zone, the zone charged for being drawn from the level's
+active zones with sensor zones favored by a factor of $e$ over the rest.
+
+An episode ends in exactly one of five ways, tested in this order at the end
+of every physics substep (60\,Hz) and reported as the status code the
+evaluation suites count: \code{crashed}, the craft's position is inside the
+radius of a solid body (a station or a tracer, having no radius, cannot be
+crashed into); \code{destroyed}, health has reached zero under the accumulated
+damage from stellar radiation, atmospheric heating, debris and radiation
+belts; \code{arrived}, every active waypoint has been visited, which is the
+only success; \code{lost}, the craft is farther than 1.35 times the level
+radius from the origin; and, tested once per control tick rather than per
+substep, \code{timeout}, the tick count has reached $T_{\max}/\Delta t$ (2250
+at the 150\,s clock) with the tour unfinished. An empty tank is not among
+them. The burn in a substep is the smaller of the commanded burn and the fuel
+left, so that once the tank is empty the throttle does nothing, the craft
+coasts under gravity alone, and the episode continues until one of the five
+endings occurs, which on an energy-efficient path is often the clock
+(Section~\ref{sec:clock}) and on a decaying one is a crash. The hazard terms
+themselves do not end an episode; they lower health, and only health reaching
+zero does.
