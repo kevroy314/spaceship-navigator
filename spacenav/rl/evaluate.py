@@ -14,7 +14,9 @@ weighted cost is lower.
 """
 
 import collections
+import os
 import pickle
+import warnings
 from pathlib import Path
 
 import jax
@@ -29,7 +31,21 @@ from spacenav.rl.network import ACTIONS
 from spacenav.types import ARRIVED, REASONS
 
 DATA = Path(__file__).resolve().parents[2] / "data"
-SUITES_PATH = DATA / "eval" / "suites.pkl"
+DEFAULT_SUITES_PATH = DATA / "eval" / "suites.pkl"
+
+
+def _suites_path():
+    """SPACENAV_SUITES picks the suite file (e.g. suites_long.pkl for a 600 s clock).
+    A relative path is taken against the repo root, like every other data path here,
+    so the queue scripts and a shell at the root agree."""
+    p = os.environ.get("SPACENAV_SUITES")
+    if not p:
+        return DEFAULT_SUITES_PATH
+    p = Path(p)
+    return p if p.is_absolute() else DATA.parent / p
+
+
+SUITES_PATH = _suites_path()
 
 SUITE_SPECS = {
     # one target, a roomy tank and a strong engine: the old "point and burn" job
@@ -65,10 +81,16 @@ def _pilot_rollout(lv, task):
     return E.rollout(lv, task, baselines.pilot(lv, task))
 
 
-def build_suites(seed=0):
+def build_suites(seed=0, pool=None, path=None):
+    """Build and save the four suites.  `pool` overrides every spec's pool (the long
+    clock draws all four from one 900 s-validated pool); `path` defaults to
+    SUITES_PATH.  The clock the pilot yardstick was flown at is stored with each
+    suite, because the pilot's success is only a fair reference at that clock."""
+    path = Path(path) if path else SUITES_PATH
     suites = {}
     for name, spec in SUITE_SPECS.items():
-        levels, meta = load_pool(DATA / "pools" / f"{spec['pool']}.npz")
+        pool_name = pool or spec["pool"]
+        levels, meta = load_pool(DATA / "pools" / f"{pool_name}.npz")
         fams = collections.defaultdict(list)
         for i, m in enumerate(meta):
             fams[m["family"]].append(i)
@@ -107,18 +129,31 @@ def build_suites(seed=0):
                 show.append(j); seen.add(f)
         while len(show) < N_SHOWCASE:
             show.append(len(show))
-        suites[name] = dict(pool=spec["pool"], level_idx=np.asarray(idx), task=task_b,
-                            family=np.asarray(fam_of), pilot=pilot, showcase=np.asarray(show))
-        print(f"suite {name}: {len(idx)} tasks, pilot success {np.mean(pilot['status'] == ARRIVED):.0%}")
-    SUITES_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(SUITES_PATH, "wb") as f:
+        suites[name] = dict(pool=pool_name, level_idx=np.asarray(idx), task=task_b,
+                            family=np.asarray(fam_of), pilot=pilot, showcase=np.asarray(show),
+                            clock_s=float(C.MAX_EPISODE_TIME))
+        print(f"suite {name}: {len(idx)} tasks from {pool_name} at {C.MAX_EPISODE_TIME:.0f} s, "
+              f"pilot success {np.mean(pilot['status'] == ARRIVED):.0%}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "wb") as f:
         pickle.dump(suites, f)
     return suites
 
 
-def load_suites():
-    with open(SUITES_PATH, "rb") as f:
-        return pickle.load(f)
+def load_suites(path=None):
+    path = Path(path) if path else SUITES_PATH
+    with open(path, "rb") as f:
+        suites = pickle.load(f)
+    # Suites built before the clock was configurable carry no clock; they were all
+    # flown at 150 s.  A mismatch means the pilot yardstick (and the timeout
+    # outcomes) were measured under a different clock than this process uses.
+    for name, s in suites.items():
+        built = s.get("clock_s", 150.0)
+        if abs(built - C.MAX_EPISODE_TIME) > 1e-6:
+            warnings.warn(f"suite {name!r} in {path} was built at a {built:.0f} s clock; this "
+                          f"process runs {C.MAX_EPISODE_TIME:.0f} s (SPACENAV_EPISODE_S). Pilot "
+                          f"success and win rates against it are not comparable.")
+    return suites
 
 
 class Evaluator:

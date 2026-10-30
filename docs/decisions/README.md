@@ -42,3 +42,4 @@ with no evidence behind it is a preference, and should say so.
 | [0031](0031-the-instrument-channels-cost-seven-points.md) | The instrument channels cost ~7 pp as policy inputs; two of four are redundant |
 | [0032](0032-two-stop-is-flyable-and-the-clock-helps.md) | Two-stop tours are flyable and the clock helps to 600 s (supersedes 0025) |
 | [0033](0033-the-cost-splits-exactly-on-the-redundancy-line.md) | eta and stretch are free; budget and demand cost the whole 7 pp |
+| [0034](0034-the-clock-is-a-process-setting-and-it-helps-some-navigators.md) | The clock is a per-process setting; a longer one helps a navigator only if it can use the time |

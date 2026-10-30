@@ -5,10 +5,17 @@
 # has historically failed during process startup, so the spare-compute skill
 # asks for a single worker that loops.  Each line of the queue file is
 #
-#     <run-name> <SPACENAV_INSTRUMENTS spec> <seed>
+#     <run-name> <SPACENAV_INSTRUMENTS spec> <seed> [extra ...]
+#
+# Optional trailing tokens, any order:
+#     pool=NAME        train.py --pool NAME            (default train)
+#     updates=N        this run's length                (default: the queue's)
+#     VAR=VALUE        exported for this run only, e.g. SPACENAV_EPISODE_S=600
+#                      SPACENAV_SUITES=data/eval/suites_long.pkl  (key must be
+#                      upper-case to be treated as an environment variable)
 #
 # Blank lines and #-comments are skipped, and a run whose eval.jsonl already
-# reaches --updates is skipped too, so the queue is resumable after a drop.
+# reaches its update count is skipped too, so the queue is resumable after a drop.
 #
 #   scripts/run_queue.sh queues/ablation.txt 3000 /path/to/logs
 set -u
@@ -17,10 +24,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PY="${SPACENAV_PY:-$ROOT/.venv-gpu/bin/python}"
 mkdir -p "$LOGDIR"
 
-done_already () {   # run reached the target update?
+done_already () {   # run $1 reached update $2?
   local f="$ROOT/data/rl/$1/eval.jsonl"
   [ -f "$f" ] || return 1
-  "$PY" - "$f" "$UPDATES" <<'EOF' 2>/dev/null
+  "$PY" - "$f" "$2" <<'EOF' 2>/dev/null
 import json,sys
 try:
     r=[json.loads(l) for l in open(sys.argv[1]) if l.strip()]
@@ -31,14 +38,23 @@ EOF
 }
 
 echo "=== queue $QUEUE, $UPDATES updates per run, python $PY ==="
-while read -r RUN SPEC SEED; do
+while read -r RUN SPEC SEED EXTRA; do
   case "${RUN:-}" in ""|\#*) continue;; esac
-  if done_already "$RUN"; then
-    echo "=== skip $RUN (already at $UPDATES updates) ==="; continue
+  POOL=train; N=$UPDATES; ENVS=()
+  for tok in ${EXTRA:-}; do
+    case "$tok" in
+      pool=*)    POOL="${tok#pool=}";;
+      updates=*) N="${tok#updates=}";;
+      [A-Z]*=*)  ENVS+=("$tok");;
+      *) echo "=== $RUN: unknown token '$tok', skipping run ==="; continue 2;;
+    esac
+  done
+  if done_already "$RUN" "$N"; then
+    echo "=== skip $RUN (already at $N updates) ==="; continue
   fi
-  echo "=== $(date -Is) start $RUN  instruments=$SPEC seed=$SEED ==="
-  SPACENAV_INSTRUMENTS="$SPEC" "$PY" -u "$ROOT/scripts/train.py" \
-      --run "$RUN" --updates "$UPDATES" --ckpt-every 100 --seed "$SEED" \
+  echo "=== $(date -Is) start $RUN  instruments=$SPEC seed=$SEED pool=$POOL updates=$N ${ENVS[*]:-} ==="
+  env ${ENVS[@]+"${ENVS[@]}"} SPACENAV_INSTRUMENTS="$SPEC" "$PY" -u "$ROOT/scripts/train.py" \
+      --run "$RUN" --updates "$N" --ckpt-every 100 --seed "$SEED" --pool "$POOL" \
       > "$LOGDIR/$RUN.log" 2>&1
   RC=$?
   echo "=== $(date -Is) end $RUN rc=$RC ==="

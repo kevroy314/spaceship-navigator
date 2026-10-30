@@ -1,0 +1,12 @@
+# run-name        instruments   seed  extras
+# --- "The 150 s clock is arbitrary and too short": the same policy and
+# --- curriculum at a 600 s clock, on the 900 s-validated `long` pool, scored on
+# --- suites drawn from `long_val` at the same clock (scripts/build_long_suites.py).
+# --- `blind` there is NOT blind: the long pools hold only training families.
+long600_s0        eta,stretch   0     pool=long updates=3000 SPACENAV_EPISODE_S=600 SPACENAV_SUITES=data/eval/suites_long.pkl
+long600_s1        eta,stretch   1     pool=long updates=3000 SPACENAV_EPISODE_S=600 SPACENAV_SUITES=data/eval/suites_long.pkl
+long600_s2        eta,stretch   2     pool=long updates=3000 SPACENAV_EPISODE_S=600 SPACENAV_SUITES=data/eval/suites_long.pkl
+# --- "More training budget, by a lot": 10,000 updates (3.3x) at the default
+# --- clock, pool and suites, so these are directly comparable to abl_info_s*.
+budget10k_s0      eta,stretch   0     pool=train updates=10000
+budget10k_s1      eta,stretch   1     pool=train updates=10000

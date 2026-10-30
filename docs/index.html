@@ -3,258 +3,590 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>What Makes a Mission Hard? — spacenav</title>
-<meta name="description" content="A gravitational navigation environment that is cheap to simulate, fully specified, and still resists a single notion of difficulty.">
-<meta property="og:title" content="What Makes a Mission Hard?">
-<meta property="og:description" content="A gravitational navigation environment that is cheap to simulate, fully specified, and still resists a single notion of difficulty.">
+<title>N-Body Navigation</title>
+<meta name="description" content="A thrusting craft in a field made by several moving bodies, reaching targets that are themselves moving. The task, three ways to picture it, and why a level of a given difficulty is hard to design.">
+<meta property="og:title" content="N-Body Navigation">
+<meta property="og:description" content="A thrusting craft in a field made by several moving bodies, reaching targets that are themselves moving. The task, three ways to picture it, and why a level of a given difficulty is hard to design.">
 <meta property="og:image" content="figures/ghosts.png">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="style.css">
 <style>
-:root{
-  --plane:#f6f7fa; --surface:#fdfdfe; --sunk:#eef1f6;
-  --ink:#10131a; --ink-2:#4e5566; --ink-3:#79818f; --line:#dde2ea;
-  --accent:#2a78d6; --good:#0ca30c; --bad:#d03b3b;
-  --font-display:"Chivo","Helvetica Neue",Arial,sans-serif;
-  --font-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
-  --font-data:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-  color-scheme:light;
-  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --plane:#0b0d12; --surface:#14171f; --sunk:#1b1f29;
-  --ink:#eef0f5; --ink-2:#a7afc0; --ink-3:#7d8596; --line:#262c38;
-  --accent:#3987e5; --good:#0ca30c; --bad:#e66767;
-  color-scheme:dark;
-}}
-:root[data-theme="dark"]{
-  --plane:#0b0d12; --surface:#14171f; --sunk:#1b1f29;
-  --ink:#eef0f5; --ink-2:#a7afc0; --ink-3:#7d8596; --line:#262c38;
-  --accent:#3987e5; --good:#0ca30c; --bad:#e66767;
-  color-scheme:dark;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--plane);color:var(--ink);font-family:var(--font-body);
-  font-size:16px;line-height:1.6;-webkit-text-size-adjust:100%}
-.wrap{max-width:860px;margin:0 auto;padding-block:38px 72px;
-  padding-left:max(16px,env(safe-area-inset-left,0px));
-  padding-right:max(16px,env(safe-area-inset-right,0px))}
-h1{font-family:var(--font-display);font-weight:800;font-size:clamp(30px,6.4vw,46px);
-  line-height:1.03;letter-spacing:-.022em;margin:0;text-wrap:balance}
-h2{font-family:var(--font-display);font-weight:600;font-size:clamp(20px,3.6vw,25px);
-  letter-spacing:-.01em;margin:0 0 10px;text-wrap:balance}
-h3{font-family:var(--font-body);font-weight:600;font-size:15px;margin:0 0 6px}
-p{margin:0 0 14px;max-width:68ch}
-a{color:var(--accent)}
-.eyebrow{font-family:var(--font-data);font-size:11.5px;font-weight:600;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--ink-3);margin:0 0 12px}
-.lede{font-size:18.5px;color:var(--ink-2);max-width:60ch;margin-top:16px}
-.byline{font-family:var(--font-data);font-size:12.5px;color:var(--ink-3);margin-top:18px}
-section{margin-top:46px}
-.note{font-size:14.5px;color:var(--ink-2)}
-
-.cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
-.cta a{display:inline-flex;align-items:center;gap:8px;text-decoration:none;
-  font-family:var(--font-data);font-size:12.5px;font-weight:600;letter-spacing:.04em;
-  padding:10px 16px;border-radius:8px;border:1px solid var(--line);
-  background:var(--surface);color:var(--ink)}
-.cta a.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-.cta a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-
-figure{margin:0 0 10px}
-figure img{width:100%;height:auto;display:block;border-radius:9px;
-  border:1px solid var(--line);background:var(--surface)}
-figcaption{font-size:13.5px;color:var(--ink-2);margin-top:9px;max-width:68ch}
-video{width:100%;height:auto;display:block;border-radius:9px;background:#0b0d12;
-  border:1px solid var(--line)}
-
-.claims{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin-top:18px}
-.claim{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:16px}
-.claim .n{font-family:var(--font-data);font-size:11px;font-weight:600;letter-spacing:.1em;
-  color:var(--ink-3);text-transform:uppercase}
-.claim h3{margin-top:8px}
-.claim p{font-size:14px;color:var(--ink-2);margin:0}
-
-.vids{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
-.vid p{font-size:13.5px;color:var(--ink-2);margin:9px 0 0}
-
-.tbl{overflow-x:auto;margin-top:12px}
-table{border-collapse:collapse;font-family:var(--font-data);font-size:13px;
-  font-variant-numeric:tabular-nums;width:100%;min-width:430px}
-th,td{text-align:right;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-th:first-child,td:first-child{text-align:left}
-thead th{color:var(--ink-3);font-weight:600;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
-tbody tr:last-child td{border-bottom:none}
-tr.hi td{background:var(--sunk);font-weight:600}
-
-.box{background:var(--sunk);border:1px solid var(--line);border-radius:11px;padding:20px 20px 8px}
-.box ul{margin:0;padding-left:20px}
-.box li{margin-bottom:12px;font-size:14.5px;color:var(--ink-2);max-width:66ch}
-.box li b{color:var(--ink);font-weight:600}
-code{font-family:var(--font-data);font-size:.88em;background:var(--sunk);padding:2px 6px;
-  border-radius:4px;border:1px solid var(--line)}
-footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);
-  font-size:13.5px;color:var(--ink-3)}
+/* page-local layout only; tokens and components live in style.css */
+.task-wide{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+.obs-grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.quant td:first-child{font-weight:600;color:var(--ink)}
+.toc{display:flex;flex-wrap:wrap;gap:6px 18px;margin:22px 0 0;padding:0;list-style:none;font-family:var(--font-data);font-size:12px}
+.toc a{color:var(--ink-3);text-decoration:none}
+.toc a:hover{color:var(--accent)}
+.toc span{color:var(--line-3);margin-right:6px}
 </style>
 </head>
 <body>
-<div class="wrap">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#4a6ea8" stroke-width=".8" opacity=".6"/>
+    </pattern>
+    <marker id="arr" class="mk mk-l" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0.5 L8 4 L0 7.5"/>
+    </marker>
+    <marker id="arr-a" class="mk mk-a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0.5 L8 4 L0 7.5"/>
+    </marker>
+    <marker id="arr-g" class="mk mk-g" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0.5 L8 4 L0 7.5"/>
+    </marker>
+    <marker id="arr-w" class="mk mk-w" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0.5 L8 4 L0 7.5"/>
+    </marker>
+    <marker id="pin" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5">
+      <circle cx="3" cy="3" r="2.2" fill="#8fb2e6"/>
+    </marker>
+  </defs>
+</svg>
 
-  <p class="eyebrow">spacenav · research preprint</p>
-  <h1>What Makes a Mission Hard?</h1>
-  <p class="lede">A spacecraft, a fuel tank, and a target that is itself
-  orbiting. The physics is Newtonian, the simulation runs in milliseconds, and
-  the question “is this mission hard?” still has no single answer.</p>
-  <p class="byline">Kevin Horecka · preprint draft, October 2026</p>
+<div class="sheet">
 
-  <div class="cta">
-    <a class="primary" href="spacenav.pdf">Read the paper (PDF)</a>
-    <a href="ghosts/">Interactive ghost replay</a>
-    <a href="https://github.com/kevroy314/spaceship-navigator">Code &amp; data</a>
-  </div>
-
-  <section>
-    <h2>Three ways difficulty refuses to be one number</h2>
-    <div class="claims">
-      <div class="claim">
-        <div class="n">Claim 1</div>
-        <h3>It needs two axes</h3>
-        <p>A mission can be hard because a simple mental model of the field is
-        wrong, or because the window for acting is narrow. The two need
-        opposite fixes, so a single difficulty score merges exactly the cases a
-        designer must tell apart.</p>
+  <!-- ===================================================================== -->
+  <!-- title block                                                           -->
+  <!-- ===================================================================== -->
+  <header class="title-block">
+    <div class="corner">
+      <p class="eyebrow">spacenav &middot; sheet 1 of 2 &middot; companion to the paper</p>
+      <h1>N-Body Navigation</h1>
+      <!-- DRAFT COPY: replace from paper -->
+      <p class="lede">A craft with a small tank, in a field made by several bodies that
+      are all moving, trying to reach targets that are moving too. The task is cheap to
+      simulate and fully specified, and it is still hard to say which of its levels are
+      hard, which are interesting, and which can be flown at all.</p>
+      <!-- /DRAFT COPY -->
+      <p class="byline">Kevin Horecka &middot; draft, October 2026</p>
+      <div class="cta">
+        <a class="primary" href="spacenav.pdf">Read the paper (PDF)</a>
+        <a href="ghosts/">Ghost replay &rarr; sheet 2</a>
+        <a href="https://github.com/kevroy314/spaceship-navigator">Code &amp; data</a>
       </div>
-      <div class="claim">
-        <div class="n">Claim 2</div>
-        <h3>It is hard to measure</h3>
-        <p>We published a conclusion that a class of missions was infeasible.
-        It was twelve correlated samples of a process that succeeds 16% of the
-        time, where seeing zero has probability 0.13. The paper reports that as
-        a finding, not a footnote.</p>
+      <ul class="toc">
+        <li><a href="#task"><span>01</span>the task</a></li>
+        <li><a href="#framings"><span>02</span>three pictures</a></li>
+        <li><a href="#design"><span>03</span>designing a level</a></li>
+        <li><a href="#quantities"><span>04</span>quantities</a></li>
+        <li><a href="#ghosts"><span>05</span>ghosts and videos</a></li>
+        <li><a href="#results"><span>06</span>results</a></li>
+        <li><a href="#try"><span>07</span>try it</a></li>
+      </ul>
+    </div>
+
+    <aside class="spec" aria-label="Sheet data">
+      <h3>Sheet data</h3>
+      <dl>
+        <dt>space</dt><dd>2-D, G = 1, lengths in game units (u)</dd>
+        <dt>field</dt><dd>up to 32 bodies, 12 named families</dd>
+        <dt>craft</dt><dd>test particle; it feels every body, moves none</dd>
+        <dt>control</dt><dd>9 discrete actions at 15 Hz</dd>
+        <dt>episode</dt><dd>150 s = 2250 ticks</dd>
+        <dt>tour</dt><dd>1 to 6 targets, radius 12 u</dd>
+        <dt>training pool</dt><dd>18,000 levels, each checked for 900 s</dd>
+      </dl>
+      <p>Browser client reproduces the physics from a ~1.5 KB snapshot.</p>
+    </aside>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- 01 the task                                                           -->
+  <!-- ===================================================================== -->
+  <section id="task">
+    <div class="sec-head">
+      <span class="no">01</span><h2>The task</h2><span class="rule"></span>
+    </div>
+    <!-- DRAFT COPY: replace from paper -->
+    <p>Several bodies orbit one another under their own gravity; the craft feels all of
+    them and moves none, so the field's whole future is fixed the moment the level is
+    chosen. The craft has a heading, a throttle and a tank measured in seconds of burn,
+    and it is asked to pass through a short tour of targets, some of which sit in free
+    space and some of which ride on a body. One picture of a level, drawn below, holds
+    most of what there is to know about the task; the three panels after it are the
+    parts of it a learner actually touches.</p>
+    <!-- /DRAFT COPY -->
+
+    <div class="task-wide">
+      <div class="panel">
+        <span class="lbl">fig. 1 &middot; one level, one tour</span>
+        <div class="scroll-x"><svg class="schem wide" viewBox="0 0 900 470" role="img"
+             aria-label="Schematic of a level: a star with two planets and a moon, a craft with velocity and gravity vectors, three targets, a radiation belt, and the out-of-bounds circle.">
+          <!-- out-of-bounds circle and level radius -->
+          <circle cx="400" cy="235" r="228" class="lnf dash"/>
+          <circle cx="400" cy="235" r="169" class="lnf dot"/>
+          <!-- orbits -->
+          <ellipse cx="400" cy="235" rx="150" ry="98" transform="rotate(-14 400 235)" class="ln"/>
+          <ellipse cx="400" cy="235" rx="212" ry="140" transform="rotate(18 400 235)" class="ln"/>
+          <!-- radiation belt (hazard) around the star -->
+          <path d="M400 173 A62 62 0 1 1 399.9 173 M400 185 A50 50 0 1 0 400.1 185" class="haze" fill-rule="evenodd"/>
+          <!-- star -->
+          <circle cx="400" cy="235" r="22" class="star"/>
+          <circle cx="400" cy="235" r="30" class="warn dot"/>
+          <!-- planet 1 with moon and attached target -->
+          <circle cx="541" cy="166" r="30" class="ln dot"/>
+          <circle cx="541" cy="166" r="11" class="body"/>
+          <circle cx="567" cy="151" r="4" class="body"/>
+          <circle cx="567" cy="151" r="12" class="tgt"/>
+          <path d="M562 131 A30 30 0 0 1 571 164" class="good dash"/>
+          <!-- planet 2 (rocky, with thin atmosphere ring) -->
+          <circle cx="212" cy="300" r="8" class="body"/>
+          <circle cx="212" cy="300" r="13" class="ln dot"/>
+          <!-- free-space target and station target -->
+          <circle cx="690" cy="330" r="12" class="tgt"/>
+          <path d="M690 318 v-7 M690 342 v7 M678 330 h-7 M702 330 h7" class="good"/>
+          <circle cx="262" cy="118" r="12" class="tgt"/>
+          <rect x="257" y="113" width="10" height="10" class="good" transform="rotate(45 262 118)"/>
+          <path d="M262 100 A80 80 0 0 1 300 92" class="good dash"/>
+          <!-- tour order -->
+          <path d="M579 151 Q640 220 680 320" class="good dot"/>
+          <path d="M680 322 Q500 120 274 118" class="good dot" opacity=".55"/>
+          <!-- craft: hull, heading, velocity, gravity, thrust -->
+          <g transform="translate(610 352) rotate(-40)">
+            <path d="M14 0 L-8 7 L-4 0 L-8 -7 Z" class="ship"/>
+            <path d="M-9 0 h-18" class="acc dash"/>
+            <path d="M0 0 h58" class="acc" marker-end="url(#arr-a)"/>
+          </g>
+          <path d="M610 352 l34 -62" class="ln2" marker-end="url(#arr)"/>
+          <path d="M610 352 l-52 -30" class="warn" marker-end="url(#arr-w)"/>
+          <!-- pins: numbered leader lines to the margin, right-angled like a drafting sheet -->
+          <g class="lead">
+            <path d="M400 213 V60 H120" marker-start="url(#pin)"/>
+            <path d="M541 155 V40 H640" marker-start="url(#pin)"/>
+            <path d="M567 139 V82 H760" marker-start="url(#pin)"/>
+            <path d="M610 352 V440 H760" marker-start="url(#pin)"/>
+            <path d="M690 342 V400 H830" marker-start="url(#pin)"/>
+            <path d="M400 173 h-60 V140 H120" marker-start="url(#pin)"/>
+            <path d="M172 235 H60 V300 H40" marker-start="url(#pin)"/>
+            <path d="M212 308 V420 H120" marker-start="url(#pin)"/>
+          </g>
+          <!-- pin numbers -->
+          <g class="t-h" font-size="13">
+            <text x="104" y="64">1</text>
+            <text x="646" y="44">2</text>
+            <text x="766" y="86">3</text>
+            <text x="766" y="444">4</text>
+            <text x="836" y="404">5</text>
+            <text x="104" y="144">6</text>
+            <text x="24" y="304">7</text>
+            <text x="104" y="424">8</text>
+          </g>
+          <!-- a few drafted ornaments: scale bar, heading rose -->
+          <path d="M40 440 h100" class="ln2"/><path d="M40 435 v10 M140 435 v10" class="ln2"/>
+          <text x="40" y="458" class="t-m">500 u</text>
+          <g transform="translate(850 60)">
+            <circle r="18" class="ln dash"/><path d="M0 -26 V26 M-26 0 H26" class="ln"/>
+            <path d="M0 -18 L4 -8 L-4 -8 Z" class="pin"/>
+          </g>
+        </svg></div>
+        <ol class="callouts">
+          <li data-n="1"><b>Star</b><p>Dominant mass. Every body attracts every other; the field is integrated with a leapfrog scheme at 1/60 s.</p></li>
+          <li data-n="2"><b>Planet and moon</b><p>Bodies move visibly during an episode. Inside a body's radius the pull falls off linearly, so nothing is singular.</p></li>
+          <li data-n="3"><b>Attached target</b><p>A target riding on a body carries the body's motion; the dashed arc is where it will be.</p></li>
+          <li data-n="4"><b>The craft</b><p>Blue is heading, with the thrust vector; the pale arrow is velocity, the gold one local gravity. The tank is sized so gravity can never be ignored.</p></li>
+          <li data-n="5"><b>Free-space target</b><p>Arrival radius 12 u. A rendezvous target also demands a relative speed under 3 u/s.</p></li>
+          <li data-n="6"><b>Radiation belt</b><p>A hazard band. Damage accrues inside; enough of it ends the episode.</p></li>
+          <li data-n="7"><b>Level radius</b><p>Dotted. Past 1.35 times it the craft is lost and the episode ends.</p></li>
+          <li data-n="8"><b>Second planet</b><p>With a thin atmosphere ring: drag and heating for a craft that passes too close.</p></li>
+        </ol>
       </div>
-      <div class="claim">
-        <div class="n">Claim 3</div>
-        <h3>What you tell the agent matters</h3>
-        <p>Four hand-designed physical readouts <em>cost</em> the agent up to
-        ten points of success — and the whole cost sits on the two that were
-        algebraically redundant, not the two carrying new physics.</p>
+    </div>
+
+    <div class="obs-grid" style="margin-top:18px">
+      <!-- observation frame -->
+      <div class="panel">
+        <span class="lbl">fig. 2 &middot; what the craft is told</span>
+        <svg class="schem" viewBox="0 0 420 300" role="img"
+             aria-label="The ego-centric observation: the craft at the origin with its nose along +x, one token per body and per hazard zone, pooled into a policy.">
+          <path d="M20 150 H200" class="ln dash" marker-end="url(#arr)"/>
+          <path d="M110 240 V60" class="ln dash" marker-end="url(#arr)"/>
+          <text x="186" y="142" class="t-m">+x = nose</text>
+          <g transform="translate(110 150)"><path d="M14 0 L-8 7 L-4 0 L-8 -7 Z" class="ship"/></g>
+          <circle cx="60" cy="90" r="9" class="body"/>
+          <circle cx="170" cy="210" r="6" class="body"/>
+          <circle cx="40" cy="220" r="12" class="haze"/>
+          <circle cx="190" cy="80" r="8" class="tgt"/>
+          <path d="M110 150 L60 90 M110 150 L170 210 M110 150 L40 220 M110 150 L190 80" class="lnf dot"/>
+          <!-- token stack -->
+          <rect x="236" y="40" width="176" height="34" class="box-a"/>
+          <text x="244" y="54" class="t-a">ship block (fixed)</text>
+          <text x="244" y="67" class="t-m">v, g, target, fuel, t left</text>
+          <rect x="236" y="88" width="176" height="34" class="box"/>
+          <text x="244" y="102">body token &times; N</text>
+          <text x="244" y="115" class="t-m">pos, vel, pull, mass, kind</text>
+          <rect x="236" y="142" width="176" height="34" class="box"/>
+          <text x="244" y="156">zone token &times; Z</text>
+          <text x="244" y="169" class="t-m">band, kind, strength</text>
+          <rect x="236" y="196" width="176" height="30" class="box"/>
+          <text x="244" y="215" class="t-m">attention + max pool</text>
+          <path d="M324 122 V142 M324 176 V196 M324 74 V88" class="ln2" marker-end="url(#arr)"/>
+          <rect x="236" y="244" width="176" height="30" class="box-a"/>
+          <text x="244" y="263" class="t-a">policy &rarr; 1 of 9 actions</text>
+          <path d="M324 226 V244" class="ln2" marker-end="url(#arr)"/>
+          <path d="M60 90 h40 V57 H236" class="lead" marker-start="url(#pin)"/>
+          <path d="M40 220 V160 H236" class="lead" marker-start="url(#pin)"/>
+          <text x="20" y="282" class="t-m">everything relative, rotated to the nose</text>
+        </svg>
+        <!-- DRAFT COPY: replace from paper -->
+        <p>The observation is ego-centric and set-structured, so one network runs on a
+        level with any number of bodies. A fixed block carries the craft's own state and
+        the tour; each body and each hazard zone is one token, pooled by attention with
+        the craft as the query.</p>
+        <!-- /DRAFT COPY -->
+      </div>
+
+      <!-- actions -->
+      <div class="panel">
+        <span class="lbl">fig. 3 &middot; the nine actions</span>
+        <svg class="schem" viewBox="0 0 420 322" role="img"
+             aria-label="A three by three grid: turn left, none, right crossed with throttle off, gentle, full.">
+          <text x="150" y="26" class="t-m">throttle</text>
+          <text x="112" y="44" class="t-m">off</text><text x="210" y="44" class="t-m">gentle</text><text x="326" y="44" class="t-m">full</text>
+          <text x="14" y="70" class="t-m">turn</text>
+          <text x="14" y="94" class="t-m">left</text><text x="14" y="174" class="t-m">none</text><text x="14" y="254" class="t-m">right</text>
+          <g class="lnf"><path d="M70 50 H400 M70 130 H400 M70 210 H400 M70 290 H400 M70 50 V290 M180 50 V290 M290 50 V290 M400 50 V290"/></g>
+          <!-- each cell: a craft glyph, a turn arc, a plume of 0 / 1 / 2 dashes -->
+          <g class="ship" transform="translate(125 90)"><path d="M12 0 L-7 6 L-3 0 L-7 -6 Z"/><path d="M-10 -14 A14 14 0 0 0 -16 -2" class="acc" marker-end="url(#arr-a)"/></g>
+          <g class="ship" transform="translate(235 90)"><path d="M12 0 L-7 6 L-3 0 L-7 -6 Z"/><path d="M-10 -14 A14 14 0 0 0 -16 -2" class="acc" marker-end="url(#arr-a)"/><path d="M-9 0 h-8" class="warn"/></g>
+          <g class="ship" transform="translate(345 90)"><path d="M12 0 L-7 6 L-3 0 L-7 -6 Z"/><path d="M-10 -14 A14 14 0 0 0 -16 -2" class="acc" marker-end="url(#arr-a)"/><path d="M-9 0 h-18" class="warn"/></g>
+          <g class="ship" transform="translate(125 170)"><path d="M12 0 L-7 6 L-3 0 L-7 -6 Z"/></g>
+          <g class="ship" transform="translate(235 170)"><path d="M12 0 L-7 6 L-3 0 L-7 -6 Z"/><path d="M-9 0 h-8" class="warn"/></g>
+          <g class="ship" transform="translate(345 170)"><path d="M12 0 L-7 6 L-3 0 L-7 -6 Z"/><path d="M-9 0 h-18" class="warn"/></g>
+          <g class="ship" transform="translate(125 250)"><path d="M12 0 L-7 6 L-3 0 L-7 -6 Z"/><path d="M-10 14 A14 14 0 0 1 -16 2" class="acc" marker-end="url(#arr-a)"/></g>
+          <g class="ship" transform="translate(235 250)"><path d="M12 0 L-7 6 L-3 0 L-7 -6 Z"/><path d="M-10 14 A14 14 0 0 1 -16 2" class="acc" marker-end="url(#arr-a)"/><path d="M-9 0 h-8" class="warn"/></g>
+          <g class="ship" transform="translate(345 250)"><path d="M12 0 L-7 6 L-3 0 L-7 -6 Z"/><path d="M-10 14 A14 14 0 0 1 -16 2" class="acc" marker-end="url(#arr-a)"/><path d="M-9 0 h-18" class="warn"/></g>
+          <text x="70" y="314" class="t-m">each action is held for one control tick = 66.7 ms</text>
+        </svg>
+        <!-- DRAFT COPY: replace from paper -->
+        <p>The action set is what a person can press. Turn is arcade-style, with no
+        angular inertia, and thrust is held constant across a control tick; a human
+        player and the learner both act at 15 Hz.</p>
+        <!-- /DRAFT COPY -->
+      </div>
+    </div>
+
+    <!-- episode clock -->
+    <div class="panel" style="margin-top:18px">
+      <span class="lbl">fig. 4 &middot; the episode and how it ends</span>
+      <div class="scroll-x"><svg class="schem wide" viewBox="0 0 900 200" role="img"
+           aria-label="A ruler from 0 to 150 seconds with the ways an episode can end pinned along it.">
+        <path d="M60 100 H840" class="ln2"/>
+        <g class="ln2">
+          <path d="M60 92 V108 M320 92 V108 M580 92 V108 M840 92 V108"/>
+          <path d="M112 96 V104 M164 96 V104 M216 96 V104 M268 96 V104 M372 96 V104 M424 96 V104 M476 96 V104 M528 96 V104 M632 96 V104 M684 96 V104 M736 96 V104 M788 96 V104"/>
+        </g>
+        <g font-size="13">
+          <text x="52" y="124">0 s</text><text x="300" y="124">50 s</text><text x="560" y="124">100 s</text><text x="816" y="124">150 s</text>
+        </g>
+        <text x="60" y="194" class="t-m" font-size="12">2250 control ticks &middot; 4 physics substeps each &middot; only a timeout needs the whole ruler</text>
+        <!-- endings: four pinned above the rule, two below, staggered so no label crosses a pin -->
+        <g font-size="12">
+          <path d="M250 100 V48" class="good" marker-start="url(#pin)"/><circle cx="250" cy="40" r="7" class="tgt"/><text x="264" y="44" class="t-g">arrived at the last target</text>
+          <path d="M430 100 V70" class="bad" marker-start="url(#pin)"/><circle cx="430" cy="62" r="6" class="body" style="stroke:var(--bad)"/><text x="444" y="66" style="fill:var(--bad)">collision with a body</text>
+          <path d="M620 100 V30" class="warn" marker-start="url(#pin)"/><path d="M613 22 h14 M620 15 v14" class="warn"/><text x="634" y="26" style="fill:var(--warn)">destroyed by damage</text>
+          <path d="M840 100 V22" class="acc" marker-start="url(#pin)"/><text x="832" y="18" class="t-a" text-anchor="end">timeout</text>
+          <path d="M700 100 V150" class="ln2" marker-start="url(#pin)"/><text x="708" y="154">tank empty</text>
+          <path d="M790 100 V172" class="ln2" marker-start="url(#pin)"/><text x="798" y="176">out of bounds</text>
+        </g>
+      </svg></div>
+      <!-- DRAFT COPY: replace from paper -->
+      <p>Six endings, one of them a clock. The craft arrives, collides, is worn down by
+      a hazard, runs dry with no coasting path left, drifts out of the level, or runs
+      out of time at 150 s. Of these the clock is the least interesting, since a
+      craft on a long, fuel-cheap path that the clock stops has not failed the task so
+      much as a hyperparameter; section 04 returns to this.</p>
+      <!-- /DRAFT COPY -->
+    </div>
+
+    <!-- goal conditions -->
+    <div class="panel" style="margin-top:18px">
+      <span class="lbl">fig. 5 &middot; four kinds of target</span>
+      <div class="scroll-x"><svg class="schem wide" viewBox="0 0 900 150" role="img"
+           aria-label="Four target kinds: flythrough, rendezvous, attached to a body, and an ordered or order-free tour.">
+        <g class="lnf"><path d="M225 20 V130 M450 20 V130 M675 20 V130"/></g>
+        <!-- flythrough -->
+        <circle cx="110" cy="70" r="14" class="tgt"/>
+        <path d="M40 110 Q110 70 180 30" class="acc" marker-end="url(#arr-a)"/>
+        <text x="30" y="135" class="t-h" font-size="13">flythrough</text><text x="30" y="24" class="t-m" font-size="12">any speed counts</text>
+        <!-- rendezvous -->
+        <circle cx="335" cy="70" r="14" class="tgt"/>
+        <path d="M335 70 l22 -8" class="good" marker-end="url(#arr-g)"/>
+        <path d="M270 105 Q310 85 332 73" class="acc" marker-end="url(#arr-a)"/>
+        <path d="M335 70 l20 -7" class="acc dash"/>
+        <text x="255" y="135" class="t-h" font-size="13">rendezvous</text><text x="255" y="24" class="t-m" font-size="12">match within 3 u/s</text>
+        <!-- attached -->
+        <circle cx="560" cy="80" r="12" class="body"/>
+        <circle cx="560" cy="80" r="40" class="ln dot"/>
+        <circle cx="596" cy="63" r="11" class="tgt"/>
+        <path d="M600 40 A40 40 0 0 1 598 100" class="good dash"/>
+        <text x="480" y="135" class="t-h" font-size="13">attached</text><text x="480" y="24" class="t-m" font-size="12">rides a moving body</text>
+        <!-- tour -->
+        <circle cx="720" cy="100" r="9" class="tgt"/><circle cx="790" cy="50" r="9" class="tgt"/><circle cx="860" cy="95" r="9" class="tgt"/>
+        <path d="M728 95 L782 56 M798 56 L852 90" class="good dot"/>
+        <text x="716" y="104" class="t-g" font-size="11">1</text><text x="786" y="54" class="t-g" font-size="11">2</text><text x="856" y="99" class="t-g" font-size="11">3</text>
+        <text x="705" y="135" class="t-h" font-size="13">tour</text><text x="705" y="24" class="t-m" font-size="12">1 to 6, ordered or order-free</text>
+      </svg></div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- 02 three ways to picture it                                           -->
+  <!-- ===================================================================== -->
+  <section id="framings">
+    <div class="sec-head">
+      <span class="no">02</span><h2>Three ways to picture the problem</h2><span class="rule"></span>
+    </div>
+    <!-- DRAFT COPY: replace from paper -->
+    <p>The rest of the sheet keeps returning to three pictures of the same task. Each is
+    correct somewhere; which one a level calls for is most of what makes that level
+    hard or easy, and none of them is visible from a single success rate.</p>
+    <!-- /DRAFT COPY -->
+
+    <div class="frames">
+      <div class="panel">
+        <span class="lbl">picture a</span>
+        <h3>A plain reinforcement-learning loop</h3>
+        <svg class="schem" viewBox="0 0 420 210" role="img" aria-label="Observe, act, reward drawn as a cycle, with a hatched chaotic region where the reward surface is rough.">
+          <rect x="30" y="80" width="90" height="36" class="box"/><text x="52" y="102">observe</text>
+          <rect x="165" y="20" width="90" height="36" class="box-a"/><text x="200" y="42" class="t-a">act</text>
+          <rect x="300" y="80" width="90" height="36" class="box"/><text x="322" y="102">reward</text>
+          <path d="M120 90 Q140 40 165 38" class="ln2" marker-end="url(#arr)"/>
+          <path d="M255 38 Q280 40 300 90" class="ln2" marker-end="url(#arr)"/>
+          <path d="M345 116 Q210 190 75 116" class="ln2" marker-end="url(#arr)"/>
+          <text x="150" y="168" class="t-m">next tick, 66.7 ms later</text>
+          <rect x="30" y="130" width="120" height="60" class="hatch" stroke="#4a6ea8" stroke-width=".8"/>
+          <text x="36" y="206" class="t-m">chaotic regime: objective loses smoothness</text>
+        </svg>
+        <!-- DRAFT COPY: replace from paper -->
+        <p>Observe, act, be rewarded. This works until the craft enters a chaotic regime,
+        and then it works only if the algorithm happens to tolerate what chaos does to
+        the objective.</p>
+        <!-- /DRAFT COPY -->
+      </div>
+
+      <div class="panel">
+        <span class="lbl">picture b</span>
+        <h3>A state machine with noise filters</h3>
+        <svg class="schem" viewBox="0 0 420 210" role="img" aria-label="Trajectories enter a hatched filter region as a tight bundle and leave as a bounded fan; the far side is a new state.">
+          <circle cx="50" cy="105" r="22" class="ln"/><text x="40" y="109" class="t-m">S0</text>
+          <circle cx="370" cy="105" r="22" class="ln"/><text x="360" y="109" class="t-m">S1</text>
+          <rect x="160" y="40" width="100" height="130" class="hatch" stroke="#4a6ea8" stroke-width=".8"/>
+          <text x="166" y="32" class="t-m">filter (chaotic pass)</text>
+          <path d="M72 105 H160" class="acc"/>
+          <path d="M260 70 L348 95 M260 140 L348 115 M260 105 H348" class="acc" opacity=".7"/>
+          <path d="M260 58 L300 50 M260 152 L300 160" class="bad dash"/>
+          <path d="M262 62 Q330 50 348 92 M262 148 Q330 160 348 118" class="good dash"/>
+          <text x="412" y="196" class="t-m" text-anchor="end">bound the exit set; adapt on the far side</text>
+        </svg>
+        <!-- DRAFT COPY: replace from paper -->
+        <p>Chaotic regions are filters the craft passes through. Inside one the goal is
+        not a precise prediction of the exit trajectory but a bound on it tight enough
+        that adaptation on the far side is still possible.</p>
+        <!-- /DRAFT COPY -->
+      </div>
+
+      <div class="panel">
+        <span class="lbl">picture c</span>
+        <h3>Stackable strategies</h3>
+        <ol class="ladder">
+          <li><b>Conics</b> &mdash; one body matters; the rest is a patched conic.</li>
+          <li><b>Dead heading</b> &mdash; point at the target and burn.</li>
+          <li><b>Leading</b> &mdash; aim where a moving target will be.</li>
+          <li><b>Gravity assists</b> &mdash; borrow velocity from a body on the way.</li>
+          <li><b>Learned models</b> &mdash; a representation of the field itself.</li>
+        </ol>
+        <!-- DRAFT COPY: replace from paper -->
+        <p>Each rung is a strategy that works on some levels and is a special case of
+        the one above it. A learner climbs them, and a curriculum is a choice of which
+        rung each level should reward.</p>
+        <!-- /DRAFT COPY -->
       </div>
     </div>
   </section>
 
-  <section>
-    <h2>496 attempts at the same mission</h2>
-    <p class="note">Every saved checkpoint of one training run flying one fixed
-    mission sixteen times, with the policy sampling its actions rather than
-    taking the most likely one. Early policies spray across the field; late
-    policies thread the same line. This is what the single number in an
-    evaluation table is averaging over.</p>
-    <div class="vids">
-      <div class="vid">
-        <video controls muted loop playsinline preload="metadata"
-               poster="figures/ghosts.png" src="media/replay_medium_1.mp4"></video>
-        <p><b>It works.</b> All 496 attempts on one mission clock. The fleet
-        thins as attempts end; 298 of them arrive.</p>
+  <!-- ===================================================================== -->
+  <!-- 03 why designing a level of a given difficulty is hard                -->
+  <!-- ===================================================================== -->
+  <section id="design">
+    <div class="sec-head">
+      <span class="no">03</span><h2>Why a level of a given difficulty is hard to design</h2><span class="rule"></span>
+    </div>
+    <div class="frames" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))">
+      <div>
+        <!-- DRAFT COPY: replace from paper -->
+        <p>Given those three pictures, deciding whether a particular level is difficult,
+        or interesting, is harder than it looks, and the difficulty is in the task
+        rather than in any machinery used to measure it. Checking that a proposed
+        solution is even correct is, in general, out of reach. The action is
+        continuous in direction and magnitude, the horizon is T steps, and an
+        exhaustive search is O(a<sup>T</sup>) with a continuous, so even a tiny level
+        cannot be checked exhaustively without simplifying assumptions. Once a chaotic
+        regime is entered the precision of the check itself becomes the problem: two
+        actions that differ below the integrator's resolution can end in different
+        places. [CITE: complexity of control and reachability; chaos and finite precision]</p>
+        <!-- /DRAFT COPY -->
       </div>
-      <div class="vid">
-        <video controls muted loop playsinline preload="metadata"
-               poster="figures/ghosts.png" src="media/replay_hard_0.mp4"></video>
-        <p><b>It does not.</b> A three-target mission, 496 attempts, zero
-        arrivals. The agent converges confidently on a shuttle between the
-        first two targets and never reaches the third.</p>
+      <div class="panel">
+        <span class="lbl">fig. 6 &middot; the check is the hard part</span>
+        <svg class="schem" viewBox="0 0 420 230" role="img" aria-label="A branching tree of actions over time steps, widening to the right, with a hatched band marking where finite precision stops distinguishing branches.">
+          <g class="ln">
+            <path d="M30 115 L110 60 M30 115 L110 115 M30 115 L110 170"/>
+            <path d="M110 60 L190 35 M110 60 L190 60 M110 60 L190 85 M110 115 L190 100 M110 115 L190 115 M110 115 L190 130 M110 170 L190 150 M110 170 L190 175 M110 170 L190 200"/>
+            <path d="M190 35 L270 25 M190 35 L270 40 M190 60 L270 55 M190 60 L270 68 M190 85 L270 80 M190 85 L270 92 M190 100 L270 100 M190 115 L270 112 M190 130 L270 128 M190 150 L270 148 M190 175 L270 170 M190 175 L270 182 M190 200 L270 198 M190 200 L270 208" opacity=".7"/>
+          </g>
+          <circle cx="30" cy="115" r="4" class="pin"/>
+          <rect x="270" y="14" width="120" height="205" class="hatch" stroke="#4a6ea8" stroke-width=".8"/>
+          <text x="276" y="30" class="t-m">below integrator</text><text x="276" y="42" class="t-m">resolution</text>
+          <text x="30" y="24" class="t-m">t = 0</text><text x="100" y="24" class="t-m">1</text><text x="180" y="24" class="t-m">2</text><text x="236" y="24" class="t-m">&hellip; T</text>
+          <text x="30" y="222" class="t-m">a branches per tick, a continuous: a^T leaves</text>
+        </svg>
       </div>
     </div>
-    <div class="vid" style="margin-top:16px;max-width:560px">
-      <video controls muted loop playsinline preload="metadata"
-             src="media/learning_medium_1.mp4"></video>
-      <p><b>Learning, as an accumulation.</b> The same mission with attempts
-      added in training order, so the corridor forms as you watch.</p>
-    </div>
-    <p class="note" style="margin-top:14px">The
-    <a href="ghosts/">interactive version</a> lets you switch missions, scrub
-    the training axis and replay the fleet yourself.</p>
   </section>
 
-  <section>
-    <h2>Where a one-body model breaks</h2>
-    <figure>
-      <img src="figures/eta.png" alt="Left: eta rising to a peak of 0.43 at the equal-pull radius and falling away on both sides. Right: median eta per level family, spanning three orders of magnitude.">
-      <figcaption>The quantity <b>η</b> is the fraction of local gravity that a
-      one-body “only the planet I’m orbiting matters” model throws away. It
-      peaks almost exactly where two bodies pull equally hard — about half a
-      Hill radius — and falls off fast on either side. Which family a level
-      belongs to moves η by three orders of magnitude, so some systems are
-      contested everywhere and others only inside a thin shell you have to aim
-      at deliberately.</figcaption>
+  <!-- ===================================================================== -->
+  <!-- 04 quantities                                                         -->
+  <!-- ===================================================================== -->
+  <section id="quantities">
+    <div class="sec-head">
+      <span class="no">04</span><h2>The quantities used</h2><span class="rule"></span>
+    </div>
+    <!-- DRAFT COPY: replace from paper -->
+    <p>Each quantity below answers a question one of the three pictures raises. The
+    representational ones ask whether a coarse model of the field is enough; the
+    timing one asks whether a human could execute the answer; the chaos ones ask
+    whether the field is actually chaotic on the episode's timescale rather than
+    assumed to be; the last asks whether anyone can fly the level at all.</p>
+    <!-- /DRAFT COPY -->
+    <div class="tbl quant">
+      <table>
+        <thead><tr><th>Symbol</th><th class="wrap">What it measures</th><th class="wrap">Picture it serves</th><th>Form</th></tr></thead>
+        <tbody>
+          <tr><td><span class="sym">&eta;</span></td><td class="wrap">The fraction of local gravity a one-body model discards. Peaks on the equal-pull surface, about half a Hill radius from a secondary.</td><td class="wrap">c &middot; is the conic rung enough?</td><td>closed form</td></tr>
+          <tr><td><span class="sym">A</span></td><td class="wrap">Authority: the craft's available impulse against the impulse gravity delivers over the tour.</td><td class="wrap">c &middot; can thrust overrule the field?</td><td>closed form</td></tr>
+          <tr><td><span class="sym">D = &eta;/A</span></td><td class="wrap">The share of the tank a wrong model costs. Invertible, so a level can be generated to a target D.</td><td class="wrap">c &middot; representational difficulty</td><td>closed form</td></tr>
+          <tr><td><span class="sym">slack</span></td><td class="wrap">Timing margin of the reference solution against human reaction limits. The trivial axis, kept separate.</td><td class="wrap">a &middot; execution, not understanding</td><td>from the optimiser</td></tr>
+          <tr><td><span class="sym">T<sub>&lambda;</sub></span></td><td class="wrap">Lyapunov time against the 150 s episode. The field is quasi-integrable on episode timescales; chaos has to be built.</td><td class="wrap">b &middot; is there a filter to pass?</td><td>measured</td></tr>
+          <tr><td><span class="sym">&alpha;</span></td><td class="wrap">Uncertainty exponent of the winning set, and the H&ouml;lder threshold the objective must clear for gradient methods.</td><td class="wrap">a, b &middot; what chaos does to the reward</td><td>measured</td></tr>
+          <tr><td><span class="sym">solvable</span></td><td class="wrap">Whether the reference optimiser can fly it. A level nobody can fly earns no label; the true optimum is never available.</td><td class="wrap">all &middot; the gate before any label</td><td>CEM planner</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="fig-grid" style="margin-top:18px">
+      <figure>
+        <img src="figures/eta.png" alt="Left: eta rising to a peak at the equal-pull radius and falling away on both sides, with an interquartile band. Right: median eta per level family, spanning three orders of magnitude.">
+        <figcaption><b>Where a one-body model breaks.</b> &eta; against distance from a secondary in units of the equal-pull radius, median over 24 directions per shell across 297 levels from nine families; and median &eta; over the playable area by family. Some families are contested everywhere, the rest only inside a thin shell.</figcaption>
+      </figure>
+      <figure>
+        <img src="figures/bands.png" alt="Two difficulty axes: representational difficulty horizontally and timing slack vertically, with regions labelled.">
+        <figcaption><b>Two axes, kept apart.</b> Horizontal: whether a coarse model suffices. Vertical: whether the timing window is within human reach. The two impossible corners need opposite repairs, which is what a single scalar difficulty would merge.</figcaption>
+      </figure>
+    </div>
+    <figure style="max-width:560px">
+      <img src="figures/clock.png" alt="Stacked bars of episode outcomes at 150, 300, 600 and 900 second episode clocks.">
+      <figcaption><b>The clock is not a difficulty knob.</b> Thirty-two two-target levels flown by the reference optimiser at four clocks, control resolution held at 3.1 s per segment. Timeouts fall the whole way; arrivals stop climbing after 600 s; hazard endings rise throughout. More time buys more exposure, which is evidence the 150 s clock is mis-set rather than that these levels are hard.</figcaption>
     </figure>
   </section>
 
-  <section>
-    <h2>The result that surprised us</h2>
-    <p class="note">We added four physically meaningful readouts to the agent’s
-    observation — η, a fuel-versus-gravity ratio, their quotient, and a local
-    tidal stretching rate — expecting an agent told about its own difficulty to
-    learn faster. It learned worse. Five training seeds per row:</p>
+  <!-- ===================================================================== -->
+  <!-- 05 ghost replay and videos                                            -->
+  <!-- ===================================================================== -->
+  <section id="ghosts">
+    <div class="sec-head">
+      <span class="no">05</span><h2>What a single success rate hides</h2><span class="rule"></span>
+    </div>
+    <!-- DRAFT COPY: replace from paper -->
+    <p>Every saved checkpoint of one training run flying one fixed level sixteen times,
+    with the policy sampling its actions rather than taking the most likely one, so
+    496 attempts in all. Early policies spray across the field; late ones thread the
+    same line. The number in an evaluation table is an average over exactly this.</p>
+    <!-- /DRAFT COPY -->
+    <div class="vids">
+      <div class="vid">
+        <video controls muted loop playsinline preload="metadata" poster="figures/ghosts.png" src="media/replay_medium_1.mp4"></video>
+        <p><b>Medium, task 1.</b> All 496 attempts on one shared clock. The fleet thins as attempts end; 298 of them arrive.</p>
+      </div>
+      <div class="vid">
+        <video controls muted loop playsinline preload="metadata" poster="figures/ghosts.png" src="media/replay_hard_0.mp4"></video>
+        <p><b>Hard, task 0.</b> A three-target tour, 496 attempts, no arrivals. The policy settles on a shuttle between the first two targets and never reaches the third.</p>
+      </div>
+      <div class="vid">
+        <video controls muted loop playsinline preload="metadata" src="media/learning_medium_1.mp4"></video>
+        <p><b>Learning, as accumulation.</b> The same level with attempts added in training order, so the corridor forms as you watch.</p>
+      </div>
+    </div>
+    <div class="cta">
+      <a class="primary" href="ghosts/">Open the interactive replay &rarr; sheet 2</a>
+    </div>
+    <figure>
+      <img src="figures/ghosts.png" alt="Four panels, each a level flown 496 times, trajectories coloured from dark (early training) to bright (late training).">
+      <figcaption><b>Four levels, 496 flights each.</b> Discs are bodies with orbits traced faintly; green rings are targets, drawn with their own paths where they ride a body. Dark trails are early checkpoints, bright trails late ones.</figcaption>
+    </figure>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- 06 results                                                            -->
+  <!-- ===================================================================== -->
+  <section id="results">
+    <div class="sec-head">
+      <span class="no">06</span><h2>Results</h2><span class="rule"></span>
+    </div>
+    <!-- DRAFT COPY: replace from paper -->
+    <p>The natural expectation is that a learner told its own difficulty would learn
+    faster, so four physically meaningful readouts were added to the observation:
+    &eta;, the authority ratio, their quotient, and a local tidal stretching rate.
+    The two that carry new information are indistinguishable from telling the learner
+    nothing; the two that are algebraic combinations of things it already observes
+    cost up to ten points of success, and the cost splits exactly on that line. Five
+    training seeds per row, percentage of levels arrived.</p>
+    <!-- /DRAFT COPY -->
     <div class="tbl">
       <table>
-        <thead><tr><th>What the agent was told</th><th>Easy</th><th>Medium</th><th>Hard</th><th>Blind</th></tr></thead>
+        <thead><tr><th>What the learner is told</th><th>Easy</th><th>Medium</th><th>Hard</th><th>Blind</th></tr></thead>
         <tbody>
           <tr><td>nothing</td><td>89.4</td><td>41.7</td><td>10.7</td><td>30.2</td></tr>
-          <tr class="hi"><td>η and stretch (new physics)</td><td>90.4</td><td>41.9</td><td>11.1</td><td>29.2</td></tr>
+          <tr class="hi"><td>&eta; and stretch (new information)</td><td>90.4</td><td>41.9</td><td>11.1</td><td>29.2</td></tr>
           <tr><td>budget and demand (redundant)</td><td>86.6</td><td>33.2</td><td>6.2</td><td>22.7</td></tr>
           <tr><td>all four</td><td>86.3</td><td>31.6</td><td>5.8</td><td>22.2</td></tr>
         </tbody>
       </table>
     </div>
-    <p class="note" style="margin-top:12px">Percentage of missions arrived. The
-    two channels carrying genuinely new information are statistically
-    indistinguishable from telling the agent nothing at all. The two that are
-    algebraic combinations of things it already observes are indistinguishable
-    from telling it everything. The cost splits exactly on the redundancy line.</p>
-    <figure style="margin-top:18px">
-      <img src="figures/ablation.png" alt="Dot plot of five training seeds per arm across four evaluation tiers, and the four-way channel split.">
-      <figcaption>Every training seed, and the four-way split. In each tier the
-      two blue arms coincide and the two orange arms coincide below them.</figcaption>
-    </figure>
+    <div class="fig-grid" style="margin-top:18px">
+      <figure>
+        <img src="figures/ablation.png" alt="Dot plot of five training seeds per arm across four evaluation suites, and the four-way channel split.">
+        <figcaption><b>Every seed, and the four-way split.</b> Dots are seeds, bars one standard deviation, the heavy tick the mean. In each suite the two new-information arms coincide and the two redundant arms coincide below them.</figcaption>
+      </figure>
+      <figure>
+        <img src="figures/curves.png" alt="Evaluation success against training update for one seed of each arm; mid-run checkpoints are noisy.">
+        <figcaption><b>Success against training update</b>, one seed per arm. Mid-run checkpoints are noisy enough that an ablation read before it finishes is misleading.</figcaption>
+      </figure>
+    </div>
   </section>
 
-  <section>
-    <h2>More time helps, then stops helping</h2>
-    <figure>
-      <img src="figures/clock.png" alt="Stacked bars of mission outcomes at 150, 300, 600 and 900 second episode clocks.">
-      <figcaption>Thirty-two two-target missions flown by a trajectory
-      optimiser at four episode clocks. Timeouts fall the whole way, but the
-      episodes a longer clock frees up become crashes about as often as they
-      become arrivals, and arrivals stop climbing after 600 seconds. More time
-      buys more exposure. An earlier result of ours, based on twelve correlated
-      samples at the shortest clock, concluded this mission class was
-      impossible.</figcaption>
-    </figure>
-  </section>
-
-  <section>
-    <h2>Reproducing any of it</h2>
+  <!-- ===================================================================== -->
+  <!-- 07 try it                                                             -->
+  <!-- ===================================================================== -->
+  <section id="try">
+    <div class="sec-head">
+      <span class="no">07</span><h2>How to try it</h2><span class="rule"></span>
+    </div>
     <div class="box"><ul>
-      <li><b>Everything is in one repository.</b> Environment, level
-      generators, evaluation suites, trained policies and the analysis that
-      produced every figure:
+      <li><b>One repository.</b> Environment, level generators, evaluation suites, trained policies and the analysis behind every figure:
       <a href="https://github.com/kevroy314/spaceship-navigator">kevroy314/spaceship-navigator</a>.</li>
-      <li><b>Figures regenerate from committed measurements.</b>
-      <code>scripts/paper_figures.py</code> reads stored results rather than
-      numbers typed into the paper source, so a claim and its figure cannot
-      drift apart.</li>
-      <li><b>The reasoning is on the record, including where it was wrong.</b>
-      <a href="https://github.com/kevroy314/spaceship-navigator/tree/main/docs/decisions">docs/decisions/</a>
-      is a numbered, append-only series. Three entries are retractions of our
-      own earlier conclusions, kept in place with the measurement that
-      overturned them.</li>
+      <li><b>Figures regenerate from committed measurements.</b> <code>scripts/paper_figures.py</code> reads stored results rather than numbers typed into the source, so a claim and its figure cannot drift apart.</li>
+      <li><b>Pools are reproducible from seeds.</b> <code>scripts/build_pools.py</code> rebuilds the 18,000-level training pool and the validation, holdout and long-horizon pools.</li>
+      <li><b>The reasoning is on the record.</b> <a href="https://github.com/kevroy314/spaceship-navigator/tree/main/docs/decisions">docs/decisions/</a> is a numbered, append-only series of design decisions with the measurement behind each.</li>
+      <li><b>Fly it yourself.</b> The browser client under <code>web/</code> integrates the same physics from a level snapshot; <a href="ghosts/">sheet 2</a> replays the learner's attempts.</li>
     </ul></div>
   </section>
 
   <footer>
-    <p>Preprint draft. Developed in collaboration with Claude (Anthropic)
-    operating as an autonomous agent on the repository; the decision records
-    include the agent’s own retracted conclusions.</p>
+    <p>Draft companion sheet. Developed with Claude (Anthropic) operating as an autonomous agent on the repository. Copy on this page is scaffolding and will be replaced from the paper.</p>
   </footer>
 
 </div>

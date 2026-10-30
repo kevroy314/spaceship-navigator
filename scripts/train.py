@@ -13,7 +13,9 @@ Writes to data/rl/<run>/:
 import argparse
 import dataclasses
 import json
+import os
 import pickle
+import sys
 import time
 from pathlib import Path
 
@@ -21,8 +23,9 @@ import jax
 import numpy as np
 from flax import serialization
 
+from spacenav import constants as C
 from spacenav.levels.build import load_pool
-from spacenav.rl.evaluate import SUITES_PATH, Evaluator, build_suites
+from spacenav.rl.evaluate import DEFAULT_SUITES_PATH, SUITES_PATH, Evaluator, build_suites
 from spacenav.rl.ppo import PPOConfig, make
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -50,6 +53,11 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--resume", action="store_true",
                     help="continue from state_latest.msgpack in the run directory")
+    ap.add_argument("--pool", default="train",
+                    help="level pool to train on, data/pools/<NAME>.npz.  `train` is validated "
+                         "to 300 s and carries 8 snapshots to 140 s; a clock past 150 s "
+                         "(SPACENAV_EPISODE_S) needs `long` (900 s, 16 snapshots) and suites "
+                         "built from it (SPACENAV_SUITES, scripts/build_long_suites.py)")
     ap.add_argument("--schedule-updates", type=int, default=0,
                     help="write the schedules against this horizon instead of --updates, so a "
                          "short arm sees the same curriculum/entropy/lr as a long baseline at "
@@ -71,16 +79,30 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     (out / "config.json").write_text(json.dumps(dict(dataclasses.asdict(cfg), updates=args.updates,
                                                      seed=args.seed,
-                                                     schedule_updates=horizon), indent=2))
+                                                     schedule_updates=horizon,
+                                                     pool=args.pool,
+                                                     episode_s=C.MAX_EPISODE_TIME,
+                                                     suites=str(SUITES_PATH),
+                                                     instruments=os.environ.get(
+                                                         "SPACENAV_INSTRUMENTS", "eta,stretch")),
+                                                indent=2))
     if not SUITES_PATH.exists():
+        if SUITES_PATH != DEFAULT_SUITES_PATH:
+            # Only the default suites are built on demand: build_suites() draws from
+            # val_seen/val_holdout, which a long clock overruns, so a missing
+            # SPACENAV_SUITES file is a mistake to stop on, not to paper over.
+            sys.exit(f"SPACENAV_SUITES={SUITES_PATH} does not exist; build it first "
+                     f"(scripts/build_long_suites.py for the long clock)")
         build_suites()
 
-    pool, _ = load_pool(ROOT / "data" / "pools" / "train.npz")
+    pool, _ = load_pool(ROOT / "data" / "pools" / f"{args.pool}.npz")
     net, runner, update = make(cfg, pool, jax.random.PRNGKey(args.seed))
     evaluator = Evaluator(net)
     n_params = sum(x.size for x in jax.tree.leaves(runner.params))
     print(f"run {args.run}: {n_params:,} params, batch {cfg.batch:,}, {args.updates} updates "
-          f"= {args.updates * cfg.batch / 1e6:.0f}M env steps", flush=True)
+          f"= {args.updates * cfg.batch / 1e6:.0f}M env steps; pool {args.pool}, clock "
+          f"{C.MAX_EPISODE_TIME:.0f} s ({C.MAX_EPISODE_TICKS} ticks), suites {SUITES_PATH.name}",
+          flush=True)
 
     # resume: restore params + optimiser state and carry on where the run stopped
     start = 0

@@ -9,6 +9,8 @@ orbital mechanics matter but never make a level unwinnable.
 Everything that shapes game feel lives here so tuning happens in one place.
 """
 
+import os
+
 # --- time ------------------------------------------------------------------
 PHYS_DT = 1.0 / 60.0          # physics substep (s); one render frame at 60 fps
 SUBSTEPS = 4                  # physics substeps per control tick
@@ -21,7 +23,22 @@ CTRL_DT = PHYS_DT * SUBSTEPS  # agent / player decision interval (15 Hz)
 # episode from the last epoch ends at 740 s, well past where the level was checked
 # to be well behaved. A longer game clock needs its own pool and a per-pool clock
 # (docs/decisions/0019); it is not a global constant we can simply raise.
-MAX_EPISODE_TIME = 150.0      # s (tours on a tight fuel budget coast a long way)
+#
+# SPACENAV_EPISODE_S overrides the clock per process (float seconds).  Unset, it
+# is exactly 150.0, so every existing checkpoint, suite and test is unchanged.
+# It is read once, at import, and everything downstream derives from it:
+# MAX_EPISODE_TICKS here, the time-remaining features in env.observe() and
+# env.instrument_panel() (a 600 s policy should see its own clock), the default
+# rollout length, and N_SNAPSHOTS in levels/build.py (so building a pool under
+# a 600 s clock stores 16 snapshots to 300 s, which is how `long` was built).
+# A clock longer than a pool's validated window makes late-epoch episodes run
+# past where the level was checked: `train`/`val_seen` are good to 300 s, `long`
+# to 900 s.  Pair the clock with a pool and suites that cover it
+# (scripts/build_long_suites.py, SPACENAV_SUITES).
+MAX_EPISODE_TIME = float(os.environ.get("SPACENAV_EPISODE_S", "150.0"))   # s
+if not MAX_EPISODE_TIME > 0.0:
+    raise ValueError(f"SPACENAV_EPISODE_S must be a positive number of seconds, got "
+                     f"{os.environ.get('SPACENAV_EPISODE_S')!r}")
 MAX_EPISODE_TICKS = int(round(MAX_EPISODE_TIME / CTRL_DT))
 
 # --- padding ---------------------------------------------------------------

@@ -136,9 +136,10 @@ def fig_ablation():
             if i == 0:
                 ax1.plot([], [], color=col, lw=2.0, label=lab)
     ax1.set_yticks(y); ax1.set_yticklabels([LBL[s] for s in SUITES])
-    ax1.invert_yaxis(); ax1.set_xlabel("missions arrived (%)")
+    ax1.invert_yaxis(); ax1.set_xlabel("arrived (%)")
     ax1.set_xlim(0, 100); ax1.grid(axis="x", lw=0.4, alpha=0.5)
-    ax1.legend(loc="lower right", frameon=False)
+    # the Hard row has nothing beyond x~15, so the legend sits in its empty right
+    ax1.legend(loc="center right", bbox_to_anchor=(1.0, 0.38), frameon=False)
     ax1.set_title("(a) five training seeds per arm", loc="left")
 
     # right: the four-way split
@@ -157,9 +158,15 @@ def fig_ablation():
     for col, lab in [(BLUE, "matches the no-channel arm"), (ORANGE, "matches the all-four arm")]:
         ax2.scatter([], [], s=26, color=col, label=lab, linewidths=0)
     ax2.set_xticks(range(len(SUITES))); ax2.set_xticklabels([LBL[s] for s in SUITES])
-    ax2.set_ylabel("missions arrived (%)"); ax2.grid(axis="y", lw=0.4, alpha=0.5)
-    ax2.legend(loc="upper right", frameon=False)
-    ax2.set_title(r"(b) which channels cost: none / $\eta$,stretch / budget,demand / all", loc="left")
+    ax2.set_ylabel("arrived (%)"); ax2.grid(axis="y", lw=0.4, alpha=0.5)
+    ax2.set_ylim(0, 100)
+    # the band between the Easy group (~85-90) and the Medium group (~30-45) is
+    # empty on the left, so the legend and the dot order live there
+    leg = ax2.legend(loc="center left", bbox_to_anchor=(0.0, 0.61), frameon=False,
+                     title="dots in each group, left to right:\n"
+                           r"none $\cdot$ $\eta$, stretch $\cdot$ budget, demand $\cdot$ all four",
+                     title_fontsize=7, alignment="left")
+    ax2.set_title("(b) which channels cost", loc="left")
     fig.tight_layout()
     fig.savefig(OUT / "ablation.pdf"); fig.savefig(OUT / "ablation.png")
     plt.close(fig); print("ablation.pdf")
@@ -178,7 +185,7 @@ def fig_clock():
                 o[r["status"]] = o.get(r["status"], 0) + 1
         rows.append((d["clock"], d["arrived"], o.get("timeout", 0),
                      o.get("crashed", 0) + o.get("destroyed", 0) + o.get("lost", 0), d["n"]))
-    fig, ax = plt.subplots(figsize=(3.4, 2.7))
+    fig, ax = plt.subplots(figsize=(3.4, 3.0))
     x = np.arange(len(rows)); w = 0.62
     arr = np.array([r[1] for r in rows], float)
     tmo = np.array([r[2] for r in rows], float)
@@ -193,8 +200,12 @@ def fig_clock():
     ax.set_xticks(x); ax.set_xticklabels([f"{int(r[0])} s" for r in rows])
     ax.set_xlabel("episode clock"); ax.set_ylabel("two-stop tours (of 32)")
     ax.set_ylim(0, 34); ax.grid(axis="y", lw=0.4, alpha=0.5)
-    ax.legend(frameon=False, loc="upper center", ncol=1, fontsize=7)
-    fig.tight_layout(); fig.savefig(OUT / "clock.pdf"); fig.savefig(OUT / "clock.png")
+    # every bar is stacked to the full 32, so there is no empty space inside the
+    # axes: the legend goes below the x label
+    fig.legend(frameon=False, loc="lower center", ncol=3, fontsize=7,
+               bbox_to_anchor=(0.5, 0.0), handlelength=1.2, columnspacing=1.0)
+    fig.tight_layout(rect=(0, 0.11, 1, 1))
+    fig.savefig(OUT / "clock.pdf"); fig.savefig(OUT / "clock.png")
     plt.close(fig); print("clock.pdf")
 
 
@@ -213,9 +224,13 @@ def fig_curves():
         ax.set_title(LBL[s], loc="left")
         ax.grid(lw=0.4, alpha=0.5)
         ax.set_xlim(0, 3000); ax.set_xticks([0, 1500, 3000])
+        # each suite keeps its own y range (Hard tops out near 10 %), but all
+        # start at 0 and tick in whole percent
+        ax.set_ylim(0, None); ax.margins(y=0.08)
+        ax.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(nbins=5, integer=True))
         if s == "easy":
             ax.set_ylabel("arrived (%)"); ax.legend(frameon=False, loc="lower right", fontsize=7)
-        ax.set_xlabel("update")
+        ax.set_xlabel("training update")
     fig.tight_layout(); fig.savefig(OUT / "curves.pdf"); fig.savefig(OUT / "curves.png")
     plt.close(fig); print("curves.pdf")
 
@@ -296,8 +311,10 @@ def fig_eta():
     ax1.fill_between(med[:, 0], med[:, 2], med[:, 3], color=BLUE, alpha=0.18, lw=0)
     ax1.plot(med[:, 0], med[:, 1], color=BLUE, lw=1.6, marker="o", ms=3.2)
     ax1.axvline(1.0, color=RED, lw=0.9, ls="--")
-    ax1.text(1.08, ax1.get_ylim()[1] * 0.92, "equal-pull\nsurface", color=RED, fontsize=7.2,
-             va="top")
+    # label above the interquartile band, not on it
+    top = float(med[:, 3].max())
+    ax1.set_ylim(0, top * 1.28)
+    ax1.text(1.08, top * 1.25, "equal-pull\nsurface", color=RED, fontsize=7.2, va="top")
     ax1.set_xscale("log"); ax1.set_xticks([0.2, 0.5, 1, 2, 4, 8])
     ax1.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
     ax1.set_xlabel(r"distance from the secondary ($\times$ equal-pull radius)")
@@ -310,7 +327,7 @@ def fig_eta():
     cols = [ORANGE if v > 0.1 else BLUE for v in vals]
     ax2.barh(range(len(fams)), vals, color=cols, height=0.68)
     ax2.set_yticks(range(len(fams)))
-    ax2.set_yticklabels([f.replace("_", " ") for f in fams], fontsize=7)
+    ax2.set_yticklabels([f.replace("_", " ") for f in fams])
     ax2.set_xscale("log")
     ax2.set_xlabel(r"median $\eta$ over the playable area")
     ax2.grid(axis="x", lw=0.4, alpha=0.5)
@@ -323,23 +340,28 @@ def fig_eta():
 # ------------------------------------------------------- the two difficulty axes
 def fig_bands():
     fig, ax = plt.subplots(figsize=(4.6, 3.1))
-    # model scale (x) against execution margin (y); bands are regions, not points
+    # model scale (x) against execution margin (y); bands are regions, not points.
+    # Three columns of width 0.26 with 0.02 gutters; the two repair arrows run in
+    # the top and right margins so that no line crosses a band.
     bands = [
-        ("trivial",    0.05, 0.62, 0.30, 0.33, "#cfe3f7"),
-        ("human",      0.35, 0.40, 0.30, 0.55, "#9ec5f4"),
-        ("calculated", 0.66, 0.40, 0.30, 0.55, "#f6c5ac"),
-        ("precision",  0.05, 0.06, 0.61, 0.32, "#f3b0b0"),
-        ("opaque",     0.66, 0.06, 0.30, 0.32, "#d9d9d9"),
+        ("trivial",    0.03, 0.56, 0.26, 0.29, "#cfe3f7"),
+        ("human",      0.31, 0.36, 0.26, 0.49, "#9ec5f4"),
+        ("calculated", 0.59, 0.36, 0.26, 0.49, "#f6c5ac"),
+        ("precision",  0.03, 0.03, 0.54, 0.30, "#f3b0b0"),
+        ("opaque",     0.59, 0.03, 0.26, 0.30, "#d9d9d9"),
     ]
     for name, x, y, w, h, col in bands:
         ax.add_patch(plt.Rectangle((x, y), w, h, facecolor=col, edgecolor="white", lw=1.4))
         ax.text(x + w / 2, y + h / 2, name, ha="center", va="center", fontsize=8.5)
-    ax.annotate("", xy=(0.64, 0.68), xytext=(0.37, 0.68),
-                arrowprops=dict(arrowstyle="<-", color="#333", lw=1.0))
-    ax.text(0.505, 0.715, "simplify the field", ha="center", fontsize=7, color="#333")
-    ax.annotate("", xy=(0.50, 0.38), xytext=(0.50, 0.20),
-                arrowprops=dict(arrowstyle="<-", color="#333", lw=1.0))
-    ax.text(0.52, 0.28, "widen the timing window", fontsize=7, color="#333")
+    # calculated -> human: a coarser field, drawn above the two columns
+    ax.annotate("", xy=(0.44, 0.905), xytext=(0.72, 0.905),
+                arrowprops=dict(arrowstyle="->", color="#333", lw=1.0))
+    ax.text(0.58, 0.925, "simplify the field", ha="center", va="bottom", fontsize=7, color="#333")
+    # precision -> human: more slack, drawn to the right of the bands
+    ax.annotate("", xy=(0.905, 0.60), xytext=(0.905, 0.18),
+                arrowprops=dict(arrowstyle="->", color="#333", lw=1.0))
+    ax.text(0.925, 0.39, "widen the timing window", ha="left", va="center", rotation=90,
+            fontsize=7, color="#333")
     ax.set_xlim(0, 1); ax.set_ylim(0, 1)
     ax.set_xlabel(r"model scale $\longrightarrow$ coarse model fails ($\mathcal{D}$ rises)")
     ax.set_ylabel(r"execution margin $\longrightarrow$ more slack")

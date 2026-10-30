@@ -18,3 +18,4 @@ research/__pycache__/
 # Legacy prototype's recorded episodes
 legacy/data/
 .coord/
+paper/figures/phase_data.npz
