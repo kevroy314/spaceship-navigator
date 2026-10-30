@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>What Makes a Mission Hard? — spacenav</title>
+<meta name="description" content="A gravitational navigation environment that is cheap to simulate, fully specified, and still resists a single notion of difficulty.">
+<meta property="og:title" content="What Makes a Mission Hard?">
+<meta property="og:description" content="A gravitational navigation environment that is cheap to simulate, fully specified, and still resists a single notion of difficulty.">
+<meta property="og:image" content="figures/ghosts.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --plane:#f6f7fa; --surface:#fdfdfe; --sunk:#eef1f6;
+  --ink:#10131a; --ink-2:#4e5566; --ink-3:#79818f; --line:#dde2ea;
+  --accent:#2a78d6; --good:#0ca30c; --bad:#d03b3b;
+  --font-display:"Chivo","Helvetica Neue",Arial,sans-serif;
+  --font-body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --font-data:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:light;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --plane:#0b0d12; --surface:#14171f; --sunk:#1b1f29;
+  --ink:#eef0f5; --ink-2:#a7afc0; --ink-3:#7d8596; --line:#262c38;
+  --accent:#3987e5; --good:#0ca30c; --bad:#e66767;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --plane:#0b0d12; --surface:#14171f; --sunk:#1b1f29;
+  --ink:#eef0f5; --ink-2:#a7afc0; --ink-3:#7d8596; --line:#262c38;
+  --accent:#3987e5; --good:#0ca30c; --bad:#e66767;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plane);color:var(--ink);font-family:var(--font-body);
+  font-size:16px;line-height:1.6;-webkit-text-size-adjust:100%}
+.wrap{max-width:860px;margin:0 auto;padding-block:38px 72px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font-family:var(--font-display);font-weight:800;font-size:clamp(30px,6.4vw,46px);
+  line-height:1.03;letter-spacing:-.022em;margin:0;text-wrap:balance}
+h2{font-family:var(--font-display);font-weight:600;font-size:clamp(20px,3.6vw,25px);
+  letter-spacing:-.01em;margin:0 0 10px;text-wrap:balance}
+h3{font-family:var(--font-body);font-weight:600;font-size:15px;margin:0 0 6px}
+p{margin:0 0 14px;max-width:68ch}
+a{color:var(--accent)}
+.eyebrow{font-family:var(--font-data);font-size:11.5px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 12px}
+.lede{font-size:18.5px;color:var(--ink-2);max-width:60ch;margin-top:16px}
+.byline{font-family:var(--font-data);font-size:12.5px;color:var(--ink-3);margin-top:18px}
+section{margin-top:46px}
+.note{font-size:14.5px;color:var(--ink-2)}
+
+.cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+.cta a{display:inline-flex;align-items:center;gap:8px;text-decoration:none;
+  font-family:var(--font-data);font-size:12.5px;font-weight:600;letter-spacing:.04em;
+  padding:10px 16px;border-radius:8px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink)}
+.cta a.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.cta a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+figure{margin:0 0 10px}
+figure img{width:100%;height:auto;display:block;border-radius:9px;
+  border:1px solid var(--line);background:var(--surface)}
+figcaption{font-size:13.5px;color:var(--ink-2);margin-top:9px;max-width:68ch}
+video{width:100%;height:auto;display:block;border-radius:9px;background:#0b0d12;
+  border:1px solid var(--line)}
+
+.claims{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin-top:18px}
+.claim{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:16px}
+.claim .n{font-family:var(--font-data);font-size:11px;font-weight:600;letter-spacing:.1em;
+  color:var(--ink-3);text-transform:uppercase}
+.claim h3{margin-top:8px}
+.claim p{font-size:14px;color:var(--ink-2);margin:0}
+
+.vids{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.vid p{font-size:13.5px;color:var(--ink-2);margin:9px 0 0}
+
+.tbl{overflow-x:auto;margin-top:12px}
+table{border-collapse:collapse;font-family:var(--font-data);font-size:13px;
+  font-variant-numeric:tabular-nums;width:100%;min-width:430px}
+th,td{text-align:right;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{color:var(--ink-3);font-weight:600;font-size:11px;letter-spacing:.07em;text-transform:uppercase}
+tbody tr:last-child td{border-bottom:none}
+tr.hi td{background:var(--sunk);font-weight:600}
+
+.box{background:var(--sunk);border:1px solid var(--line);border-radius:11px;padding:20px 20px 8px}
+.box ul{margin:0;padding-left:20px}
+.box li{margin-bottom:12px;font-size:14.5px;color:var(--ink-2);max-width:66ch}
+.box li b{color:var(--ink);font-weight:600}
+code{font-family:var(--font-data);font-size:.88em;background:var(--sunk);padding:2px 6px;
+  border-radius:4px;border:1px solid var(--line)}
+footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);
+  font-size:13.5px;color:var(--ink-3)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="eyebrow">spacenav · research preprint</p>
+  <h1>What Makes a Mission Hard?</h1>
+  <p class="lede">A spacecraft, a fuel tank, and a target that is itself
+  orbiting. The physics is Newtonian, the simulation runs in milliseconds, and
+  the question “is this mission hard?” still has no single answer.</p>
+  <p class="byline">Kevin Horecka · preprint draft, October 2026</p>
+
+  <div class="cta">
+    <a class="primary" href="spacenav.pdf">Read the paper (PDF)</a>
+    <a href="ghosts/">Interactive ghost replay</a>
+    <a href="https://github.com/kevroy314/spaceship-navigator">Code &amp; data</a>
+  </div>
+
+  <section>
+    <h2>Three ways difficulty refuses to be one number</h2>
+    <div class="claims">
+      <div class="claim">
+        <div class="n">Claim 1</div>
+        <h3>It needs two axes</h3>
+        <p>A mission can be hard because a simple mental model of the field is
+        wrong, or because the window for acting is narrow. The two need
+        opposite fixes, so a single difficulty score merges exactly the cases a
+        designer must tell apart.</p>
+      </div>
+      <div class="claim">
+        <div class="n">Claim 2</div>
+        <h3>It is hard to measure</h3>
+        <p>We published a conclusion that a class of missions was infeasible.
+        It was twelve correlated samples of a process that succeeds 16% of the
+        time, where seeing zero has probability 0.13. The paper reports that as
+        a finding, not a footnote.</p>
+      </div>
+      <div class="claim">
+        <div class="n">Claim 3</div>
+        <h3>What you tell the agent matters</h3>
+        <p>Four hand-designed physical readouts <em>cost</em> the agent up to
+        ten points of success — and the whole cost sits on the two that were
+        algebraically redundant, not the two carrying new physics.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>496 attempts at the same mission</h2>
+    <p class="note">Every saved checkpoint of one training run flying one fixed
+    mission sixteen times, with the policy sampling its actions rather than
+    taking the most likely one. Early policies spray across the field; late
+    policies thread the same line. This is what the single number in an
+    evaluation table is averaging over.</p>
+    <div class="vids">
+      <div class="vid">
+        <video controls muted loop playsinline preload="metadata"
+               poster="figures/ghosts.png" src="media/replay_medium_1.mp4"></video>
+        <p><b>It works.</b> All 496 attempts on one mission clock. The fleet
+        thins as attempts end; 298 of them arrive.</p>
+      </div>
+      <div class="vid">
+        <video controls muted loop playsinline preload="metadata"
+               poster="figures/ghosts.png" src="media/replay_hard_0.mp4"></video>
+        <p><b>It does not.</b> A three-target mission, 496 attempts, zero
+        arrivals. The agent converges confidently on a shuttle between the
+        first two targets and never reaches the third.</p>
+      </div>
+    </div>
+    <div class="vid" style="margin-top:16px;max-width:560px">
+      <video controls muted loop playsinline preload="metadata"
+             src="media/learning_medium_1.mp4"></video>
+      <p><b>Learning, as an accumulation.</b> The same mission with attempts
+      added in training order, so the corridor forms as you watch.</p>
+    </div>
+    <p class="note" style="margin-top:14px">The
+    <a href="ghosts/">interactive version</a> lets you switch missions, scrub
+    the training axis and replay the fleet yourself.</p>
+  </section>
+
+  <section>
+    <h2>Where a one-body model breaks</h2>
+    <figure>
+      <img src="figures/eta.png" alt="Left: eta rising to a peak of 0.43 at the equal-pull radius and falling away on both sides. Right: median eta per level family, spanning three orders of magnitude.">
+      <figcaption>The quantity <b>η</b> is the fraction of local gravity that a
+      one-body “only the planet I’m orbiting matters” model throws away. It
+      peaks almost exactly where two bodies pull equally hard — about half a
+      Hill radius — and falls off fast on either side. Which family a level
+      belongs to moves η by three orders of magnitude, so some systems are
+      contested everywhere and others only inside a thin shell you have to aim
+      at deliberately.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>The result that surprised us</h2>
+    <p class="note">We added four physically meaningful readouts to the agent’s
+    observation — η, a fuel-versus-gravity ratio, their quotient, and a local
+    tidal stretching rate — expecting an agent told about its own difficulty to
+    learn faster. It learned worse. Five training seeds per row:</p>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>What the agent was told</th><th>Easy</th><th>Medium</th><th>Hard</th><th>Blind</th></tr></thead>
+        <tbody>
+          <tr><td>nothing</td><td>89.4</td><td>41.7</td><td>10.7</td><td>30.2</td></tr>
+          <tr class="hi"><td>η and stretch (new physics)</td><td>90.4</td><td>41.9</td><td>11.1</td><td>29.2</td></tr>
+          <tr><td>budget and demand (redundant)</td><td>86.6</td><td>33.2</td><td>6.2</td><td>22.7</td></tr>
+          <tr><td>all four</td><td>86.3</td><td>31.6</td><td>5.8</td><td>22.2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note" style="margin-top:12px">Percentage of missions arrived. The
+    two channels carrying genuinely new information are statistically
+    indistinguishable from telling the agent nothing at all. The two that are
+    algebraic combinations of things it already observes are indistinguishable
+    from telling it everything. The cost splits exactly on the redundancy line.</p>
+    <figure style="margin-top:18px">
+      <img src="figures/ablation.png" alt="Dot plot of five training seeds per arm across four evaluation tiers, and the four-way channel split.">
+      <figcaption>Every training seed, and the four-way split. In each tier the
+      two blue arms coincide and the two orange arms coincide below them.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>More time helps, then stops helping</h2>
+    <figure>
+      <img src="figures/clock.png" alt="Stacked bars of mission outcomes at 150, 300, 600 and 900 second episode clocks.">
+      <figcaption>Thirty-two two-target missions flown by a trajectory
+      optimiser at four episode clocks. Timeouts fall the whole way, but the
+      episodes a longer clock frees up become crashes about as often as they
+      become arrivals, and arrivals stop climbing after 600 seconds. More time
+      buys more exposure. An earlier result of ours, based on twelve correlated
+      samples at the shortest clock, concluded this mission class was
+      impossible.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Reproducing any of it</h2>
+    <div class="box"><ul>
+      <li><b>Everything is in one repository.</b> Environment, level
+      generators, evaluation suites, trained policies and the analysis that
+      produced every figure:
+      <a href="https://github.com/kevroy314/spaceship-navigator">kevroy314/spaceship-navigator</a>.</li>
+      <li><b>Figures regenerate from committed measurements.</b>
+      <code>scripts/paper_figures.py</code> reads stored results rather than
+      numbers typed into the paper source, so a claim and its figure cannot
+      drift apart.</li>
+      <li><b>The reasoning is on the record, including where it was wrong.</b>
+      <a href="https://github.com/kevroy314/spaceship-navigator/tree/main/docs/decisions">docs/decisions/</a>
+      is a numbered, append-only series. Three entries are retractions of our
+      own earlier conclusions, kept in place with the measurement that
+      overturned them.</li>
+    </ul></div>
+  </section>
+
+  <footer>
+    <p>Preprint draft. Developed in collaboration with Claude (Anthropic)
+    operating as an autonomous agent on the repository; the decision records
+    include the agent’s own retracted conclusions.</p>
+  </footer>
+
+</div>
+</body>
+</html>
