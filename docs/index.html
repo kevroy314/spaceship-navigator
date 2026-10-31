@@ -746,7 +746,7 @@
     learned and one did not: the two that learned reached 68% and 74% on the easy
     suite and 26% and 32% on the medium suite, against 90% and 42% for the same
     configuration at 150 s, while the third never exceeded 19% on the easy suite and
-    finished at 4%, so that the mean over seeds is 48.9 &plusmn; 38.6, 19.8 &plusmn; 16.1,
+    finished at 4%, so that the mean over seeds is 48.9 &plusmn; 38. Raising the discount to match the clock recovers it: at &gamma; = 0.9998 (about 333 s of lookahead) all three seeds learn, reaching 83.7 / 42.4 / 14.1 / 29.7 with seed spread under 1.5 points, at or above the 150 s reference on medium, hard and blind; at &gamma; = 0.9995 the failure reproduces exactly. The clock and the discount are one parameter, not two.6, 19.8 &plusmn; 16.1,
     3.9 &plusmn; 3.6 and 13.1 &plusmn; 10.5 on the four tiers. Note that the dominant
     ending for the policies that did learn was still the clock, with 37&ndash;42% of
     medium-suite tasks timing out at 600 s against roughly a third at 150 s, so that

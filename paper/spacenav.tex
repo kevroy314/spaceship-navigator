@@ -70,8 +70,9 @@ argued to be the least informative of the constraints, with the caveat that
 what a longer clock buys depends on the navigator: a trajectory optimizer
 converts timeouts into arrivals as the clock lengthens, while a scripted
 reflex pilot converts them into escapes and collisions, and a learned policy
-trained at the longer clock with its discount unchanged mostly fails to
-arrive at all. Finally, a proximal policy optimization agent trained across
+trained at the longer clock mostly fails to arrive at all unless its discount
+is raised to match, at which point it recovers the shorter clock's
+performance; the clock and the discount are one parameter, not two. Finally, a proximal policy optimization agent trained across
 20 runs (5 seeds per condition) is used both to evaluate the levels and to be
 evaluated by them: of four physically meaningful readouts added to its
 observation, the two that are algebraic combinations of quantities it already
@@ -709,12 +710,22 @@ having tested it, is the discount: $\gamma = 0.999$ gives the value estimate
 a horizon of about 65\,s at 15\,Hz, which is a reasonable fraction of a
 150\,s episode and a ninth of a 600\,s one, so that a policy trained at the
 longer clock is rewarded for progress it cannot see the end of and has every
-reason to drift. Whether raising the discount to match the clock recovers
-the 150\,s performance is \MEASURE{queued: $\gamma = 0.9995$ and $0.9998$
-(about 130\,s and 330\,s of lookahead) at 600\,s, three seeds each}; what
-can be said now is that a longer clock is not a free parameter for a learner
-either, and that the sense in which 150\,s was arbitrary (Section
-\ref{sec:discussion}) does not make 600\,s correct.
+reason to drift. Raising the discount to match the clock confirms this, and
+the threshold is sharp. At $\gamma = 0.9995$ (about 133\,s of lookahead) the
+failure reproduces almost exactly, with the same seed never learning and
+means of $47.7 \pm 38.1$, $20.0 \pm 16.2$, $4.2 \pm 4.1$ and $13.1 \pm 11.1$;
+at $\gamma = 0.9998$ (about 333\,s, over half the episode) all three seeds
+learn, the seed standard deviations fall to $0.1$--$1.4$ points, and the
+policy reaches $83.7 \pm 1.4$, $42.4 \pm 1.4$, $14.1 \pm 0.7$ and
+$29.7 \pm 0.1$ on the four tiers, i.e. at or above the 150\,s reference on
+medium, hard and blind (on different levels, so same-family rather than
+paired, and with the caveat that the 600\,s blind suite is seen-family) and
+somewhat below it on easy, with the medium-suite timeout share down from
+37--42\% to 26--35\%. Thus, the clock and the discount are one parameter and
+not two: a longer clock is available to a learner, but only together with a
+horizon that reaches a substantial fraction of it, and the sense in which
+150\,s was arbitrary (Section~\ref{sec:discussion}) does not make 600\,s
+correct so much as it makes the pair of settings the thing to choose.
 
 There is a reason the clock cannot simply be set long enough to settle the
 question, and it is worth stating because it bears on what solvability
