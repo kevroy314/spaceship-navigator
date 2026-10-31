@@ -86,10 +86,10 @@ $\Delta v$ the tour is estimated to require is
 which \code{deltav\_estimate()} computes and which is also what the
 observation reports as the $\Delta v$ required over the legs still pending.
 The engine acceleration $a_{\mathrm{eng}}$ is drawn log-uniformly from
-$[0.6, 3]$\,u/s$^2$ (\code{SHIP\_ACCEL\_RANGE}, narrowed to $[1.5, 3]$ on the
+$[0.6, 3]$\,u/s$^2$ (\code{SHIP\_ACCEL\_RANGE}, overridden per suite, to $[1.5, 3]$ on the
 easy suite and $[0.8, 2]$ on the hard suite, and started generous by the
 training curriculum), the budget multiple $\beta$ is drawn uniformly from
-$[0.55, 1.35]$ (\code{DELTAV\_BUDGET\_RANGE}, narrowed per suite as
+$[0.55, 1.35]$ (\code{DELTAV\_BUDGET\_RANGE}, overridden per suite as
 Table~\ref{tab:suites} lists), and the tank, in seconds of full-throttle burn,
 is $\beta\,\Delta v_{\mathrm{req}} / a_{\mathrm{eng}}$ clipped to
 $[3, 60]$\,s (\code{SHIP\_FUEL\_LIMITS}), so that the tank actually carried can

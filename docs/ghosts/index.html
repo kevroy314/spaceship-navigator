@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ghost Replay</title>
-<meta name="description" content="Every checkpoint of one training run flying one fixed level sixteen times: 496 attempts drawn together, coloured by how far through training each was flown.">
+<meta name="description" content="Every checkpoint of one training run flying one fixed task instance sixteen times: 496 attempts drawn together, colored by how far through training each was flown.">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,13 +50,12 @@ canvas{display:block;width:100%;height:auto}
   <header class="corner">
     <p class="eyebrow"><a href="../">&larr; spacenav &middot; sheet 1</a> &middot; sheet 2 of 2 &middot; ghost replay</p>
     <h1>496 attempts at one level</h1>
-    <!-- DRAFT COPY: replace from paper -->
-    <p class="lede">Every checkpoint of one training run flying one fixed level, sixteen
-    times each, coloured by how far through training the policy was. Early policies
-    spray across the whole field; late ones thread the same line. <b class="k">Trails</b>
-    shows every path at once; <b class="k">replay</b> flies all 496 together against
-    the clock.</p>
-    <!-- /DRAFT COPY -->
+    <p class="lede">Every saved checkpoint of one training run flying one fixed task
+    instance sixteen times, with actions sampled rather than maximized (31 &times; 16 =
+    496 trajectories), colored by the training update at which each attempt was flown.
+    Early policies spray across the field and late policies converge into bundles,
+    which are not always the right ones. <b class="k">Trails</b> shows every path at
+    once; <b class="k">replay</b> flies all 496 together against the clock.</p>
   </header>
 
   <section>
@@ -91,7 +90,7 @@ canvas{display:block;width:100%;height:auto}
       <div class="plate">
         <div id="tip" class="tip"></div>
         <canvas id="cv" width="1100" height="1100" role="img"
-          aria-label="Craft trajectories for 496 attempts at one level, coloured by training update"></canvas>
+          aria-label="Craft trajectories for 496 attempts at one level, colored by training update"></canvas>
         <div class="ramp"><span>update 0</span><span class="strip"></span><span>3000</span></div>
       </div>
 
@@ -118,11 +117,14 @@ canvas{display:block;width:100%;height:auto}
     <div class="sec-head">
       <span class="no">A</span><h2>The four tracks say different things</h2><span class="rule"></span>
     </div>
-    <!-- DRAFT COPY: replace from paper -->
-    <p class="note">Same policy, same training run, four levels from the frozen
-    evaluation suites. The spread between them is wider than the spread between any
-    two training configurations measured so far.</p>
-    <!-- /DRAFT COPY -->
+    <p class="note">Same training run, four task instances from the frozen evaluation
+    suites. Sampled success is far below greedy success (easy task 0 arrives 52% of
+    the time when sampled, against 89% for the greedy policy on that suite), and the
+    spread between instances within a suite (60%, 52%, 8% and 0% on the four here) is
+    larger than any effect measured between training configurations in the paper,
+    since the observation-channel effect is seven to ten points and two instances
+    drawn from the same suite differ by fifty. Any claim about this environment that
+    rests on a handful of instances is fragile by construction.</p>
     <div class="tbl"><table id="tblTracks"></table></div>
   </section>
 
@@ -140,22 +142,23 @@ canvas{display:block;width:100%;height:auto}
       active target, drawn where it sits over the episode; on most of these levels
       the target is itself in motion.</li>
       <li><b>A line stopping early means the attempt ended there</b>, by arrival,
-      collision, fuel or hazard. Only timeouts run the full 150 s.</li>
+      collision, accumulated damage or leaving the level. An empty tank is not an
+      ending; the craft coasts on. Only timeouts run the full 150 s.</li>
       <li><b>In replay, all 496 fly on one shared clock</b>, so the fleet thins as
-      attempts end. A finished attempt leaves a dot in its outcome colour, bright for
+      attempts end. A finished attempt leaves a dot in its outcome color, bright for
       an arrival and faint for everything else, and the green ring tracks the target.
       One second of wall clock is one second of episode time at 1&times;.</li>
       <li><b>One run, one seed.</b> This is <code>abl_info_s0</code>, trained with
       <code>eta,stretch</code> and rolled out the same way. It is one of five seeds
       behind that configuration, not a summary of them.</li>
-      <li><b>Hard task 0 never arrives, 0 of 496.</b> The planner lands only about
-      16% of two-stop tours at this clock, so part of that is the tier and not the
-      policy.</li>
+      <li><b>Hard task 0 never arrives, 0 of 496.</b> The reference optimizer lands
+      only 5 of 32 two-target levels at this clock, so part of that is the tier and
+      not the policy.</li>
     </ul></div>
   </section>
 
   <footer>
-    <p><a href="../">&larr; back to sheet 1</a> &middot; Draft companion sheet. Copy on this page is scaffolding and will be replaced from the paper.</p>
+    <p><a href="../">&larr; back to sheet 1</a> &middot; Companion sheet to a draft paper; the replays are the flights that were scored, integrated by the browser from the same physics.</p>
   </footer>
 </div>
 

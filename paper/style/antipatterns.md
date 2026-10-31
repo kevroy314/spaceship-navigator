@@ -983,3 +983,320 @@ most naive possible procedure" worked case (L240; voice.md 1.7), the
 parenthetical definitions throughout, the six-reason and three-picture
 enumerations as content, and the 100-word sentences, which are the
 author's length.
+
+
+---
+
+## 6. Audit of the complete draft
+
+Line numbers from `cat -n` on the four files at commit `c33e6ec` (2026-10-31):
+`paper/spacenav.tex` (1320 lines) and the three fragments it inputs,
+`paper/appendix_obs.tex` (184), `paper/appendix_goals.tex` (124) and
+`paper/appendix_repro.tex` (115). The whole text was read end to end; the
+tables below cover the parts section 5 did not see (the recurrence argument
+and the zero-thrust measurement in the clock section, the 600 s training
+result, "Training budget" and Table 4, "Relations between the measures" and
+its figure, Appendix B, and the three appendices) and re-check the rest.
+Allowances are those of section 5: sentence-initial "However,", "Thus,",
+"Moreover,", "Note that", "Taken together,", "Firstly, ... Secondly,",
+"Here, we examine", long sentences with parenthetical definitions, inline
+"1) ... 2)" lists, "the natural expectation", the "Consider ..." worked case,
+"rather than" where both alternatives are named, and colons before an
+equation, a specification or an enumeration. Thirty-six of the cited lines
+were re-read with `sed -n Np` before the tables were written (6k).
+
+### 6a. Measured counts, draft 1 against draft 2 against the complete draft
+
+Same greps as section 5a, run on flattened text (comment lines dropped,
+paragraphs joined, so a sentence start or a "rather than" split across a
+line break is counted). The raw per-line grep gives 17 "rather than" in
+`spacenav.tex`; the two extra are at L339-340 and L428-429, where the phrase
+crosses a line.
+
+| Measure | spacenav.tex (draft 1) | draft2.tex | spacenav.tex (now) | appendix_obs | appendix_goals | appendix_repro |
+|---|---|---|---|---|---|---|
+| Sentences beginning "We <verb>" | 24 | 0 | 0 | 0 | 0 | 0 |
+| Spaced em dashes ` --- ` | 29 | 0 | 0 | 0 | 0 | 0 |
+| `\emph{}` | 78 | 0 | 0 | 0 | 0 | 0 |
+| "rather than" | 13 | 28 | 19 (L108, 174, 180, 254, 339, 429, 446, 651, 665, 670, 681, 719, 785, 863, 1023, 1037, 1130, 1173, 1186) | 1 (L12) | 1 (L115) | 2 (L86, 107) |
+| "mental model" | 3 | 0 | 0 | 0 | 0 | 0 |
+| "mission" | 73 | 4 | 4 (L115, 189 "mission designer(s)"; L638 "mission-design source"; L645 "every mission in Section 1", the historical ones; all permitted) | 0 | 0 | 0 |
+| "exactly" | 6 | 10 | 6 (L288, 305, 563, 707, 1296, 1307; three are literal and three are filler, rows below) | 0 | 1 (L107, literal) | 0 |
+
+The five surface tells remain at zero. "rather than" fell from 28 to 23 over
+the four files and most of the survivors now name both alternatives (L108,
+L254, L339, L651, L785, L1037, L1186 are real contrasts); the rhetorical form
+survives at L429, L719, L1023 and L1130, listed below. The main residue in the
+new third of the text is of a different kind from section 5's: the new
+material is cleaner at the sentence level than the old (one colon reveal per
+page rather than three, no triads announced) but it carries more numbers,
+and several of them disagree with each other or with the appendices (6j).
+Those rows are the ones to fix first.
+
+Priority as in section 5: **H** = a reader would flag it on its own, or the
+text contradicts itself; M = contributes to density or leaves a number
+unsupported; L = fix if touching the sentence.
+
+### 6b. Title and abstract (spacenav.tex L31-84)
+
+| Line | Quoted | Pattern | Pri | Suggested rewrite |
+|---|---|---|---|---|
+| 32-33 | "Defining, Measuring, and Learning Difficulty in a Game-Scale Gravitational Navigation Environment" | T5 gerund triad, flagged H in section 5b; the comment at L5-6 says the subtitle is kept at the author's request | -- | Author's call; listed so the count is honest, not re-flagged. |
+| 66-72 | "the episode clock is argued to be the least informative of the constraints, with the caveat that what a longer clock buys depends on the navigator: a trajectory optimizer converts timeouts into arrivals as the clock lengthens, while a scripted reflex pilot converts them into fuel exhaustion and collisions" | S3 colon before a mirrored pair; S5; and incomplete against the body, which has a third navigator (the policy trained at 600 s times out more, L688-691) and the zero-action measurement (L728-751) | M | "...the least informative of the constraints, though what a longer clock buys depends on the navigator, since between 150 s and 900 s a trajectory optimizer converts timeouts into arrivals (5/32 to 13/32 at 600 s), a scripted reflex pilot converts them into fuel exhaustion and collisions, and a policy trained at 600 s times out more often than one trained at 150 s." |
+| 68 | "chaos has to be built into a level deliberately" | V2 "deliberately" | L | "chaos has to be built into a level." |
+| 72-78 | "a proximal policy optimization agent trained across 20 runs (5 seeds per condition) ... cost 3.1 to 10.1 percentage points of success" | Inconsistent with Section 5.2 (L892-912): the paper now has 25 runs (20 at 3000 updates, 3 at the 600 s clock, 2 at 10,000 updates), the 10,000-update result is called "the ceiling this paper can report" (L908) and is absent here, and the channel cost is quoted without the caveat at L905-908 that it was measured between under-trained policies | H | "Finally, a proximal policy optimization agent trained for 3000 updates across 20 runs (5 seeds per condition) is used both to evaluate the levels and to be evaluated by them; of four physically meaningful readouts added to its observation, the two that are algebraic combinations of quantities it already observes cost 3.1 to 10.1 percentage points of success depending on the evaluation tier (Welch's $t$ on seed means, $p \le 0.029$ on every tier), while the two that carry new information cost nothing; training the default configuration to 10,000 updates at two seeds gains a further 4.7 to 15.3 points, so the channel costs are differences between under-trained policies, and per-level replay of the trained policies shows how much a single success rate conceals." |
+
+### 6c. Section 1, Navigating an n-body field (L87-211)
+
+| Line | Quoted | Pattern | Pri | Suggested rewrite |
+|---|---|---|---|---|
+| 145-146 | caption: "and then circle the star to the clock without matching the giant's velocity; it is shown as the failure it is." | R4 aphorism in a caption | M | "...and then circle the star to the clock without matching the giant's velocity, so the flight fails on the third target." |
+| 153-154 | caption: "(g) The five ways an episode ends, the one way it does not, and the units." | R2 cadence with a teaser ("the one way it does not") | L | "(g) The five episode endings, the empty tank (which is not one), and the units." |
+| 187-188 | "On this view a chaotic region is a noise filter, and the navigator's plan is for what comes after it." | R4 closer; this is section 5c's own suggested wording | L | Keep unless the paragraph is reopened; if it is, "On this view a chaotic region is a noise filter and the plan is made for the far side of it." |
+| 209-211 | `\FIG{the three pictures side by side ...}` | Editorial placeholder visible in the PDF of a paper described as complete; and because it is not a float, "Figure 2" in the PDF is `fig:eta`, not the figure the text promises | H | Draw it (three panels, `scripts/fig_pictures.py`) or delete the placeholder; the three pictures are already carried by prose. |
+| 229 | "which is what a level designer ultimately wants" | H4 "ultimately" | L | "which is what a level designer wants" |
+
+### 6d. Section 2, Why a level of a given difficulty is hard to design (L214-280)
+
+| Line | Quoted | Pattern | Pri | Suggested rewrite |
+|---|---|---|---|---|
+| 214 | `\section{Why a level of a given difficulty is hard to design}` | T2/T4 heading as an indirect clause (voice.md 3: headings are noun phrases); section 5d let it pass | M | "Designing a level to a difficulty" |
+| 235 | `\subsection{What it would take to check an answer}` | T4 teaser heading, same form | M | "The cost of checking solvability" |
+| 274-275 | "The same literature offers the consolation on which this paper's method rests" | V metaphor ("consolation") | L | "The same literature supplies the property on which this paper's method rests, which is that ensemble statistics..." |
+
+### 6e. Section 3, Heuristics (L283-774)
+
+| Line | Quoted | Pattern | Pri | Suggested rewrite |
+|---|---|---|---|---|
+| 286-288 | "and the reader is asked to hold them as such" | R8 address to the reader | L | Delete the clause. |
+| 288-290 | "What follows is the environment in enough detail to define them, then the quantities, then the properties of the field that bear on whether they mean anything." | D2 roadmap sentence; "then, then" cadence | L | Delete, or "The environment is described first, in enough detail to define them." |
+| 365 | Table 1 cell: "the hazard, not the gravity, shapes the route" | R1 "X, not Y" in a table | M | "extended debris zones that shape the route; the gravity does not" |
+| 370 | Table 1 cell: "a luminous body whose radiation, not its gravity, is the constraint" | R1 | M | "a luminous body whose radiation is the constraint" |
+| 394-395 | "$k = 0$ the truth; bodies always move truthfully" | V5/V7: "truth", "truthfully" for the full field | L | "$k = 0$ the full field; bodies always move under the full field" |
+| 423 | "thousands of candidate levels can be scored for free" | H4 informal | L | "scored without simulation" |
+| 431-435 | "An ordinary level in this environment sits at $\dd \approx 0.0014$, with $\eta = 0.0036$ and $A = 3.8$" | Number without its n or source (the figures are in `docs/decisions/0004-model-demand.md`), and the three do not satisfy the definition: $0.0036/3.8 = 0.00095$, not $0.0014$, so they are presumably separate medians and the median of a ratio is not the ratio of the medians; the paper does not say | H | "A typical level (medians over the $n = $ [N] levels of the training pool, \code{docs/decisions/0004}) has $\eta = 0.0036$ and $A = 3.8$, and a median $\dd$ of $0.0014$ (the median of the ratio, which exceeds the ratio of the medians because $\dd$ is heavy-tailed), which is to say that..." |
+| 436-443 | "was checked by comparing a planner restricted to the one-body representation against one with the true field on levels pooled by $\dd$ band (24 levels per band, two bands)" | Number without its script (voice.md 4: a measurement names its script) | L | Append "(\code{scripts/[validation script]}, 48 levels)". |
+| 450 | "placing targets in the Wisdom band raises $\eta$ only from $0.0026$ to $0.0172$" | Term used before definition ("Wisdom band" is never defined; `wisdom1980` is cited two lines earlier for resonance overlap, not for the band); number without n or script | M | "placing targets in the resonance-overlap band around a secondary (the band whose width Wisdom \cite{wisdom1980} gave as the $2/7$ power of the mass ratio) raises $\eta$ only from $0.0026$ to $0.0172$ ($n = $ [N] levels, \code{scripts/[probe]})" |
+| 471 | "thin shells that must be aimed at deliberately" | V2 "deliberately" | L | "thin shells that must be aimed at" |
+| 496-497 | "The outcome row does not separate them, and the reason is instructive: a single-burn decision space is shaped by the task" | R6 labelled device; S3 colon reveal; "instructive" is on the section 2 blocklist (added from the section 4 audit) | H | "The outcome row does not separate them, since a single-burn decision space is shaped by the task (the start orbit, the target's motion, the authority $A$) at least as much as by the family, so that the star cluster shown has a clean diagonal winning stripe (...) and the binary star a single narrow band, while two other levels from the same families would show different shapes." |
+| 517-518 | caption: "Row (c) is the decision space of one task, not a property of the family." | R1 "X, not Y" in a caption | M | "Row (c) is the decision space of the one task shown and differs between tasks of the same family." |
+| 535-536 | "Every level is banded on this axis as well as on $\dd$, and the two are never combined" | Claim without its measurement: no figure, table or script in the paper shows the trivial-difficulty banding (draft 1's bands figure is gone; `--which ... bands` survives in Appendix D L49) | M | Either restore the banding figure or "The generator bands every level on this axis as well as on $\dd$ (\code{scripts/[probe]}; the bands are not reported here), and the two are never combined". |
+| 574-575 | "the environment is well inside the benign regime" | H4: draft 1's "comfortably inside" (section 4f) with the adverb swapped | L | "the environment is inside the regime in which the objective is not fractal, by about a factor of two in $\lambda$" |
+| 588-589 | "chiefly by episodes long relative to orbital periods (closer encounters and tighter binaries help less)" | Claim without a measurement; "help less" is asserted, and the only related number (L450-452) is for $\eta$, not $\lambda$ | M | "chiefly, on the timescale argument above, by episodes long relative to orbital periods \MEASURE{$\lambda$ on levels with tighter binaries and closer encounters}" |
+| 608 | "this is a design decision, not a result" | R1 "X, not Y" | M | "this is a design decision, and it is the nearest relative in this paper of..." |
+| 636-637 | "time is the least interesting, and it is also the one most easily mistaken for difficulty. This is a position, not a finding, since" | R1; S2 short sentence as a thesis | M | "That ranking is a position, since deadlines and launch windows are real constraints in every mission-design source cited above, but it is the position the measurement below supports." |
+| 645-646 | "which is the choice every mission in Section~\ref{sec:field} was praised for making" | Overstates Section 1, which says the missions were "judged on fuel, exposure and arrival" (L107-108), not praised | L | "which is the choice each of the historical missions in Section~\ref{sec:field} made." |
+| 662-663 | "The same experiment on a weaker navigator gives the opposite reading, and the contrast is the point." | R6 labelling the device; R4 | H | "The same experiment on a weaker navigator gives the opposite reading." |
+| 671-674 | "A longer clock, that is, gives a navigator the time to finish a path it could not otherwise finish, or the time to exhaust its tank and fall into a body, and which of the two it gets depends on the navigator and not on the clock." | S5 mirrored A/B; R1 "and not"; R4 closer | H | "Thus, a longer clock gives the optimizer time to finish paths it could not otherwise finish and gives the reflex pilot time to exhaust its tank and fall into a body, so that what the clock buys is a property of the navigator." |
+| 688-691 | "Note that the dominant ending for the policies that did learn was still the clock: 37--42\% of medium-suite tasks timed out at 600\,s, against roughly a third at 150\,s, so that four times the time produced more timeouts, not fewer." | R1 kicker "not fewer"; "roughly a third" has no n (the figure is in `docs/decisions/0035-budget-not-clock.md`) | M | "Note that the dominant ending for the two policies that did learn was still the clock, with 37--42\% of medium-suite tasks timing out at 600\,s against [33]\% ($n = 594$, \code{docs/decisions/0035}) at 150\,s for the same configuration, so that four times the clock produced more timeouts." |
+| 695-696 | "a policy trained at the longer clock is rewarded for progress it cannot see the end of and has every reason to drift" | V7 colloquial ("has every reason") | L | "...is rewarded for progress it cannot see the end of, and drifting is not penalized." |
+| 699-701 | "a longer clock is not a free parameter for a learner either, and that the sense in which 150\,s was arbitrary (Section~\ref{sec:discussion}) does not make 600\,s correct." | R4 chiastic closer | M | "...a longer clock is not a free parameter for a learner either; 150\,s was inherited (Section~\ref{sec:discussion}) and 600\,s has not been derived." |
+| 703-705 | "There is a reason the clock cannot simply be set long enough to settle the question, and it is worth stating because it bears on what solvability means. Consider a navigator that does nothing at all." | R5 telegraph; H1 "worth"; H4 "simply", "at all" | H | "The clock cannot be set long enough to settle the question, for a reason that bears on what solvability means. Consider a navigator that does nothing." |
+| 707 | "in the sense Poincar\'e established for exactly this problem" | H4 "exactly" | L | "in the sense Poincar\'e established for this problem" |
+| 713-718 | "Thus, for a flythrough tour, the zero-action policy succeeds with probability approaching one as the clock lengthens ... (in the limit of a system collapsing gravitationally to a point, every path is that path)." | The recurrence claim is stated without its conditions (CLAUDE.md mandate 3): the craft's own Hamiltonian is time-dependent, so recurrence applies to the autonomous bodies-plus-craft system on a bounded energy surface, with respect to Liouville measure rather than the task's start distribution, and "succeeds" for a tour means arriving in order; the measurement that follows shows contact flat by 9,000 s because the craft is dead (L742-745). The parenthetical is a flourish. | M | "Thus, if the bodies-plus-craft system stays bounded, a coasting craft returns arbitrarily near its starting state (the recurrence is for the autonomous system on a bounded energy surface and with respect to Liouville measure, not the task's start distribution), so that for a flythrough tour the zero-action policy's contact probability has no bound other than the one the hazards set, and the only stopping criterion that is not a choice is divergence, i.e. the craft leaving the system." Delete the parenthetical about gravitational collapse. |
+| 739-741 | "a pool of 900 levels was validated to 9{,}000\,s (ten episodes; 80--100\% of generated levels survive that long, so bounded systems from these generators stay bounded)" | "ten episodes" is wrong at either clock (sixty at 150 s, fifteen at 600 s); it is ten validation horizons. "stay bounded" overreads 80--100\% survival | M | "(ten times the 900\,s validation horizon, or sixty 150\,s episodes; 80--100\% of generated levels survive that long, so most levels from these generators stay bounded over it)" |
+| 745-751 | "Thus, patience alone buys a coasting craft three to five points of contact ... and the race between the improbable path and exposure is won by exposure; in this environment the stopping criterion that recurrence fails to supply is supplied instead by the hazards, and the constraint the author ranks most interesting is also the one that bounds the clock." | R4 aphoristic triple closer; metaphor ("race ... won"); self-reference ("the author ranks"); R7-adjacent | H | "Thus, coasting gains three to five points of contact between 150\,s and 900\,s and another three to six between 900\,s and 9{,}000\,s, while the fraction of craft destroyed over the same intervals rises to 26--27\% and then to 78--80\%, so that in this environment the stopping criterion recurrence does not supply is supplied by the hazards." |
+| 756 | caption: "A craft that never thrusts." | Headline fragment opening a caption | L | "Contact and death curves for a craft that never thrusts." |
+| 763 | caption: "the two rows are same-specification, not paired." | R1 in a caption | L | "the two rows are drawn to the same suite specifications on different levels." |
+| 753-774 | `fig:noop` is placed before `fig:clock` in the source, but `fig:clock` is referenced first (L652 against L729), so the PDF cites Figure 6 before Figure 5 | Figure numbered out of reference order | M | Move the `fig:clock` float above `fig:noop`. |
+
+### 6f. Sections 4-5, The learning agent and Results (L777-1151)
+
+| Line | Quoted | Pattern | Pri | Suggested rewrite |
+|---|---|---|---|---|
+| 800 | "$\gamma = 0.999$; $\lambda = 0.95$; clip $0.2$" | Symbol collision: $\lambda$ is the maximal Lyapunov exponent from L548 onward (and $\lambda_{\mathrm{crit}}$ at L552) | M | "the advantage-estimation parameter $\lambda_{\mathrm{GAE}} = 0.95$" |
+| 803-804 | "which on the hardware used takes about 67 minutes" | Disagrees with Appendix D L89-96, where four of the twenty runs took 6.4 h on the other card | L | "which takes about 67 minutes on the faster of the two cards used (Appendix~\ref{app:repro})" |
+| 838-840 | Table 2 caption: "(a station or a target carried by a body, drawn with probability 0.45--0.6 per target)" | Disagrees with Appendix C L14 ("\code{p\_station}, 0.35 by default and set per suite") unless the reader is told the suites set it | L | "(a station or a target carried by a body, drawn with a per-suite probability of 0.45--0.6; the training default is 0.35, Appendix~\ref{app:goals})" |
+| 852-853 | "the best configuration found (the policy told $\eta$ and the stretching rate, for reasons given below)" | "best" is nominal: Table 5 gives $p = 0.40$--$0.90$ against the no-channel arm; and the paper uses three different agents as "the agent" (see 6j item 3) | H | "the default configuration (the policy told $\eta$ and the stretching rate, which is statistically indistinguishable from the no-channel arm, Table~\ref{tab:instr})", and state at each later use which arm is flown and why. |
+| 861 | "on a comfortable-tank instance set it arrives 63.3\% of the time" | Number without n or script (carried over from draft 2) | L | "on a comfortable-tank instance set ($n = $ [N], \code{scripts/[pilot eval]})" |
+| 883-885 | caption: `\TODO{the first draft's table used the no-channel arm ...; confirm which the author prefers as "the" result}` | Editorial placeholder in a table caption of the complete draft | H | Resolve (6j item 3) and delete. |
+| 867-887, 914-934 | Table 3 and Table 4 | D6: Table 3 (3000-update row, pilot row) is a strict subset of Table 4 (the same two rows plus the 10,000-update row) | M | One table of three rows, or make Table 3 the no-channel arm as the TODO proposes. |
+| 900-901 | "rises from $47.8\%$ at update 3000 through $52.4\%$ at 6000 to $57.7\%$ at 10,000" | Two values for one quantity: Table 4 gives $57.2 \pm 2.5$ for the 10,000-update medium result (mean of the last three checkpoints), the text $57.7$ (final checkpoint), without saying so | L | "to $57.7\%$ at the final checkpoint ($57.2\%$ as the mean of the last three, Table~\ref{tab:budget})" |
+| 905-908 | "the direction of an effect measured there is likely to survive more training, as the budget runs show the same ordering across tiers, but its size should not be read as a property of the task" | The factor does not bear on the mechanism (CLAUDE.md mandate 3): the ordering of the four tiers under one configuration says nothing about the contrast between arms, and only the $\eta$,stretch arm was trained to 10,000 updates | H | "whether the direction of an effect measured there survives more training has not been tested, since only the $\eta$,stretch arm was trained to 10,000 updates \MEASURE{the all-four arm at 10,000 updates, two seeds}, and its size should not be read as a property of the task." |
+| 908-912 | "The 10,000-update result is the ceiling this paper can report, and the one against which the reference pilot of Table~\ref{tab:main} should be compared: the learned policy then exceeds the pilot by $9.8$, ..." | S3 colon reveal; and the abstract does not carry this comparison (6b) | M | "...should be compared, since the learned policy then exceeds the pilot by $9.8$, $22.5$, $11.3$ and $9.1$ points on the four tiers, including the holdout tier on which the 3000-update policy fell short of it." |
+| 947 | "toggling them was verified not to perturb the dynamics" | Number-free claim without its script (carried over) | L | "(\code{tests/[test name]})" |
+| 967-969 | "(it is also a good proxy for the quantity one would actually want, since on the four levels of Figure~\ref{fig:phase} its log--log correlation with the measured 20\,s Lyapunov exponent is $0.96$--$0.98$)" | "the quantity one would actually want" is vague; $n = 4$ levels | L | "(on the four levels of Figure~\ref{fig:phase} its log--log correlation over the playable area with the 20\,s finite-time Lyapunov exponent is $0.96$--$0.98$, so it stands in for the local divergence rate)" |
+| 970 | "puts the entire cost on the redundant half" | V2 "entire" | L | "puts the cost on the redundant half" |
+| 1017-1021 | "Four extra input dimensions against 285,322 parameters is a capacity account, a ratio with a division in it is heavy-tailed even after log compression, which is a conditioning account, and the two predict different behavior under scale" | S5 parallel "X account / Y account" (draft 1's "X story; Y story", section 4h, with the noun swapped); and the first clause argues against capacity pressure, not for it | M | "The cost could be a capacity effect, though four extra inputs against 285,322 parameters makes that an unlikely one, or a conditioning effect, since a ratio with a division in it is heavy-tailed even after log compression; the two predict different behavior as the network widens \MEASURE{...}." |
+| 1022-1023 | "an observation channel's value to a learner depends on whether it is new rather than on whether it is true" | R1: draft 1 L851 "not on whether the information is true but on whether it is new" (section 4i) with the connective swapped | M | "an observation channel's value to a learner depends on whether it adds information the observation does not already determine, and a true quantity that is already determined costs capacity without buying anything" |
+| 1049-1050 | "the channel effect of Section~\ref{sec:instruments} is seven to ten points" | Contradicts L949 and Table 5: the all-four cost is $3.1$, $10.1$, $4.9$ and $8.0$ points on the four tiers | H | "since the channel effect of Section~\ref{sec:instruments} is three to ten points" |
+| 1044, 1047-1048, 1064-1066 | "the easy-suite instance shown arrives 52\%"; "(60\%, 52\%, 8\% and 0\% on the four shown)"; caption names medium task 1, medium task 0 and hard task 0 only | The fourth (easy) instance is unnamed in the caption and the four rates are not assigned to instances; if the order is easy, medium 1, medium 0, hard 0 then medium task 1 (60\%) outperforms the easy instance (52\%), which the text should say | L | Caption: "Easy task [k] (52\% sampled success), medium task 1 (60\%), medium task 0 (8\%) and hard task 0 (0\%)." |
+| 1078-1079 | caption: "one seed of each headline configuration" | Configurations unnamed | L | "(no channels, $\eta$,stretch, $A$,$\dd$ and all four; seed 0)" |
+| 1086-1088 | "the test of that is whether they predict who arrives" | V7 colloquial "who" | L | "whether they predict which instances are completed" |
+| 1089-1090 | "the fraction of four 3000-update policies (two no-channel seeds and two all-channel seeds) that arrived" | Mixes the two arms Table 5 separates by $3$--$10$ points; `fig:corr` caption (L1144) says only "mean of four 3000-update runs" | M | Use one arm (five seeds of the no-channel or $\eta$,stretch arm), or state why the mixture is harmless ("the two arms rank instances identically, $\rho = $ [x]"), and name the arms in the caption. |
+| 1102-1104 | "Thus, $\dd$ predicts success better than family alone and better than the suite's own design levers, as it was meant to." | R4 tag "as it was meant to" | L | End at "design levers." |
+| 1106 | "However, it does so for the wrong half of itself." | S2 one-line reveal; metaphor | H | "However, the prediction is carried by the authority $A$ rather than by $\eta$, since $A$ alone is the stronger predictor ($\rho = +0.754$; held-out area $0.946$ with the design levers) while $\eta$ at the targets is weak ($\rho = -0.248$) and, once $A$ is in the model, carries no information (deviance drop $0.2$ on one degree of freedom, $p = 0.67$; coefficient $-0.02$ against $+2.09$ for $A$)." |
+| 1108, 1146-1147 | "$\eta$ at the targets" (text) against "the maximum $\eta$ over a task's targets" (caption) | Two descriptions of the per-instance $\eta$ | L | Use "the maximum $\eta$ over a task's targets" in both. |
+| 1109-1110 | "carries no information at all" | H4 | L | "carries no information" |
+| 1115-1116 | "where the field is simple and the route is not" | S5 antithesis | M | "where the field is simple and the hazards shape the route" |
+| 1116-1120 | "What the learned policy's success tracks at this training budget is the tank against the tour, i.e. whether a direct flight is affordable, and not whether a one-body representation of the field is wrong; the representational component of difficulty that the dial was built to capture is not yet the component that limits the learner." | R1 "and not"; V5 "the dial" ($\dd$ is called a dial nowhere else) | H | "At this training budget the learned policy's success tracks the tank against the tour, i.e. whether a direct flight is affordable, and the representational component that $\dd$ was built to capture is not yet the component that limits the learner." |
+| 1124-1126 | "is a question the 10,000-update policies could answer and the present ones cannot" | S5 mirrored | L | "is a question for the 10,000-update policies \MEASURE{$\eta$ against per-instance success of the 10,000-update runs}" |
+| 1126-1127 | "the picture is the same from the other side: a family's median $\dd$ predicts its success rate" | S3 colon reveal | M | "the picture is the same, since a family's median $\dd$ predicts its success rate ($\rho = -0.734$ over the twelve families, $p = 0.007$) and the families that break the ordering are the ones whose difficulty is hazard rather than field." |
+| 1132-1133 | "The expectation that a longer clock matters most on multi-target tasks does not survive normalization." | S2 thesis opener; the paragraph is also a clock measurement filed under "Relations between the measures" | M | Merge with the next sentence ("...does not survive normalization, since on the 600\,s suites a coasting craft...") and move the paragraph to Section~\ref{sec:clock} after the zero-action measurement. |
+| 1137-1138 | "more targets are more chances, and the tour structure adds nothing" | R4 closer | M | "so that the multi-target excess is the number of chances and not anything about the tour" is the same tic; use "so that the multi-target excess is accounted for by the number of chances." |
+
+### 6g. Discussion, Future directions, Acknowledgements (L1154-1257)
+
+| Line | Quoted | Pattern | Pri | Suggested rewrite |
+|---|---|---|---|---|
+| 1164-1167 | "the policy being strong on the hierarchical families, weak on the contested ones and worst on the held-out families where the representation learned elsewhere does not transfer" | Contradicted by Section 5.4 L1113-1116, where four hierarchical families (\code{debris\_maze} 25\%, \code{asteroid\_field} 28\%, \code{compact\_system} 31\%, \code{pulsar} 39\%; all "hierarchical" in Table 1) are among the worst; also R2 strong/weak/worst | H | "and the results of Section~\ref{sec:results} are consistent with that account only in part, since the policy is strong on the hierarchical families whose routes are not shaped by hazards, weak on the contested ones, and weakest on the hazard families and the held-out families, where what limits it is the route or the transfer and not the field (Section~\ref{sec:correlations})." |
+| 1180-1181 | "which is to say that the agent learned a one-body representation first and was then asked to extend it" | An inference stated as a fact: nothing in the paper measures what representation was learned | M | "which is to say that the agent was trained on levels where a one-body representation suffices before being shown levels where it does not" |
+| 1199-1202 | "which limits the environment and not the picture, and the route to building them is known (Section~\ref{sec:chaos})" | R1 "and not" (section 5g L943 survived with the words changed); "known" overstates a timescale argument with no measurement | M | "which is a limitation of the environment; the route to building them (Section~\ref{sec:chaos}) has not been tried." |
+| 1209-1210 | "the gradient through a chaotic system is correct and useless at once" | S5 aphorism | M | "the gradient through a chaotic system is exact and carries no usable descent direction" |
+| 1217-1218 | "Several of the definitions in this paper are choices, and the reader should know which." | R8 address to the reader; R5 | M | "Several of the definitions in this paper are choices." |
+| 1225-1226 | "the regimes the authors could think of" | Single author (L35); "the author" at L750 | L | "the regimes that came to mind" |
+| 1232-1236 | "The value of better definitions here is that they let the environment and the agents that run over it be understood together, with the same quantities describing what a level demands and what a learner has managed, and that is a more useful thing to have than either description alone." | R4 closer | M | End at "...what a learner has managed." |
+| 1247-1248 | "one craft may be attempting to catch, target, or otherwise react to another" | R2 cadence | L | "one craft may be attempting to catch or evade another" |
+
+### 6h. Appendix B, Theoretical notes on observation (spacenav.tex L1263-1311)
+
+| Line | Quoted | Pattern | Pri | Suggested rewrite |
+|---|---|---|---|---|
+| 1268-1271 | "Two departures from this are worth setting down, because each would change what a learner could and could not infer, and because the environment's construction makes one of them unusually clean to study." | H1 "worth"; R3 announced pair | M | "Two departures from this would each change what a learner could infer, and the environment's construction makes the second unusually clean to study." |
+| 1275 | "at game scale this is not negligible: with a signal speed chosen so that" | S3 colon reveal | L | "and at game scale this is not negligible, since with a signal speed chosen so that..." |
+| 1292-1294 | "and here the environment's design has a consequence that is easy to overlook." | R5 telegraph | M | Delete the clause. |
+| 1301-1303 | "In a real setting the two differ: a measured position carries sensor noise, a projected one carries model error that grows with the projection horizon, and a navigator must weigh one against the other." | S3; S5 mirrored | L | "In a real setting a measured position carries sensor noise while a projected one carries model error that grows with the horizon, and a navigator must weigh the two." |
+| 1304-1305 | "which is a simplification to be aware of when reading the results" | R8 | L | Delete the clause. |
+| 1307 | "since $\eta$ is exactly a measure of how wrong" | H4 | L | "since $\eta$ is a measure of how wrong" |
+| 1263-1311 | the whole appendix | D3: two untested proposals with no measurement, figure or number from the repository; it reads as a future-work essay placed among the data appendices | L | Coordinator's call: fold into Future directions as two sentences, or keep and say in its first sentence that it proposes two experiments the environment supports and none was run. |
+
+### 6i. Appendices A, C and D (the fragment files)
+
+| File:line | Quoted | Pattern | Pri | Suggested rewrite |
+|---|---|---|---|---|
+| obs:28 | "``the target'' is the waypoint currently being flown to" | V6 quotes on the paper's own term (voice.md 7) | L | "the target (the waypoint currently being flown to, which in a fixed-order tour ...)" |
+| obs:169 | "with a success rate that simply looks wrong" | H4 "simply" | L | "with a success rate that looks wrong" |
+| goals:14 | "with probability \code{p\_station}, 0.35 by default and set per suite" | See 6f L838-840; the two statements of the station probability should point at each other | L | "(0.35 in training; 0.45--0.6 on the evaluation suites, Table~\ref{tab:suites})" |
+| goals:70-72 | "so an order-free tour is neither easier nor harder by construction; it is different in that the navigator, and not the instance, chooses the sequence." | R1 "and not" | M | "so an order-free tour is neither easier nor harder by construction, and differs only in that the navigator chooses the sequence." |
+| goals:91-93 | "the budget multiple $\beta$ is drawn uniformly from $[0.55, 1.35]$ (\code{DELTAV\_BUDGET\_RANGE}, narrowed per suite as Table~\ref{tab:suites} lists)" | The easy suite's $1.0$--$1.5\times$ (Table 2 L829; `spacenav/rl/evaluate.py:54` sets `deltav_budget=(1.0, 1.5)`) lies outside that range, so the suites set $\beta$ rather than narrow it | M | "drawn uniformly from $[0.55, 1.35]$ in training (\code{DELTAV\_BUDGET\_RANGE}); each evaluation suite sets its own range (Table~\ref{tab:suites}), and the easy suite's $1.0$--$1.5\times$ extends past the training range" |
+| goals:117-118 | "An empty tank is not among them." | Contradicted by the body, which counts "fuel exhaustions" as endings for the optimizer sweep (L654-655), the reflex pilot at 600 s (L669-671, "fuel exhaustions 53 to 105") and the pilot's failure breakdown (L862-863); `spacenav/env.py:483` selects a status over crashed, health, finished and lost only, and `docs/decisions/0032` reports the sweep with a column "crashed / destroyed / out of fuel" | H | In Section~\ref{sec:clock}, at first use: "an episode that ends by any code with the tank empty is counted here as a fuel exhaustion (the environment itself has no such ending, Appendix~\ref{app:goals})", and keep the appendix sentence. |
+| repro:8-10 | "Everything reported in this paper is produced by scripts in the repository ... in the order below" | The listing omits \code{scripts/noop\_clock.py} (`fig:noop`), \code{scripts/correlations.py} (`fig:corr`), the 10,000-update runs (Table 4), the reflex pilot on the 600\,s suites (L666-671) and the 9,000\,s pool (L739; \code{data/pools/long10x.npz}); and `--which ... bands` (L49) draws a figure that is no longer in the paper | H | Add the five commands; drop `bands`. |
+| repro:11-15 | "from $3 \times 10^7$ and $4 \times 10^7$ for the two long-horizon pools" | The body names one long-horizon pool of 1,800 levels (L346-351) and a separate 900-level pool validated to 9,000\,s (L739); \code{data/pools/} holds \code{long}, \code{long\_val} and \code{long10x} | M | "from $3 \times 10^7$ and $4 \times 10^7$ for the two 900\,s long-horizon pools (training and suites) and from [seed] for the 9{,}000\,s pool" |
+| repro:21-22 | `--train 2000 --val 300 --holdout 400`, `--only long --n 200` | Per-family counts against the body's totals (18,000 / 2,700 / 1,200 / 1,800, L346-349); the paper never says the flags are per family | L | Comment: "# counts are per family: nine training families, three holdout families" |
+| repro:77-82 | "Python 3.12 against JAX 0.9.2 ..., Flax 0.12.6 ..., Optax 0.2.8; ... NumPy 2.4.3 and SciPy 1.17.1, ... matplotlib 3.11.2" | voice.md 4: methods cite the libraries | L | Add `\cite` or `[CITE]` for JAX, Flax, Optax, NumPy, SciPy and matplotlib. |
+| repro:83-87 | "the replays on the companion site" | The site is not introduced anywhere in the paper (L306 says "a browser client") | L | "the replays on the companion site (\url{...})" |
+| repro:98-99 | "no difference attributable to the card was found" | Claim without its statistic ($n = 2$ against $3$ seeds) | L | "no difference larger than the seed spread (easy-suite seed means [x] and [y])" |
+
+### 6j. Internal inconsistencies
+
+Numbered in the order the coordinator should take them; the first four are
+the ones a reader stops on.
+
+1. **An empty tank is and is not an ending.** Section 3.1 (L320-321) and
+   Appendix C (goals:117-118) say an empty tank does not end an episode and
+   the status set is five codes; Section 3.6 counts "fuel exhaustions" among
+   the endings for the optimizer sweep (L654-655), the reflex pilot at 600 s
+   (L669-671, "fuel exhaustions 53 to 105") and the pilot's failure breakdown
+   (L862-863, "fuel exhaustion (4.7\%)"). `spacenav/env.py:483` has no fuel
+   code; the category is a post-hoc classification (an ending with the tank
+   empty, presumably) that the paper never defines.
+2. **The abstract reports the under-trained numbers without saying so.**
+   L72-78 gives "20 runs", the 3000-update pilot comparison and the 3.1--10.1
+   point channel cost; L892-912 says every such comparison is between
+   under-trained policies, that the 10,000-update result (two further seeds)
+   is "the ceiling this paper can report" and the one the pilot "should be
+   compared" against, and that the margins over the pilot are then
+   9.8--22.5 points. None of that reaches the abstract.
+3. **Three different agents are "the agent".** Tables 3 and 4 report the
+   $\eta$,stretch arm as "the best configuration" (L852), though Table 5 puts
+   it at $p = 0.40$--$0.90$ against the no-channel arm; `fig:task` and the
+   ghost fleets are flown by \code{ppo\_v5\_noinstr}, the no-channel arm
+   (repro:45, 50; L1044 "89\% for the greedy policy on that suite" is the
+   no-channel 89.4); the correlations average two no-channel and two
+   all-channel seeds (L1089-1090), the arms the paper separates by 3--10
+   points. The TODO at L883-885 is this question, unresolved.
+4. **"Seven to ten points" (L1049-1050) against 3.1--10.1 (L949, Table 5).**
+   The per-tier all-four cost is 3.1, 10.1, 4.9 and 8.0.
+5. **The Discussion's family story (L1164-1167) against Section 5.4
+   (L1113-1116).** "Strong on the hierarchical families" is false for four of
+   the six hierarchical families in Table 1, which Section 5.4 names as the
+   low-$\eta$ failures at 25--39\%.
+6. **$\dd \approx 0.0014$ with $\eta = 0.0036$ and $A = 3.8$ (L431-432).**
+   $0.0036/3.8 = 0.00095$. If the three are separate medians the text should
+   say so; no $n$ or script is given (the source is ADR 0004).
+7. **How many long-horizon pools.** Body: 1,800 levels validated to 900 s
+   (L349) and 900 levels validated to 9,000 s (L739). Appendix D: "the two
+   long-horizon pools" (repro:11-15) and one build command (repro:22).
+   On disk: \code{long}, \code{long\_val}, \code{long10x}. And "ten episodes"
+   (L740) for 9,000 s is sixty at 150 s or fifteen at 600 s.
+8. **The budget range.** Appendix C says $\beta \in [0.55, 1.35]$ "narrowed
+   per suite" (goals:91-93); Table 2 gives the easy suite $1.0$--$1.5\times$
+   (L829), and `spacenav/rl/evaluate.py:54` sets it directly.
+9. **The station probability.** Table 2 caption: 0.45--0.6 per target
+   (L839-840); Appendix C: 0.35 by default (goals:14). Compatible, but
+   neither points at the other.
+10. **$\lambda$ is two things**: the maximal Lyapunov exponent (L548, 552,
+    566) and the advantage-estimation parameter (L800).
+11. **Figure order.** `fig:noop` (source L753) precedes `fig:clock` (L767)
+    while `fig:clock` is referenced first (L652 against L729), so Figure 6 is
+    cited before Figure 5; and the `\FIG` placeholder at L209 means the PDF's
+    Figure 2 is `fig:eta`, not the three-pictures figure the text promises.
+12. **The reproduction appendix is not complete** (repro:8-10 against the
+    figures and tables; 6i row repro:8-10): five of the paper's results have
+    no command, and one listed figure (`bands`) is not in the paper.
+13. **Trivial-difficulty banding (L535-536)** is asserted for every level and
+    shown nowhere; the abstract (L59-60) says the reaction-time component is
+    not treated.
+14. **57.7\% (L901) against $57.2$ (Table 4)** for the 10,000-update medium
+    result: final checkpoint against mean of the last three, unsaid.
+15. **67 minutes (L803-804) against 6.4 h** for four of the twenty runs
+    (repro:89-93).
+16. **"the author" (L750), "the authors" (L1226), one author (L35).**
+17. **The ghost figure's fourth instance.** The text's "easy-suite instance"
+    (L1044) and the four rates (L1047-1048) are not matched to the three
+    instances the caption names (L1064-1066).
+18. **Per-instance $\eta$**: "at the targets" (L1108) against "the maximum
+    $\eta$ over a task's targets" (L1146-1147).
+19. **"Praised" (L645-646) against "judged" (L107-108)** for the historical
+    missions.
+20. **Placeholders in a complete draft**: `\FIG` at L209, `\TODO` at
+    L883-885, `\MEASURE` at L697-698 and L1021-1022. The two `\MEASURE`s are
+    what STYLE asks for; the `\FIG` and `\TODO` are not.
+
+One repository note, not a paper inconsistency: CLAUDE.md's trap table says
+the instrument default "is now off (ADR 0031)"; `spacenav/env.py:73` defaults
+\code{SPACENAV\_INSTRUMENTS} to \code{eta,stretch}, and the paper (obs:161-163,
+repro:68) and ADR 0033 agree with the code. The CLAUDE.md row is the stale
+one.
+
+### 6k. Spot-checks
+
+Thirty-six cited lines re-read with `sed -n Np` at `c33e6ec`; every one
+matched the quotation in its row. spacenav.tex: 68 ("built into a level
+deliberately"), 145 ("the failure it"), 229 ("ultimately wants"), 365
+("the hazard, no[t]"), 394 ("$k = 0$ the truth"), 423 ("scored for free"),
+431 ("$\dd \approx 0.0014$"), 450 ("Wisdom band"), 497 ("the reason is
+instructive:"), 518 ("not a property of the family"), 535 ("Every level is
+banded"), 608 ("not a result"), 637 ("a position, not a finding"), 663
+("the contrast is the point"), 674 ("and not on the clock"), 691 ("not
+fewer"), 704 ("worth stating"), 740 ("ten episodes"), 750 ("the author
+ranks"), 800 ("$\lambda = 0.95$"), 884 (the TODO), 901 ("$57.7\%$ at
+10,000"), 906 ("likely to survive more training"), 1050 ("seven to ten
+points"), 1106 ("the wrong half of itself"), 1119 ("the dial"), 1133 ("not
+survive normalization"), 1165 ("strong on the hierarchical families"), 1226
+("the authors"), 1269 ("worth setting down"), 1293 ("easy to overlook");
+appendix_goals.tex: 92 ("narrowed per suite"), 117 ("An empty tank is not
+among"); appendix_obs.tex: 169 ("simply looks wrong"); appendix_repro.tex: 8
+("Everything reported in this paper"), 12 ("from $10^7$").
+
+### 6l. Summary
+
+One hundred rows: 17 H, 37 M, 45 L, and the subtitle left to the author.
+Of the seventeen H, ten are contradictions between numbers or claims (6j
+items 1-6 and 12, the unsupported inference at L905-908, and the two
+placeholders) rather than prose tics, which is the reverse of section 5's
+mix, and it is the reason the first three fixes are not sentence rewrites.
+First, settle which agent the paper reports and make the abstract, Tables 3
+and 4, the ghost fleets and the correlations agree (6j items 2, 3 and 4, and
+the TODO at L883): the abstract should carry the 10,000-update result and
+the under-training caveat, and "seven to ten" at L1050 should read "three to
+ten". Second, define "fuel exhaustion" where it is first counted (L654) and
+reconcile it with the five endings of Appendix C, since as written the
+paper's own appendix says the category does not exist. Third, fix the
+Discussion's family claim at L1164-1167 against Section 5.4 and the
+$\dd$/$\eta$/$A$ medians at L431, since both are places where a reader who
+has followed the numbers will stop. After those, the prose rows that matter
+most are the five aphoristic closers in the clock section (L663, L671-674,
+L703-705, L745-751) and the correlations section (L1106, L1116-1120), which
+are the only passages in the new third of the text that still read as
+generated.

@@ -69,14 +69,21 @@ chaos has to be built into a level deliberately, and the episode clock is
 argued to be the least informative of the constraints, with the caveat that
 what a longer clock buys depends on the navigator: a trajectory optimizer
 converts timeouts into arrivals as the clock lengthens, while a scripted
-reflex pilot converts them into fuel exhaustion and collisions. Finally, a proximal policy optimization agent trained
-across 20 runs (5 seeds per condition) is used both to evaluate the levels and
-to be evaluated by them; of four physically meaningful readouts added to its
+reflex pilot converts them into escapes and collisions, and a learned policy
+trained at the longer clock with its discount unchanged mostly fails to
+arrive at all. Finally, a proximal policy optimization agent trained across
+20 runs (5 seeds per condition) is used both to evaluate the levels and to be
+evaluated by them: of four physically meaningful readouts added to its
 observation, the two that are algebraic combinations of quantities it already
 observes cost 3.1 to 10.1 percentage points of success depending on the
 evaluation tier (Welch's $t$ on seed means, $p \le 0.029$ on every tier),
-while the two that carry new information cost nothing, and per-level replay
-of the trained policies shows how much a single success rate conceals. Taken
+while the two that carry new information cost nothing; the closed-form $\dd$
+predicts per-instance success ($\rho = -0.585$ over 2,388 instances) but does
+so through its fuel-budget denominator, the representational numerator adding
+nothing once the budget is known; and training for 10,000 updates instead of
+3,000 raises success by 4.7 to 15.3 points per tier, to 95.1\%, 57.2\%,
+18.9\% and 40.9\%, which is larger than most of the effects the comparisons
+measure. Taken
 together, these results suggest that the difficulty of an n-body navigation
 task has several separable axes and that each has to be measured, and the
 environment, levels and trained policies are provided so that the measurement
@@ -205,10 +212,6 @@ the field, and a level is hard on this picture when the rung a navigator
 stands on is the wrong one for it. Of the three pictures, this is the one
 that yields a closed-form difficulty measure, and it is developed in
 Section~\ref{sec:eta}.
-
-\FIG{the three pictures side by side: an observe-act-reward loop; a
-trajectory entering and leaving a shaded region with a bounded exit cone; a
-ladder of strategies from dead heading to learned model}
 
 % =====================================================================
 \section{Why a level of a given difficulty is hard to design}
@@ -428,11 +431,13 @@ can be placed on a chosen rung by solving for the tank (fuel is only ever
 added when retuning, since a level starved onto a high rung is infeasible
 rather than demanding).
 
-An ordinary level in this environment sits at $\dd \approx 0.0014$, with
-$\eta = 0.0036$ and $A = 3.8$, which is to say that gravity supplies about a
-quarter of the tank's worth of impulse over a flight but a single body
-explains 99.6\% of the field, so that patched conics is adequate on an
-ordinary level and $\eta$ has to be raised by construction. That $\dd$
+An ordinary hierarchical level in this environment has $\eta$ of order
+$0.003$ over its playable area (Table~\ref{tab:families}) and a median $A$
+near $2.3$ over sampled task instances ($n = 4{,}096$ draws from the
+training pool), so that $\dd$ is of order $0.001$: gravity supplies a
+substantial fraction of the tank's worth of impulse over a flight, but a
+single body explains more than 99\% of the field, so that patched conics is
+adequate on an ordinary level and $\eta$ has to be raised by construction. That $\dd$
 measures what it is meant to was checked by comparing a planner restricted
 to the one-body representation against one with the true field on levels
 pooled by $\dd$ band (24 levels per band, two bands): below $\dd = 0.1$ the
@@ -643,7 +648,7 @@ atmosphere each have their own geometry and dynamics and because avoiding
 them shapes a route in ways the gravity alone would not. The clock, by
 contrast, mostly penalizes a craft that chooses an energy-efficient path over
 a fast one, which is the choice every mission in Section~\ref{sec:field} was
-praised for making.
+judged on.
 
 The evidence that the 150\,s clock of this environment is binding in that
 way comes from the optimizer of Section~\ref{sec:solvable} flown on 32
@@ -651,13 +656,22 @@ two-target levels at four clocks, with control resolution held at 3.1\,s per
 segment so that a longer clock buys more segments rather than coarser ones
 (Figure~\ref{fig:clock}). Arrivals rise from $5/32$ at 150\,s to $8/32$ at
 300\,s and $13/32$ at 600\,s, then fall back to $11/32$ at 900\,s; timeouts
-fall monotonically from 18 to 5; and crashes, destructions and fuel
-exhaustions go from 9 at the shortest clock to 16 at the longest, though not
+fall monotonically from 18 to 5; and crashes, destructions and escapes go
+from 9 at the shortest clock to 16 at the longest, though not
 monotonically, so that of the thirteen timeouts a longer clock removes,
 about half become arrivals and half become hazard endings. Thus, for the
 optimizer at 150\,s, a substantial fraction of what the environment scores
 as failure is the clock, and the useful ceiling for this task class is near
 600\,s, beyond which hazard exposure is the binding constraint.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.46\textwidth]{figures/clock.pdf}
+\caption{Thirty-two two-target levels flown by the reference optimizer at
+four episode clocks, control resolution held at 3.1\,s per segment. Timeouts
+fall monotonically, arrivals peak near 600\,s, and hazard endings rise.}
+\label{fig:clock}
+\end{figure}
 
 The same experiment on a weaker navigator gives the opposite reading, and
 the contrast is the point. Evaluation suites were rebuilt from a
@@ -666,12 +680,14 @@ specifications as the 150\,s suites, different levels, so same-family rather
 than paired), and the scripted reflex pilot was flown on them: its arrivals
 after the 150\,s mark are 1/480, 3/197, 1/47 and 0/136 on the easy, medium,
 hard and blind suites, and its 150\,s timeouts (102, 146 and 147 of about
-600 on the medium, hard and blind suites) became fuel exhaustions and
-collisions at 600\,s rather than arrivals (medium suite: timeouts 102 to 17,
-fuel exhaustions 53 to 105, arrivals 206 to 197). A longer clock, that is,
-gives a navigator the time to finish a path it could not otherwise finish,
-or the time to exhaust its tank and fall into a body, and which of the two
-it gets depends on the navigator and not on the clock.
+600 on the medium, hard and blind suites) became escapes and collisions at
+600\,s rather than arrivals (medium suite: timeouts 102 to 17, escapes 53 to
+105, arrivals 206 to 197), an escape being the craft leaving the level past
+1.35 times its radius, which a pilot with an empty tank cannot avoid once it
+is on an unbound path. A longer clock, that is, gives a navigator the time to
+finish a path it could not otherwise finish, or the time to drain its tank
+and drift out, and which of the two it gets depends on the navigator and not
+on the clock.
 
 The learned policy, trained at a 600\,s clock, is a third case, and the one
 that argues most strongly against treating the clock as a free parameter.
@@ -702,9 +718,10 @@ either, and that the sense in which 150\,s was arbitrary (Section
 
 There is a reason the clock cannot simply be set long enough to settle the
 question, and it is worth stating because it bears on what solvability
-means. Consider a navigator that does nothing at all. The craft is a test
-particle in a bounded gravitational system, and a bounded Hamiltonian system
-is recurrent, in the sense Poincar\'e established for exactly this problem
+means. Consider a navigator that does nothing at all. The bodies and a coasting
+craft together form an autonomous Hamiltonian system, and on a bounded
+energy surface, i.e. one of finite phase-space volume, such a system is
+recurrent in the sense Poincar\'e established for exactly this problem
 \cite{poincare1890}: almost every trajectory returns arbitrarily close to
 its starting state, and so, given enough time, a coasting craft will pass
 within the arrival radius of any target it can reach at all, unless an
@@ -713,9 +730,10 @@ system \cite{kolmogorov1954,arnold1963} happens to separate it from that
 target permanently. Thus, for a flythrough tour, the zero-action policy
 succeeds with probability approaching one as the clock lengthens, and the
 only stopping criterion that is not a choice is divergence, i.e. the craft
-leaving the system; inside it, there is always an improbable path that has
-not yet been given time to occur (in the limit of a system collapsing
-gravitationally to a point, every path is that path). A finite clock is
+leaving the bounded region; inside it, there is always an improbable path
+that has not yet been given time to occur, and a system that collapsed
+gravitationally toward a point would be the limiting case in which every
+path is that path. A finite clock is
 therefore a definition rather than a measurement of the task, and
 solvability is relative to a time budget in the same way that
 Section~\ref{sec:eta} makes it relative to a fuel budget, and the question
@@ -737,7 +755,7 @@ points per 100\,s; strict completion of the tour as specified by coasting is
 the same interval the fraction of tasks ending in collision, destruction or
 escape rises at about 2.5 points per 100\,s on the three harder tiers, to
 26--27\% at 900\,s. To see where the contact curve goes, a pool of 900 levels
-was validated to 9{,}000\,s (ten episodes; 80--100\% of generated levels
+was validated to 9{,}000\,s (sixty episodes; 80--100\% of generated levels
 survive that long, so bounded systems from these generators stay bounded)
 and the same measurement run on it: contact reaches 8.7\%, 9.8\%, 12.9\% and
 11.8\% by 9{,}000\,s and is flat over the last 300\,s, because the craft is
@@ -764,15 +782,6 @@ the two rows are same-specification, not paired.}
 \label{fig:noop}
 \end{figure}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.46\textwidth]{figures/clock.pdf}
-\caption{Thirty-two two-target levels flown by the reference optimizer at
-four episode clocks, control resolution held at 3.1\,s per segment. Timeouts
-fall monotonically, arrivals peak near 600\,s, and hazard endings rise.}
-\label{fig:clock}
-\end{figure}
-
 % =====================================================================
 \section{The learning agent}
 \label{sec:learning}
@@ -797,7 +806,8 @@ estimation \cite{schulman2016} in a fully vectorized loop of the kind that
 accelerator-native physics environments make practical \cite{matthews2025}
 (1024 parallel environments by 128 steps, i.e. 131,072 transitions per
 update; four epochs of eight minibatches; learning rate $3 \times 10^{-4}$
-annealed linearly to a tenth; $\gamma = 0.999$; $\lambda = 0.95$; clip
+annealed linearly to a tenth; $\gamma = 0.999$; the advantage-estimation
+weight $\lambda_{\mathrm{GAE}} = 0.95$; clip
 $0.2$; entropy coefficient annealed from $0.01$ to $0.002$; value
 coefficient $0.5$; gradient norm clipped at $0.5$), for 3000 updates or 393
 million environment steps per run, which on the hardware used takes about
@@ -860,7 +870,7 @@ trained on and the only one in which the tour order is sometimes the
 navigator's to choose. Note that the reference pilot is a weaker yardstick
 than its rates suggest, since on a comfortable-tank instance set it arrives
 63.3\% of the time and its dominant failure is collision (21.6\% of
-instances) rather than fuel exhaustion (4.7\%) or timeout (7.8\%), so that
+instances) rather than escape (4.7\%) or timeout (7.8\%), so that
 every margin quoted against it is softened by an opponent that flies into
 bodies one time in five, though the absolute rates are unaffected.
 
@@ -880,9 +890,10 @@ Difference               & $+5.1$ & $+7.2$ & $+3.5$ & $-2.6$ \\
 \caption{Percentage of task instances completed, mean $\pm$ standard
 deviation over five training seeds for the policy told $\eta$ and the
 stretching rate (the \code{eta,stretch} configuration), against the
-reference pilot on the identical instances. \TODO{the first draft's table
-used the no-channel arm (89.4/41.7/10.7/30.2); this uses eta,stretch, which
-is now the default; confirm which the author prefers as "the" result}}
+reference pilot on the identical instances. The no-channel configuration is
+statistically indistinguishable from this one at this budget
+(Table~\ref{tab:instr}); the figures of Sections~\ref{sec:field}
+and~\ref{sec:ghosts} fly policies from each.}
 \label{tab:main}
 \end{table}
 
@@ -898,7 +909,8 @@ run on the hardware used) at two seeds. The gain is large on every tier
 points over the five-seed 3000-update mean on the easy, medium, hard and
 blind suites, with seed standard deviations of $0.1$--$2.5$ points, and the
 medium-suite curve of the longer runs rises from $47.8\%$ at update 3000
-through $52.4\%$ at 6000 to $57.7\%$ at 10,000 without flattening. Thus, the
+through $52.4\%$ at 6000 to $57.2\%$ at 10,000 (the mean of the last three
+checkpoints) without flattening. Thus, the
 agent of Section~\ref{sec:learning} is under-trained at 3000 updates by a
 margin larger than most of the effects reported in this paper, and the
 ablations of Section~\ref{sec:instruments}, which were run at that budget,
@@ -1047,7 +1059,7 @@ number describes a behavior the policy exhibits only with its stochasticity
 removed. Secondly, the spread between instances within a suite (60\%, 52\%,
 8\% and 0\% on the four shown) is larger than any effect measured between
 training configurations in this paper, since the channel effect of
-Section~\ref{sec:instruments} is seven to ten points and two instances drawn
+Section~\ref{sec:instruments} is three to ten points and two instances drawn
 from the same suite differ by fifty. Thus, any claim about this environment
 that rests on a handful of instances is fragile by construction (compare
 Section~\ref{sec:solvable}).
@@ -1056,14 +1068,16 @@ Section~\ref{sec:solvable}).
 \centering
 \includegraphics[width=\textwidth]{figures/ghosts.pdf}
 \caption{Four task instances from the evaluation suites, each flown 496
-times by one training run (every saved checkpoint, sixteen sampled rollouts
-each), colored by the training update at which the attempt was flown. Grey
-discs are bodies with their orbits traced faintly; green rings are targets,
-drawn along their own paths where attached to moving bodies. Early policies
-(dark) spray across the field; late policies (bright) converge into bundles.
-Medium task 1 converges onto a single arrival corridor; medium task 0 onto
-a corridor that mostly misses; hard task 0 onto a shuttle between its first
-two targets that never reaches the third, at upper left.}
+times by one training run of the \code{eta,stretch} configuration (every
+saved checkpoint, sixteen sampled rollouts each), colored by the training
+update at which the attempt was flown. Grey discs are bodies with their
+orbits traced faintly; green rings are targets, drawn along their own paths
+where attached to moving bodies. Early policies (dark) spray across the
+field; late policies (bright) converge into bundles. Medium task 1 converges
+onto a single arrival corridor; easy task 0 onto a corridor that arrives
+about half the time when sampled; medium task 0 onto a corridor that mostly
+misses; hard task 0 onto a shuttle between its first two targets that never
+reaches the third, at upper left.}
 \label{fig:ghosts}
 \end{figure}
 
@@ -1161,10 +1175,14 @@ pictures of Section~\ref{sec:framings} exist alongside the first. A learner
 that treats the task as an undifferentiated observe-act-reward loop will
 learn it on levels where a coarse representation suffices and will have no
 particular reason to do better on levels where it does not, and the results
-of Section~\ref{sec:results} are consistent with that account, the policy
-being strong on the hierarchical families, weak on the contested ones and
-worst on the held-out families where the representation learned elsewhere
-does not transfer.
+of Section~\ref{sec:results} are consistent with that account only in part:
+the policy is strong on the hierarchical families whose difficulty is the
+field (\code{sol\_like}, \code{jovian}, \code{saturnian}), weak on the
+contested ones, worst on the held-out families where the representation
+learned elsewhere does not transfer, and, as Section~\ref{sec:correlations}
+shows, also weak on the hierarchical families whose difficulty is hazard
+rather than field, which is the part of the picture a representational
+account of difficulty does not reach.
 
 \subsection{Learning a class of levels}
 
@@ -1223,7 +1241,7 @@ derived from the task, and Section~\ref{sec:clock} argues it is too short. Third
 human motor limits is a reasonable scale for a game and an arbitrary one for
 any other purpose. Fourthly, the reference optimizer is one configuration of
 one method, and every solvability label is relative to it. Finally, the
-twelve families were chosen to span the regimes the authors could think of,
+twelve families were chosen to span the regimes the author could think of,
 with no taxonomy of the field behind them. These choices do not make the
 measurements wrong; they mean that the paper offers definitions that make a
 set of intuitions checkable, not a theory of difficulty for this task, which

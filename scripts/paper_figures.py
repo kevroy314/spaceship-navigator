@@ -193,7 +193,7 @@ def fig_clock():
     ax.bar(x, arr, w, color=GREEN, label="arrived", zorder=3)
     ax.bar(x, tmo, w, bottom=arr, color=BLUE, label="ran out of clock", zorder=3)
     ax.bar(x, died, w, bottom=arr + tmo, color=RED,
-           label="crashed, destroyed\nor out of fuel", zorder=3)
+           label="crashed, destroyed\nor escaped", zorder=3)
     for i, r in enumerate(rows):
         ax.text(i, r[1] + 0.6, f"{r[1]}", ha="center", va="bottom",
                 fontsize=8, color="#0a6b0a", fontweight="bold")

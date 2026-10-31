@@ -10,8 +10,10 @@ from a checkout with the \code{spacenav} package installed and the GPU build
 of JAX, in the order below; \code{data/} is not under version control, and the
 level pools are regenerated from their seed blocks (seeds from 0 for the
 training pool, from $10^7$ for the seen-family validation pool, from
-$2 \times 10^7$ for the holdout pool, from $3 \times 10^7$ and
-$4 \times 10^7$ for the two long-horizon pools) so that the levels themselves
+$2 \times 10^7$ for the holdout pool, from $3 \times 10^7$, $4 \times 10^7$
+and $5 \times 10^7$ for the three long-horizon pools: \code{long}, the
+\code{long\_val} pool the 600\,s suites are drawn from, and the 900-level pool
+validated to 9{,}000\,s) so that the levels themselves
 are reproducible without being distributed.
 
 \begin{small}
@@ -41,12 +43,27 @@ SPACENAV_EPISODE_S=600 SPACENAV_SUITES=data/eval/suites_long.pkl \
 # the clock sweep (the reference optimizer at 150, 300, 600 and 900 s)
 bash scripts/clock_sweep.sh data/curriculum/clock
 
-# the ghost fleets: every checkpoint of one run on one instance
-python scripts/ghost_fleet.py --run ppo_v5_noinstr --suite medium --task 0 \
-  --rollouts 16 --out data/ghosts/medium_0.json
+# the ghost fleets: every checkpoint of one run on one instance, rolled out
+# with the instrument setting the run was trained with
+SPACENAV_INSTRUMENTS=eta,stretch python scripts/ghost_fleet.py \
+  --run abl_info_s0 --suite medium --task 1 --rollouts 16 \
+  --out data/ghosts/medium_1.json
+
+# the zero-thrust navigator to 900 s, the 9,000 s pool, and the same to 9,000 s
+python scripts/noop_clock.py measure --clock 900
+python scripts/noop_clock.py build10x --per-family 100
+python scripts/noop_clock.py measure10x --clock 9000
+python scripts/noop_clock.py figure
+
+# per-instance success against eta, A, D and family
+python scripts/correlations.py
+
+# the training-budget run
+SPACENAV_INSTRUMENTS=eta,stretch \
+  python scripts/train.py --run budget10k_s0 --updates 10000 --seed 0
 
 # figures
-python scripts/paper_figures.py --which ghosts,ablation,clock,curves,bands,eta
+python scripts/paper_figures.py --which ghosts,ablation,clock,curves,eta
 python scripts/fig_task.py --suite hard --task 63 --run ppo_v5_noinstr
 python scripts/fig_phase.py compute --pool data/pools/long.npz
 python scripts/fig_phase.py render
