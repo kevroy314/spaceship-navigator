@@ -1083,12 +1083,72 @@ headline configuration.}
 \subsection{Relations between the measures}
 \label{sec:correlations}
 
-\MEASURE{Correlation table across the frozen suites between per-instance
-success (agent and pilot), $\eta$ at the targets, $\dd$, family, number of
-targets, rendezvous share, and the instance's clock-sensitivity from the
-600\,s runs when they land. The claim this section should test is that
-$\dd$ predicts agent success better than family alone, and that
-clock-sensitivity is concentrated on multi-target instances.}
+The quantities of Section~\ref{sec:heuristics} were defined to describe a
+level's difficulty before anyone flies it, and the test of that is whether
+they predict who arrives. Across the 2,388 task instances of the four 150\,s
+suites, with agent success per instance taken as the fraction of four
+3000-update policies (two no-channel seeds and two all-channel seeds) that
+arrived at their final checkpoint, success falls monotonically with $\dd$
+(Figure~\ref{fig:corr}(a); Spearman $\rho = -0.585$, $p = 10^{-219}$), from
+84\% in the lowest decile to 0.2\% in the highest, with a plateau over
+$\dd \approx 0.003$--$0.05$ and a cliff above $\dd \approx 0.2$, and the
+reference pilot follows the same curve ($\rho = -0.547$; the two navigators'
+per-instance successes correlate at $\rho = 0.787$). A logistic model of
+agent success on family alone reaches a held-out area under the curve of
+$0.745$; $\dd$ alone reaches $0.811$ and family with $\dd$ reaches $0.871$,
+and adding $\dd$ to a model that already knows the suite, the family, the
+number of targets and whether a rendezvous is required still drops the
+held-out deviance by 1042 on one degree of freedom ($p = 10^{-228}$;
+ten-fold cross-validation repeated five times). Thus, $\dd$ predicts success
+better than family alone and better than the suite's own design levers, as
+it was meant to.
+
+However, it does so for the wrong half of itself. Separating the ratio into
+its parts, the authority $A$ alone is the stronger predictor ($\rho = +0.754$;
+held-out area $0.946$ with the design levers), while $\eta$ at the targets is
+weak ($\rho = -0.248$) and, once $A$ is in the model, carries no information
+at all (deviance drop $0.2$ on one degree of freedom, $p = 0.67$; coefficient
+$-0.02$ against $+2.09$ for $A$). The relation between success and $\eta$ is
+in fact non-monotone (Figure~\ref{fig:corr}(b)): it peaks near
+$\eta \approx 0.005$ and falls on both sides, and the low-$\eta$ failures
+are the hazard families (\code{debris\_maze} 25\%, \code{asteroid\_field}
+28\%, \code{compact\_system} 31\%, \code{pulsar} 39\%), where the field is
+simple and the route is not. What the learned policy's success tracks at
+this training budget is the tank against the tour, i.e. whether a direct
+flight is affordable, and not whether a one-body representation of the field
+is wrong; the representational component of difficulty that the dial was
+built to capture is not yet the component that limits the learner. This is
+consistent with the budget result of Section~\ref{sec:budget}, in which the
+policy is still improving rapidly at 3000 updates, since a policy that has
+not yet learned to spend its tank well fails on fuel before it can fail on
+representation, and whether $\eta$ becomes predictive once $A$ is no longer
+the limit is a question the 10,000-update policies could answer and the
+present ones cannot. At the level of families (Figure~\ref{fig:corr}(c)) the
+picture is the same from the other side: a family's median $\dd$ predicts its
+success rate ($\rho = -0.734$ over the twelve families, $p = 0.007$), and the
+families that break the ordering are the ones whose difficulty is hazard
+rather than field.
+
+The expectation that a longer clock matters most on multi-target tasks does
+not survive normalization. On the 600\,s suites, a coasting craft first
+contacts a target after the 150\,s mark on 2.3\% of single-target and 4.7\%
+of multi-target tasks (Fisher's exact $p = 0.001$), but per target slot the
+rates are 2.3\% and 2.1\% ($p = 0.81$), and for the first target alone 2.3\%
+and 2.2\%; more targets are more chances, and the tour structure adds
+nothing. Note that this measurement is on different levels from the 150\,s
+suites and is not joined to the agent's per-instance success.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/corr.pdf}
+\caption{Per-instance success of the learned policy (mean of four 3000-update
+runs) and of the reference pilot across the 2,388 tasks of the 150\,s
+suites. (a) By decile of $\dd$, with 95\% Wilson intervals. (b) By the
+maximum $\eta$ over a task's targets; the relation is non-monotone, and the
+low-$\eta$ failures are the hazard families. (c) By family, with each
+family's median $\dd$ at right. Computed by \code{scripts/correlations.py}.}
+\label{fig:corr}
+\end{figure}
 
 % =====================================================================
 \section{Discussion}
