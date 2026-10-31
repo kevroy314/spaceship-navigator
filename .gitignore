@@ -19,3 +19,4 @@ research/__pycache__/
 legacy/data/
 .coord/
 paper/figures/phase_data.npz
+paper/figures/noop_data.npz

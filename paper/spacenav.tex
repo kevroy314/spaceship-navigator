@@ -695,16 +695,51 @@ not yet been given time to occur (in the limit of a system collapsing
 gravitationally to a point, every path is that path). A finite clock is
 therefore a definition rather than a measurement of the task, and
 solvability is relative to a time budget in the same way that
-Section~\ref{sec:eta} makes it relative to a fuel budget; the question is
-not whether 150\,s is correct but how much a given navigator's success rate
-depends on the allowance, which is answered for three navigators in this
-section and in \MEASURE{the no-op patience sweep: the cumulative fraction of
-suite tasks whose first target a coasting craft has contacted by time $t$,
-to 900\,s on the validated levels and to 9{,}000\,s on a pool validated that
-long; report whether the curve is still rising at the longest clock}. The
+Section~\ref{sec:eta} makes it relative to a fuel budget, and the question
+becomes how much a given navigator's success depends on the allowance. The
 same fact is what makes the exhaustive check of Section~\ref{sec:complexity}
-ill-posed even in principle: without a horizon, "has this control sequence
-failed" has no finite answer for a sequence that stays in the system.
+ill-posed even in principle, since without a horizon the question of whether
+a control sequence has failed has no finite answer for a sequence that stays
+in the system.
+
+The zero-action navigator was therefore measured directly
+(Figure~\ref{fig:noop}). Coasting from the start of every task in the 600\,s
+suites for 900\,s (13,500 ticks, the levels' validated horizon), the fraction
+of tasks in which the craft passes within the arrival radius of any target
+(velocity tolerance and tour order ignored) is 2.3\%, 2.9\%, 5.1\% and 3.7\%
+at 150\,s on the easy, medium, hard and blind suites, and 5.3\%, 6.6\%, 9.8\%
+and 6.9\% at 900\,s, still rising at the end at about 0.2--0.5 percentage
+points per 100\,s; strict completion of the tour as specified by coasting is
+0--1.2\% on every tier except easy (5.3\%, where contact is completion). Over
+the same interval the fraction of tasks ending in collision, destruction or
+escape rises at about 2.5 points per 100\,s on the three harder tiers, to
+26--27\% at 900\,s. To see where the contact curve goes, a pool of 900 levels
+was validated to 9{,}000\,s (ten episodes; 80--100\% of generated levels
+survive that long, so bounded systems from these generators stay bounded)
+and the same measurement run on it: contact reaches 8.7\%, 9.8\%, 12.9\% and
+11.8\% by 9{,}000\,s and is flat over the last 300\,s, because the craft is
+dead, with 78--80\% of the non-easy tasks ended by then and destruction by
+accumulated damage the commonest ending. Thus, patience alone buys a
+coasting craft three to five points of contact between 150\,s and 900\,s and
+another three to six between 900\,s and 9{,}000\,s, and the race between
+the improbable path and exposure is won by exposure; in this environment the
+stopping criterion that recurrence fails to supply is supplied instead by
+the hazards, and the constraint the author ranks most interesting is also
+the one that bounds the clock.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/noop.pdf}
+\caption{A craft that never thrusts. Top: on the four 600\,s suites run to
+900\,s, the cumulative fraction of tasks in which the craft has passed
+within the arrival radius of any target, completed the tour as specified,
+or ended in collision, destruction or escape, with rules at the 150\,s clock
+and at 600\,s and the values at 150 and 900\,s marked. Bottom: on 900 levels
+validated to 9{,}000\,s, the same contact and death curves on a logarithmic
+time axis, by suite specification. Computed by \code{scripts/noop\_clock.py};
+the two rows are same-specification, not paired.}
+\label{fig:noop}
+\end{figure}
 
 \begin{figure}[t]
 \centering
