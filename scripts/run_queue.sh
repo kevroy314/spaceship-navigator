@@ -11,6 +11,7 @@
 #     pool=NAME        train.py --pool NAME            (default train)
 #     updates=N        this run's length                (default: the queue's)
 #     dmodel=N         train.py --d-model N           (default 128)
+#     gamma=G          train.py --gamma G             (default 0.999)
 #     VAR=VALUE        exported for this run only, e.g. SPACENAV_EPISODE_S=600
 #                      SPACENAV_SUITES=data/eval/suites_long.pkl  (key must be
 #                      upper-case to be treated as an environment variable)
@@ -41,12 +42,13 @@ EOF
 echo "=== queue $QUEUE, $UPDATES updates per run, python $PY ==="
 while read -r RUN SPEC SEED EXTRA; do
   case "${RUN:-}" in ""|\#*) continue;; esac
-  POOL=train; N=$UPDATES; DMODEL=128; ENVS=()
+  POOL=train; N=$UPDATES; DMODEL=128; GAMMA=0.999; ENVS=()
   for tok in ${EXTRA:-}; do
     case "$tok" in
       pool=*)    POOL="${tok#pool=}";;
       updates=*) N="${tok#updates=}";;
       dmodel=*)  DMODEL="${tok#dmodel=}";;
+      gamma=*)   GAMMA="${tok#gamma=}";;
       [A-Z]*=*)  ENVS+=("$tok");;
       *) echo "=== $RUN: unknown token '$tok', skipping run ==="; continue 2;;
     esac
@@ -56,7 +58,7 @@ while read -r RUN SPEC SEED EXTRA; do
   fi
   echo "=== $(date -Is) start $RUN  instruments=$SPEC seed=$SEED pool=$POOL updates=$N ${ENVS[*]:-} ==="
   env ${ENVS[@]+"${ENVS[@]}"} SPACENAV_INSTRUMENTS="$SPEC" "$PY" -u "$ROOT/scripts/train.py" \
-      --run "$RUN" --updates "$N" --ckpt-every 100 --seed "$SEED" --pool "$POOL" --d-model "$DMODEL" \
+      --run "$RUN" --updates "$N" --ckpt-every 100 --seed "$SEED" --pool "$POOL" --d-model "$DMODEL" --gamma "$GAMMA" \
       > "$LOGDIR/$RUN.log" 2>&1
   RC=$?
   echo "=== $(date -Is) end $RUN rc=$RC ==="

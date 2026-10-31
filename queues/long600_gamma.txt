@@ -1,0 +1,10 @@
+# The 600 s clock at gamma 0.999 (65 s lookahead) timed out on 40-68 % of
+# tasks with seed SD up to 39 pp.  Hypothesis: the discount, not the clock.
+# gamma 0.9995 is ~130 s of lookahead; 0.9998 is ~330 s.  3 seeds each.
+# Run after queues/scale.txt.
+long600_g9995_s0    eta,stretch   0   pool=long SPACENAV_EPISODE_S=600 SPACENAV_SUITES=data/eval/suites_long.pkl gamma=0.9995
+long600_g9995_s1    eta,stretch   1   pool=long SPACENAV_EPISODE_S=600 SPACENAV_SUITES=data/eval/suites_long.pkl gamma=0.9995
+long600_g9995_s2    eta,stretch   2   pool=long SPACENAV_EPISODE_S=600 SPACENAV_SUITES=data/eval/suites_long.pkl gamma=0.9995
+long600_g9998_s0    eta,stretch   0   pool=long SPACENAV_EPISODE_S=600 SPACENAV_SUITES=data/eval/suites_long.pkl gamma=0.9998
+long600_g9998_s1    eta,stretch   1   pool=long SPACENAV_EPISODE_S=600 SPACENAV_SUITES=data/eval/suites_long.pkl gamma=0.9998
+long600_g9998_s2    eta,stretch   2   pool=long SPACENAV_EPISODE_S=600 SPACENAV_SUITES=data/eval/suites_long.pkl gamma=0.9998

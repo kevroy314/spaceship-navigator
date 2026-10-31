@@ -671,11 +671,34 @@ collisions at 600\,s rather than arrivals (medium suite: timeouts 102 to 17,
 fuel exhaustions 53 to 105, arrivals 206 to 197). A longer clock, that is,
 gives a navigator the time to finish a path it could not otherwise finish,
 or the time to exhaust its tank and fall into a body, and which of the two
-it gets depends on the navigator and not on the clock. The results that
-follow in Section~\ref{sec:results} were obtained at the 150\,s clock, and
-\MEASURE{training at a 600\,s clock on the long-horizon pool, 3 seeds, is
-in progress; report what changes on each tier when it lands} will say which
-of the two the learned policy is.
+it gets depends on the navigator and not on the clock.
+
+The learned policy, trained at a 600\,s clock, is a third case, and the one
+that argues most strongly against treating the clock as a free parameter.
+Three seeds of the best 150\,s configuration were trained for 3000 updates
+with the clock at 600\,s on the long-horizon pool and evaluated on the 600\,s
+suites (same families and task specifications as the 150\,s suites, different
+levels, so same-family rather than paired; and the blind suite is not blind
+at this clock, since no long-horizon pool carries the holdout families). Two
+seeds learned and one did not: the two that learned reached 68\% and 74\% on
+the easy suite and 26\% and 32\% on the medium suite, against 90\% and 42\%
+for the same configuration at 150\,s, while the third never exceeded 19\% on
+the easy suite and finished at 4\%, so that the mean over seeds is
+$48.9 \pm 38.6$, $19.8 \pm 16.1$, $3.9 \pm 3.6$ and $13.1 \pm 10.5$ on the
+four tiers. Note that the dominant ending for the policies that did learn
+was still the clock: 37--42\% of medium-suite tasks timed out at 600\,s,
+against roughly a third at 150\,s, so that four times the time produced
+more timeouts, not fewer. The explanation this paper can offer, without
+having tested it, is the discount: $\gamma = 0.999$ gives the value estimate
+a horizon of about 65\,s at 15\,Hz, which is a reasonable fraction of a
+150\,s episode and a ninth of a 600\,s one, so that a policy trained at the
+longer clock is rewarded for progress it cannot see the end of and has every
+reason to drift. Whether raising the discount to match the clock recovers
+the 150\,s performance is \MEASURE{queued: $\gamma = 0.9995$ and $0.9998$
+(about 130\,s and 330\,s of lookahead) at 600\,s, three seeds each}; what
+can be said now is that a longer clock is not a free parameter for a learner
+either, and that the sense in which 150\,s was arbitrary (Section
+\ref{sec:discussion}) does not make 600\,s correct.
 
 There is a reason the clock cannot simply be set long enough to settle the
 question, and it is worth stating because it bears on what solvability
@@ -861,6 +884,53 @@ reference pilot on the identical instances. \TODO{the first draft's table
 used the no-channel arm (89.4/41.7/10.7/30.2); this uses eta,stretch, which
 is now the default; confirm which the author prefers as "the" result}}
 \label{tab:main}
+\end{table}
+
+\subsection{Training budget}
+\label{sec:budget}
+
+Every configuration compared in this paper was trained for 3000 updates
+(393 million environment steps), and the question of whether that budget is
+where the comparisons should be made was answered by training the best
+configuration for 10,000 updates (1.31 billion steps, about 3.5 hours per
+run on the hardware used) at two seeds. The gain is large on every tier
+(Table~\ref{tab:budget}): $+4.7$, $+15.3$, $+7.8$ and $+11.7$ percentage
+points over the five-seed 3000-update mean on the easy, medium, hard and
+blind suites, with seed standard deviations of $0.1$--$2.5$ points, and the
+medium-suite curve of the longer runs rises from $47.8\%$ at update 3000
+through $52.4\%$ at 6000 to $57.7\%$ at 10,000 without flattening. Thus, the
+agent of Section~\ref{sec:learning} is under-trained at 3000 updates by a
+margin larger than most of the effects reported in this paper, and the
+ablations of Section~\ref{sec:instruments}, which were run at that budget,
+are comparisons between under-trained policies; the direction of an effect
+measured there is likely to survive more training, as the budget runs show
+the same ordering across tiers, but its size should not be read as a
+property of the task. The 10,000-update result is the ceiling this paper
+can report, and the one against which the reference pilot of
+Table~\ref{tab:main} should be compared: the learned policy then exceeds the
+pilot by $9.8$, $22.5$, $11.3$ and $9.1$ points on the four tiers, including
+the holdout tier on which the 3000-update policy fell short of it.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+& Easy & Medium & Hard & Blind \\
+\midrule
+3000 updates (5 seeds)   & $90.4 \pm 1.8$ & $41.9 \pm 2.3$ & $11.1 \pm 1.0$ & $29.2 \pm 1.2$ \\
+10,000 updates (2 seeds) & $95.1 \pm 0.9$ & $57.2 \pm 2.5$ & $18.9 \pm 0.6$ & $40.9 \pm 0.1$ \\
+\midrule
+Difference               & $+4.7$ & $+15.3$ & $+7.8$ & $+11.7$ \\
+Reference pilot          & $85.3$ & $34.7$ & $7.6$ & $31.8$ \\
+\bottomrule
+\end{tabular}
+\caption{Percentage of task instances completed by the \code{eta,stretch}
+configuration at the two training budgets, mean $\pm$ standard deviation
+over seeds, on the 150\,s suites. The 10,000-update runs passed the
+3000-update mean at their own update 3000 ($92.7$, $47.8$, $13.4$, $34.8$)
+and kept rising.}
+\label{tab:budget}
 \end{table}
 
 \subsection{Observation channels}
