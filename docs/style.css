@@ -192,6 +192,10 @@ tr.hi td{background:rgba(142,208,255,.07);color:var(--ink)}
 td.wrap,th.wrap{text-align:left}
 td.wrap{white-space:normal;min-width:220px;color:var(--ink-2)}
 td.wrap b{color:var(--ink)}
+/* assumptions table (sheet 1, section 03): group labels as rows, first column wraps */
+tr.grp td{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);
+  background:rgba(142,208,255,.04);padding-top:12px}
+.assume td:first-child{white-space:normal;min-width:110px;color:var(--ink);font-weight:600}
 
 figure{margin:18px 0 0;border:1px solid var(--line);background:rgba(10,22,40,.6);padding:12px}
 figure img{width:100%;height:auto;display:block;background:#fff}
