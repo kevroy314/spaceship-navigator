@@ -1,0 +1,62 @@
+% Table for Section 3.1 (the environment). Fragment, \input by spacenav.tex.
+% Every value below was read from the code on 2026-11-01:
+%   spacenav/constants.py        PHYS_DT, SUBSTEPS, CTRL_DT, MAX_EPISODE_TIME/TICKS,
+%                                MAX_BODIES, MAX_ZONES, SNAPSHOT_INTERVAL, LEVEL_HORIZON,
+%                                SHIP_*, DELTAV_BUDGET_RANGE, MAX_WAYPOINTS, hazard
+%                                coefficients, OUT_OF_BOUNDS_FACTOR, TARGET_RADIUS,
+%                                RENDEZVOUS_V_TOL, FLYTHROUGH_V_TOL
+%   spacenav/physics.py          gravity_at (softening), bodies_step and substep
+%                                (leapfrog), _atmosphere, zone_weights, hazard_terms
+%   spacenav/env.py              _substep, step (endings), sample_tour (loadout),
+%                                _sample_waypoint (target kinds), TaskConfig
+%   spacenav/rl/network.py       TURNS, THROTTLES (the discrete action set)
+%   spacenav/levels/build.py     validation thresholds, N_SNAPSHOTS, level_radius
+%   spacenav/levels/families.py  TRAIN_FAMILIES (9), HOLDOUT_FAMILIES (3)
+% The 300 s horizon of the standard pools is the value LEVEL_HORIZON had when
+% they were built (git 8d4aa23 raised it to 900 s on 2026-10-04); the pools on
+% disk carry 8 and 16 snapshots respectively, which is what those horizons give.
+% The level-radius range is np.load of data/pools/train.npz, 18,000 levels.
+% Group labels sit in the first cell of each group rather than on a row of
+% their own: the table is within a few lines of the page height.
+
+\begin{table}[p]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{2.0cm}p{6.4cm}p{7.0cm}}
+\toprule
+Assumption & Value or rule & Consequence \\
+\midrule
+\emph{Dynamics}\newline geometry & planar; $G = 1$, so a mass is its parameter $GM$; lengths in u, times in s & the field is a 2-vector at every point; bodies move visibly within one episode \\
+integrator & kick-drift-kick leapfrog at $1/60$\,s, bodies and craft together & symplectic for the bodies; second-order for the craft under thrust and drag \\
+control tick & 4 substeps $= 1/15$\,s; the action held across the tick & craft and player act at 15\,Hz; 2250 ticks per 150\,s \\
+gravitation & every massive body attracts every other & levels evolve; the unstable ones fail validation \\
+softening & $GM_b\,r/r_b^3$ inside a body's radius $r_b$ & finite everywhere (uniform sphere); zero self-force \\
+the craft & a test particle: pulled by every body, moving none & body paths fixed by the snapshot: exact replay, and a browser ephemeris from 1.5\,KB \\
+capacity & 32 body and 12 zone slots, masked; the pools use at most 12 bodies and 9 zones & one observation shape for every level \\
+\midrule
+\emph{Craft and task}\newline action set & turn $\{$left, none, right$\}$ at $3.5$\,rad/s $\times$ throttle $\{0,\,0.3,\,1\}$ & nine actions, what a player can press; no angular inertia \\
+engine & $a_{\mathrm{eng}}$ log-uniform on $[0.6, 3]$\,u/s$^2$ at full throttle, per instance (suites override) & thrust comparable to local gravity; no craft can ignore the field \\
+$\Delta v$ budget & $\beta \in [0.55, 1.35]$ times the direct-flight estimate $\Delta v_{\mathrm{req}}$, carried as $\beta\,\Delta v_{\mathrm{req}}/a_{\mathrm{eng}}$\,s of full burn, clipped to $[3, 60]$\,s & usually short of a straight flight, so gravity has to do part of the work \\
+targets & 1--6 per instance, at least 100\,u apart: a point in free space, a station, or a point hung off a solid body at radius $+$ atmosphere $+$ 35\,u & a moving target carries its anchor's velocity; black holes and tracers never anchor \\
+order & slot order unless order-free (0 in training until the curriculum raises it, 0.3 on the blind suite) & the navigator chooses the sequence \\
+arrival & within 12\,u; rendezvous: also within 3\,u/s of the target's velocity; flythrough: any speed & a rendezvous (moving targets only) is materially harder \\
+\midrule
+\emph{Hazards,}\newline\emph{endings}\newline atmosphere & \raggedright $\rho_0 e^{-\mathrm{alt}/(0.25\,h)}$ to thickness $h$; drag $0.05\,\rho\,\lVert v_{\mathrm{rel}}\rVert\,v_{\mathrm{rel}}$; heating $0.004\,\rho\,\lVert v_{\mathrm{rel}}\rVert^3$ health/s & drag enters the dynamics, heating only the health \tabularnewline
+radiation & $\sum_b \mathrm{lum}_b/\max(r, r_b, 1\,\mathrm{u})^2$ health/s & a constraint independent of the body's gravity \\
+zones & annuli, soft edge 15\% of the thickness; debris $0.35 \times$ strength $\times$ speed relative to the flow; belt: flat strength; sensor: harmless & damage is continuous in position; matching a debris flow is nearly free \\
+endings & per substep, in order: \code{crashed} (inside a solid body), \code{destroyed} (health, 100 at the start, reaches 0), \code{arrived} (every target visited), \code{lost} ($\lVert x\rVert > 1.35\,R$); per tick: \code{timeout} & exactly one status, \code{arrived} the only success; an empty tank is not one: burn is $\min(\text{throttle}\cdot\Delta t, \text{fuel left})$, the craft coasts on (Section~\ref{sec:clock}) \\
+\midrule
+\emph{Levels}\newline families & 12 procedural; 9 for training, 3 held out & whether a task was learned or a level memorised \\
+validation & to the horizon: no solid pair within radii $+$ atmospheres $+$ 3\,u; orbits within 0.6--1.6 of their initial parent distance (0.3--3.0 for \code{rogue\_flyby}); $|\Delta E/E| \le 2\times10^{-3}$ & no collisions, no ejections, a trusted integration \\
+snapshots & horizon 300\,s (standard pools) or 900\,s (long pools); state stored every 20\,s, $(\text{horizon} - \text{clock})/20\,\mathrm{s} + 1$ of them: 8 and 16 & an episode starts at any epoch that leaves a full clock inside the validated window \\
+level radius $R$ & farthest reach of any body over the horizon $+\,100$\,u; 356--1876\,u in the training pool & the escape boundary sits at $1.35\,R$ \\
+episode clock & 150\,s $= 2250$ ticks; \code{SPACENAV\_EPISODE\_S} sets it per process & ticks, the time-remaining entry and the snapshot count derive from it \\
+\bottomrule
+\end{tabular}
+\caption{Modelling assumptions and fixed parameters of the simulation
+(\code{spacenav/constants.py}, \code{physics.py}, \code{env.py},
+\code{levels/build.py}); the engine and budget ranges are overridden per
+evaluation suite (Table~\ref{tab:suites}).}
+\label{tab:assumptions}
+\end{table}

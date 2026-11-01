@@ -14,7 +14,12 @@ $2 \times 10^7$ for the holdout pool, from $3 \times 10^7$, $4 \times 10^7$
 and $5 \times 10^7$ for the three long-horizon pools: \code{long}, the
 \code{long\_val} pool the 600\,s suites are drawn from, and the 900-level pool
 validated to 9{,}000\,s) so that the levels themselves
-are reproducible without being distributed.
+are reproducible without being distributed. One caveat: the standard pools were built
+when \code{LEVEL\_HORIZON} in \code{spacenav/constants.py} was 300\,s, and
+the constant has since been raised to 900\,s for the long-horizon pools, so
+regenerating the standard pools bit for bit requires setting it back to
+300\,s first; at 900\,s the same seeds yield a different accepted set with
+38 snapshots per level.
 
 \begin{small}
 \begin{verbatim}
