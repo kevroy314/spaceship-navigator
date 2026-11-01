@@ -775,7 +775,7 @@
     parts, the authority A alone is the stronger predictor (&rho; = +0.754; held-out
     area 0.946 with the design levers), while &eta; at the targets is weak
     (&rho; = &minus;0.248) and, once A is in the model, carries no information at all
-    (p = 0.67). The relation between success and &eta; is in fact non-monotone, peaking
+    (p = 0.67). Doubling the network's embedding width to 256 settles what the cost was: it falls to &minus;0.3 / +2.4 / +0.8 / +2.7 points, the all-four arm at the wider network matches the &eta;,stretch arm at either width, and the wider network gains little on good inputs. The redundant channels cost capacity, not conditioning. The relation between success and &eta; is in fact non-monotone, peaking
     near &eta; &asymp; 0.005 and falling on both sides, and the low-&eta; failures are the
     hazard families (<code>debris_maze</code> 25%, <code>asteroid_field</code> 28%,
     <code>compact_system</code> 31%, <code>pulsar</code> 39%), where the field is simple

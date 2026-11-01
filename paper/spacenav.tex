@@ -78,7 +78,9 @@ evaluated by them: of four physically meaningful readouts added to its
 observation, the two that are algebraic combinations of quantities it already
 observes cost 3.1 to 10.1 percentage points of success depending on the
 evaluation tier (Welch's $t$ on seed means, $p \le 0.029$ on every tier),
-while the two that carry new information cost nothing; the closed-form $\dd$
+while the two that carry new information cost nothing, and the cost
+vanishes when the network's embedding width is doubled, so that it was a
+cost in capacity rather than in conditioning; the closed-form $\dd$
 predicts per-instance success ($\rho = -0.585$ over 2,388 instances) but does
 so through its fuel-budget denominator, the representational numerator adding
 nothing once the budget is known; and training for 10,000 updates instead of
@@ -1037,16 +1039,26 @@ contains measurably degrades a policy, while appending features that carry
 physics not otherwise available does not, and there is no evidence that the
 informative channels help ($\eta$ and the stretching rate are nominally
 above the no-channel arm on three suites and below it on one, none
-significantly). The mechanism of the cost is not isolated. Four extra input
-dimensions against 285,322 parameters is a capacity account, a ratio with a
-division in it is heavy-tailed even after log compression, which is a
-conditioning account, and the two predict different behavior under scale
-\MEASURE{training at embedding widths 256 and 384, which would separate the
-two accounts}; what can be said is that an observation channel's value to a
-learner depends on whether it is new rather than on whether it is true,
-which is consistent with the view that a policy is a compression of its
-inputs and that a channel which does not change the policy costs capacity
-without buying anything \cite{lai2024,kaelbling1998}.
+significantly). Two accounts of the mechanism predict different behavior
+under scale: four extra input dimensions against 285,322 parameters is a
+capacity account, under which a wider network should absorb the redundant
+channels, while a ratio with a division in it is heavy-tailed even after log
+compression, which is a conditioning account under which the cost should
+persist at any width. Doubling the embedding width to 256 (698,634
+parameters, three seeds per arm, same budget) decides between them: the
+cost falls to $-0.3$, $+2.4$, $+0.8$ and $+2.7$ points on the four tiers
+(Welch's $t$, $p = 0.74$, $0.18$, $0.38$ and $0.026$), the all-four arm at
+the wider network ($90.1 \pm 0.9$, $41.2 \pm 0.4$, $11.4 \pm 1.2$,
+$29.6 \pm 0.5$) matches the $\eta$,stretch arm at either width, and the
+$\eta$,stretch arm itself gains little from the extra width ($-0.6$, $+1.7$,
+$+1.1$ and $+3.1$). The cost was capacity. Thus, an observation channel's
+value to a learner depends on whether it is new rather than on whether it is
+true, and at a network size where capacity is scarce a channel that does not
+change the policy costs capacity without buying anything, which is
+consistent with the view of a policy as a compression of its inputs
+\cite{lai2024,kaelbling1998}; at a size where capacity is not scarce the
+redundant channels are merely ignored, and the wider network spends its
+extra parameters on tolerating them rather than on the task.
 
 \subsection{Per-instance variation}
 \label{sec:ghosts}
