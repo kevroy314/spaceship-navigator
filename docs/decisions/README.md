@@ -47,3 +47,4 @@ with no evidence behind it is a preference, and should say so.
 | [0036](0036-clock-and-discount-are-one-parameter.md) | The clock and the discount are one parameter: gamma 0.9998 recovers the 600 s learner |
 | [0037](0037-the-channel-cost-was-capacity.md) | The channel cost was capacity: it vanishes at twice the embedding width |
 | [0038](0038-paper-two-pictures-and-difficulty-from-reachability.md) | The paper pictures the task two ways, not three, and derives difficulty from reachability |
+| [0039](0039-the-chaotic-state-is-not-entered-and-the-raw-ftle-is-tidal.md) | Along real flights the chaotic state is not entered; the raw 20 s FTLE is tidal shear |
