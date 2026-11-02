@@ -64,7 +64,7 @@
       learning agent can be expected to do about it.</p>
       <p class="byline">Kevin Horecka &middot; draft, October 2026</p>
       <div class="cta">
-        <a class="primary" href="spacenav.pdf">Read the paper (PDF, draft, 42 pages)</a>
+        <a class="primary" href="spacenav.pdf">Read the paper (PDF, draft, 45 pages)</a>
         <a href="ghosts/">Ghost replay &rarr; sheet 2</a>
         <a href="https://github.com/kevroy314/spaceship-navigator">Code &amp; data</a>
       </div>
@@ -90,7 +90,7 @@
         <dt>tour</dt><dd>1 to 6 targets, radius 12 u</dd>
         <dt>pools</dt><dd>18,000 training, 2,700 validation, 1,200 holdout levels, each validated to 300 s</dd>
         <dt>long pool</dt><dd>1,800 levels validated to 900 s, for the 600 s clock</dd>
-        <dt>paper</dt><dd>draft, 42 pages, October 2026</dd>
+        <dt>paper</dt><dd>draft, 45 pages, October 2026</dd>
       </dl>
       <p>Browser client reproduces the physics from a ~1.5 KB snapshot.</p>
     </aside>
@@ -670,7 +670,11 @@
     <p class="note" style="margin-top:10px">Modelling assumptions and fixed parameters of the simulation
     (<code>spacenav/constants.py</code>, <code>physics.py</code>, <code>env.py</code>,
     <code>levels/build.py</code>); the engine and budget ranges are overridden per
-    evaluation suite (the suites table in section 06).</p>
+    evaluation suite (the suites table in section 06). Four suites are used
+    throughout: easy, medium and hard are drawn from the nine training families with
+    rising tour length, rendezvous share and contested share, and blind from the three
+    families the policy never trains on, so that it measures transfer to regimes of
+    the field the policy has not seen.</p>
 
     <h3 style="margin-top:28px">The level families</h3>
     <p>Levels are generated procedurally in twelve families. The families are samples
@@ -780,6 +784,51 @@
     <figure>
       <img src="figures/phase.png" alt="Three rows of four panels, one column per family: the eta field over each level's playable disc, a 20 second finite-time Lyapunov exponent field, and a single-burn outcome map over burn start and burn heading.">
       <figcaption><b>Computed portraits of four levels</b>, one per family, each chosen as the level whose median &eta; is nearest its family's median. (a) The &eta; field over the playable area on a logarithmic scale, bodies at true radius, the measured dominance boundary dashed, start and target marked; a hierarchical level is dark except in thin rings around its planets, a contested level bright everywhere. (b) A 20 s finite-time Lyapunov exponent from a displaced coasting particle, integrated against the true ephemeris. (c) The single-burn outcome map for the level's own task, the fraction of jittered draws that arrive over burn start and burn heading relative to the bearing to the target, best of four burn sizes. Row (c) describes one task's decision space and says nothing about the family; 368,640 full-episode rollouts per level.</figcaption>
+    </figure>
+
+    <h3 style="margin-top:28px">One flight read through the first picture</h3>
+    <p>What the first picture buys on the levels the environment currently generates
+    can be read off the figure below, which draws the state machine of section 01 and
+    then measures its states along a real flight. Membership is decided per tick from
+    the quantities above: contested where &eta; &gt; 0.1 at the craft, hazard where the
+    craft is inside a harmful zone or an atmosphere or is taking damage faster than a
+    tenth of its health per episode, and chaotic where the exponent measured from the
+    craft's own state, with one tick of thrust as the perturbation and the ballistic
+    factor divided out, exceeds the critical value. On a star-cluster level the flight
+    shown is contested on 87% of its ticks and in hazard on 11% (86.5% and 11.8% as
+    means over 16 sampled rollouts), with a chaotic reading on 1.7% that lasts two
+    seconds and sits on a dive toward three stars at once, where tidal shear and
+    divergence cannot be separated in a 20 s window; on four asteroid-field and
+    sol-like levels (16 rollouts each) the contested state is never entered and the
+    chaotic state is entered on 0% of ticks on three of them and 6% on the fourth, all
+    of it within 430 u of the star; and a screen of all 132 binary-star and
+    star-cluster tasks of the hard suite found no well-behaved segment on any of them,
+    since at &eta; &gt; 0.1 a companion of comparable mass contests the whole disc. On
+    the present levels, then, the state machine has in effect two states per family,
+    well-behaved or contested according to the mass hierarchy, with hazard entered
+    from either, and the state that gives the picture its content, the encounter whose
+    exit can only be bounded, is not entered on the timescale of an episode, so that
+    the picture does not pay off on these levels and its value is prospective: it
+    specifies what a level must contain for a regimes-based account of difficulty to
+    apply (an encounter at which the corrected exponent crosses the critical value
+    inside the episode, which by the Lyapunov measurement above requires episodes long
+    relative to orbital periods), and it names the quantities a navigator in such a
+    level would need, the entry set it can afford and the exit set it must plan
+    beyond, both of which are reachable-set computations the environment can already
+    perform. The same measurement records a trap. The raw 20 s finite-time exponent
+    of the portraits above crosses the critical value on 7&ndash;25% of the ticks of
+    every flight examined, every crossing within a few hundred units of a star,
+    because a twenty-second window cannot separate tidal shear beside a massive body
+    from exponential divergence (along these flights its logarithm tracks the tidal
+    closed form &radic;(&sum;<sub>b</sub> 2GM<sub>b</sub>/r<sub>b</sub><sup>3</sup>)
+    at correlations of 0.86&ndash;1.00), so that read with that exponent the near
+    field of every star is chaotic, which is the ballistic-drift error in another
+    guise; row (b) of the portraits should accordingly be read as a map of the field's
+    steepness, and where the field is unpredictable is the separate question that the
+    ballistic correction answers.</p>
+    <figure>
+      <img src="figures/regimes.png" alt="Left: the four regimes drawn as a state machine, well-behaved, contested, chaotic encounter and hazard, with the transitions between them. Right: one flight on a star-cluster level with its path coloured by regime, a state bar over the 150 second episode that is contested throughout with a brief chaotic sliver and hazard at the end, and the raw and corrected finite-time exponents along the flight against the critical value.">
+      <figcaption><b>Regimes as a state machine, and one flight read through it.</b> (a) The first picture of section 01: in a well-behaved field a one- or few-body model holds and the navigator plans ahead; in a contested field no single body dominates and the model must be richer, though the dynamics remain predictable; in a chaotic encounter nearby trajectories diverge, so the exit can only be bounded and the plan is made for the far side; a hazard constrains the route independently of gravity and can be entered from any regime. (b) The states along one sampled flight of a trained policy on a hard-suite <code>star_cluster</code> task (level 2428, R = 1574 u), with precedence hazard over chaotic over contested over well-behaved; the map is cropped to the flown region, bodies at true radius, grey curves their paths over the episode, green rings the targets where reached (64 s and 88 s; the third rides a station beside a star and was not reached before the clock). The bar beneath is the state sequence over the 150 s episode: contested throughout, a 2 s chaotic sliver at 131 s on the dive toward the cluster core, and hazard from 133 s in the stars' near field. The lowest strip shows the raw 20 s exponent of the portraits above, which crosses the critical value (dashed) on 7% of the ticks, and the reading with the ballistic factor divided out, which crosses on 1%. Drawn by <code>scripts/fig_regimes.py</code>.</figcaption>
     </figure>
 
     <h3 style="margin-top:28px">The episode clock</h3>
@@ -1027,7 +1076,28 @@
     rendezvous is required still drops the held-out deviance by 1042 on one degree of
     freedom. Thus, D predicts success better than family alone and better than the
     suite's own design levers, as it was meant to.</p>
-    <p>However, it does so for the wrong half of itself. Separating the ratio into its
+    <p>The figure below draws the difficulty space these numbers summarize, D against
+    the policy's per-instance success with the families and suites overlaid. The suites
+    tile the D axis in the intended order (median D of 0.0005, 0.0091, 0.023 and 0.044
+    on easy, medium, hard and blind) and success falls with D within each of them
+    (&rho; = &minus;0.37 to &minus;0.48, every p &lt; 10<sup>&minus;18</sup>), so the
+    pooled relation is not an artifact of the suites' composition. The hierarchical
+    families occupy half a decade of median D (0.0007&ndash;0.0037) at success rates
+    from 25% to 73%, which is the hazard effect of the next paragraph seen from above,
+    and the contested families sit two to three decades to the right (0.29&ndash;1.45)
+    at 17&ndash;22%. One feature of the portrait is not pressed here: where the two
+    groups overlap in D (roughly 0.03&ndash;0.1) the contested families' curves fall
+    through 50% at D of 0.04&ndash;0.17, against 0.0014&ndash;0.014 for
+    <code>sol_like</code>, <code>jovian</code> and <code>saturnian</code>, as if a
+    given share-of-budget cost were easier to absorb in a contested field than in a
+    hierarchical one. The overlap is narrow and is confounded with suite composition,
+    since no contested family appears in the easy suite, and a within-suite comparison
+    would be needed before reading it as a property of the families.</p>
+    <figure>
+      <img src="figures/portrait.png" alt="Two panels of task demand D on a log axis against the learned policy's per-instance success. Left: every task as a jittered point coloured by its family's regime, with a running success curve per family falling from left to right, hierarchical families at low D and contested families two to three decades to the right. Right: one curve per suite with a confidence band, easy highest and leftmost, then medium, blind and hard.">
+      <figcaption><b>The difficulty space.</b> Task demand D (log scale) against the learned policy's per-instance success (the fraction of four 3000-update runs that arrived) over the 2,388 tasks of the four 150 s suites. (a) Every instance as a jittered point, banded because success takes five values, coloured by the regime of its family, with a running success curve per family (Gaussian kernel in log<sub>10</sub> D, &sigma; = 0.3 decade, drawn between the family's 5th and 95th percentiles of D where the effective n &ge; 15) and a dot at the family's median D. (b) The same axes with one curve per suite, its 95% Wilson band on the effective n, and a dot at the suite's median D. Spearman &rho; of success with D is &minus;0.585 pooled (n = 2,388) and &minus;0.37, &minus;0.44, &minus;0.36 and &minus;0.48 within easy, medium, hard and blind. Seven tasks with D &lt; 10<sup>&minus;5</sup> are drawn at the left edge. Computed by <code>scripts/fig_portrait.py</code> from the data of <code>scripts/correlations.py</code>.</figcaption>
+    </figure>
+    <p>However, D does so for the wrong half of itself. Separating the ratio into its
     parts, the authority A alone is the stronger predictor (&rho; = +0.754; held-out
     area 0.946 with the design levers), while &eta; at the targets is weak
     (&rho; = &minus;0.248) and, once A is in the model, carries no information at all
