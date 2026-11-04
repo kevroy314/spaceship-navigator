@@ -555,60 +555,64 @@ policy of Section~\ref{sec:learning}: contested where $\eta > 0.1$ at the
 craft, hazard where the craft is inside a harmful zone or an atmosphere or
 is taking damage faster than a tenth of its health per episode, and chaotic
 where the exponent measured from the craft's own state, with the ballistic
-factor divided out as above, exceeds $\lambda_{\mathrm{crit}}$. On a
-star-cluster level the flight is contested on 87\% of its ticks and in
-hazard on 11\%, with a chaotic reading on 1.7\% that lasts two seconds on
-a dive toward three stars at once; on four asteroid-field and sol-like
-levels the contested state is never entered and the chaotic state on 0--6\%
-of ticks, all within 430\,u of the star; and a screen of all 132
-binary-star and star-cluster tasks of the hard suite found no well-behaved
-segment on any of them, since at $\eta > 0.1$ a companion of comparable
-mass contests the whole disc. Thus, on the present levels the state machine
-has in effect two states per family, well-behaved or contested according
-to the mass hierarchy, with hazard entered from either, and the state that
-gives the picture its content, the encounter whose exit can only be
-bounded, is not entered on the timescale of an episode. On the present levels the picture therefore adds nothing to the mass
-hierarchy, and its value is prospective, in that it specifies what a level
-must contain for a regimes-based account of difficulty to apply (an
-encounter at which the corrected exponent crosses $\lambda_{\mathrm{crit}}$
-inside the episode) and names the quantities a navigator in such a level
-would need, the entry set it can afford and the exit set it must plan
-beyond. The same
+factor divided out as above, exceeds $\lambda_{\mathrm{crit}}$. On the
+jovian flight shown the craft is well-behaved on 55\% of its ticks,
+contested on 29\% while a moon's pull rivals the giant's, in hazard on 15\%
+while crossing the giant's radiation belts, and chaotic on 1\%, in two
+one-second samples at close passes of a moon that may themselves be tidal;
+over 16 sampled rollouts the fractions are 53, 27, 18 and 2\%. The
+contested state appears on 38 of the 132 jovian tasks of the hard suite,
+on contested-family levels it is the whole flight (a star-cluster flight is
+contested on 87\% of ticks, in hazard on 11\% and chaotic on 1.7\%), and on
+asteroid-field and sol-like levels it is never entered. Thus, on the
+present levels, the state that gives the picture its content, the encounter
+whose exit can only be bounded, is entered for a second or two at a time if
+at all, and the machine reduces to the mass hierarchy, well-behaved or
+contested according to whether a secondary's pull rivals its primary's,
+with hazard entered from either. On the present levels the picture
+therefore adds nothing beyond $\eta$ and the hazard geometry, and its value
+is prospective, in that it specifies what a level must contain for a
+regimes-based account of difficulty to apply (an encounter at which the
+corrected exponent crosses $\lambda_{\mathrm{crit}}$ inside the episode)
+and names the quantities a navigator in such a level would need, the entry
+set it can afford and the exit set it must plan beyond. The same
 measurement records a trap (Appendix~\ref{app:chaos}): the raw 20\,s
 finite-time exponent of Figure~\ref{fig:phase} crosses
-$\lambda_{\mathrm{crit}}$ on 7--25\% of the ticks of every flight examined,
-because a twenty-second window cannot separate tidal shear beside a massive
-body from exponential divergence, so that row (b) of that figure is a map
-of the field's steepness.
+$\lambda_{\mathrm{crit}}$ on 42\% of the ticks of this flight and on
+7--25\% of the others examined, because a twenty-second window cannot
+separate tidal shear beside a massive body from exponential divergence, so
+that row (b) of that figure is a map of the field's steepness.
 
 \begin{figure}[!t]
 \centering
 \includegraphics[width=\textwidth]{figures/regimes.pdf}
-\caption{Regimes of predictability as a state machine, and one flight read
-through it. (a) The first picture of Section~\ref{sec:field}: the states
-are regimes, not positions. In a well-behaved field a one- or few-body model
+\caption{The state machine of regimes, measured along a flight of a trained
+policy. (a) The first picture of Section~\ref{sec:field}: the states are
+regimes of predictability. In a well-behaved field a one- or few-body model
 holds and the navigator plans ahead; in a contested field no single body
-dominates, the model must be richer, but the dynamics remain predictable; in
-a chaotic encounter nearby trajectories diverge, so the exit cannot be
-chosen, only bounded, and the region acts as a noise filter mapping the set
-of entry states onto a bounded set of exits for which the plan on the far
-side is made; a hazard (radiation, debris, atmosphere) constrains the route
-independently of gravity and can be entered from any regime. (b) The states
-measured along one flight of a trained policy (\code{ppo\_v5\_noinstr},
-sampled rollout 1 of 16) on hard-suite task 556 (\code{star\_cluster}
-family, level 2428, $R = 1574$\,u), with precedence hazard $>$ chaotic $>$
-contested $>$ well-behaved and the thresholds of Section~\ref{sec:chaos}.
-The map crops the flown region: three luminous stars of the cluster, bodies
-at true radius, grey curves their paths over the episode, green rings the
-targets where reached (64\,s and 88\,s; the third rides a station beside a
-star and was not reached before the clock). The bar beneath is the state
-sequence over the 150\,s episode: contested throughout, a 2\,s chaotic
-sliver at 131\,s on the dive toward the cluster core, and hazard from
-133\,s in the stars' near field. The lowest strip shows the two exponents
-along the flight against the critical value (dashed): the raw 20\,s
-finite-time exponent of Figure~\ref{fig:phase}, which crosses the line on
-7\% of the ticks, and the reading with the ballistic factor divided out,
-which crosses on 1\%. Drawn by \code{scripts/fig\_regimes.py}.}
+dominates, the model must be richer, but the dynamics remain predictable;
+in a chaotic encounter nearby trajectories diverge, so only the exit set is
+predictable, and the region acts as a noise filter mapping the set of entry
+states onto a bounded set of exits for which the plan on the far side is
+made; a hazard constrains the route independently of gravity and can be
+entered from any regime. (b) The states measured along one flight of
+\code{ppo\_v5\_noinstr} (sampled rollout 1 of 16) on hard-suite task 339
+(\code{jovian} family, level 309, $R = 919$\,u), with precedence hazard $>$
+chaotic $>$ contested $>$ well-behaved and the thresholds of
+Section~\ref{sec:chaos}. The map crops the flown region: the giant with its
+atmosphere and two radiation belts, three moons at true radius with their
+paths over the episode, two sensor zones, and the targets where reached (1
+at 66\,s, a station beside a moon; 2 at 128\,s, inside the inner belt; 3 not
+reached). The bar is the state sequence over the 150\,s episode with the
+time of each change beneath it: well-behaved on the approach, contested
+from 37 to 79\,s while a moon's pull rivals the giant's ($\eta$ reaches
+$2.0$ at 26\,u from the moon), well-behaved again on the transfer, hazard
+on each belt crossing from 102\,s, and two one-second chaotic samples at
+close passes of a moon (66\,s at 23\,u, 147\,s at 60\,u). The lowest strip
+shows both exponents against the critical value: the raw 20\,s exponent sits
+above it for most of the time spent near the giant, which is tidal shear;
+the corrected reading, which colours the bar, crosses it on 2 of the 150
+one-second samples. Drawn by \code{scripts/fig\_regimes.py}.}
 \label{fig:regimes}
 \end{figure}
 
