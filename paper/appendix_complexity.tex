@@ -1,0 +1,48 @@
+% Appendix. Fragment, \input by spacenav.tex inside \appendix.
+\section{Why solvability cannot be checked by exhaustion}
+\label{app:complexity}
+
+Consider the most naive possible procedure for establishing that a level is
+solvable, which is to enumerate every control sequence and simulate each
+one. The control at each of $T$ steps is a direction and a thrust magnitude,
+both continuous, so even with a discretization to $a$ distinct actions per
+step the number of sequences is $a^T$, and at $T = 2250$ this is beyond
+reach for any $a > 1$; the discrete nine-action set used here does not
+rescue the situation ($9^{2250}$ has more than two thousand digits), and the
+underlying continuous problem has no finite enumeration at all. Formal
+results in motion planning make the same point: the generalized mover's
+problem is PSPACE-hard \cite{reif1979,hopcroft1984,canny1988}, and remains
+so with moving obstacles even for a point robot of bounded velocity
+\cite{reif1994}; finite-horizon planning under partial observation is
+PSPACE-complete and its infinite-horizon form undecidable
+\cite{papadimitriou1987,madani2003}; and reachability for quite simple
+classes of continuous and hybrid dynamics is undecidable
+\cite{moore1990,henzinger1998,blondel2000}. Note that these are results
+about problem classes rather than about any single instance, and that
+approximate search is not hopeless in principle, since kinodynamic planning
+with bounded velocity and acceleration admits a polynomial-time
+$\varepsilon$-approximation \cite{donald1993}; what they establish is that
+no efficient general procedure is to be expected, and that nothing about
+the field studied here, which couples every body's position to the craft's
+acceleration at every step, places it among the restricted cases for which
+an approximation is known.
+
+Exhaustive checking is therefore replaced, in practice, by one of two
+things, a simplifying assumption (a coarse model of the field, a restricted
+family of control sequences, a short horizon) or a search that samples the
+space and reports what it finds, and both are used in this paper. Both also
+share a limitation that a chaotic regime makes acute. In a region where
+nearby trajectories diverge exponentially, the numerical trajectory of a
+given control sequence and the true trajectory of that sequence part company
+within a few multiples of the Lyapunov time, since the shadowing of a
+computed orbit by a true one breaks down in finite time when the local
+expansion rate fluctuates \cite{hammel1987,sauer1997,sauer2002}, so that a
+check which reports that a sequence arrives is a statement about a
+trajectory that may correspond to nothing the craft can fly, and the precision of the check
+becomes the limit before its cost does. The same literature supplies the
+premise on which this paper's method rests, which is that ensemble
+statistics over many orbits remain reliable where individual orbits do not
+\cite{boekholt2015,portegieszwart2018}. Thus, in general, a level's
+difficulty cannot be read off from its definition and has to be measured
+over a population, and the measurement is itself only as good as the probe
+used to make it.

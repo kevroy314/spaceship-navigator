@@ -1,0 +1,70 @@
+% Appendix. Fragment, \input by spacenav.tex inside \appendix.
+\section{Observation channels}
+\label{app:channels}
+
+Section~\ref{sec:instruments} summarizes the observation-channel result;
+this appendix gives the channels, the redundancy argument and the width
+experiment in full. The four channels added to the observation are $\eta$; a log-compressed authority $A$; a log-compressed
+demand $\dd$; and the local tidal stretching rate (the square root of the
+tidal gradient, i.e. how fast nearby trajectories are pulled apart). The
+channels can be zeroed individually or together with the observation shape
+unchanged, so that an ablated run stays comparable with a full one, and
+toggling them was verified not to perturb the dynamics.
+
+Supplying all four channels costs the agent between 3.1 and 10.1 percentage
+points of final success depending on the tier (Table~\ref{tab:instr};
+Figure~\ref{fig:ablation}(a); Welch's $t$-test on seed means, $n = 5$ per
+arm, $p = 0.021$, $0.0088$, $0.029$ and $0.0017$ on the easy, medium, hard
+and blind suites, with effect sizes between $1.8$ and $3.0$). The quoted
+uncertainties are training-seed standard deviations, which are the relevant
+ones; the episode-level binomial intervals are far narrower and would
+overstate the confidence.
+
+The observation already carries the local gravity vector (hence
+$\lVert g \rVert$), the product of fuel and engine acceleration (hence
+$\Delta v_{\mathrm{budget}}$), and the fraction of the episode remaining
+(hence $T$), so that $A = \Delta v_{\mathrm{budget}} / (\lVert g \rVert T)$ is
+an algebraic combination of three quantities the agent already has, partly
+duplicating an existing ratio of remaining to required $\Delta v$, and
+$\dd = \eta / A$ is redundant given $\eta$ and $A$; by contrast $\eta$
+requires the dominant-body decomposition, which is not otherwise computable
+from the observation, and the stretching rate is not present in any form
+(it is also a good proxy for the quantity one would actually want, since on
+the four levels of Figure~\ref{fig:phase} its log–log correlation with the
+measured 20\,s Lyapunov exponent is $0.96$--$0.98$).
+Splitting the panel along that line puts the entire cost on the redundant
+half (Table~\ref{tab:instr}; Figure~\ref{fig:ablation}(b)). Supplying only
+$\eta$ and the stretching rate is statistically indistinguishable from
+supplying nothing ($p = 0.40$ to $0.90$ across suites), supplying only $A$
+and $\dd$ is indistinguishable from supplying all four ($p = 0.59$ to
+$0.81$), and the contrast between the two halves is significant on every
+suite ($p \le 0.0064$, effect sizes $2.4$ to $3.6$).
+
+
+
+In this environment, at this network size and step budget, appending
+features that are algebraic combinations of what the observation already
+contains measurably degrades a policy, while appending features that carry
+physics not otherwise available does not, and there is no evidence that the
+informative channels help ($\eta$ and the stretching rate are nominally
+above the no-channel arm on three suites and below it on one, none
+significantly). Two accounts of the mechanism predict different behavior
+under scale: four extra input dimensions against 285,322 parameters is a
+capacity account, under which a wider network should absorb the redundant
+channels, while a ratio with a division in it is heavy-tailed even after log
+compression, which is a conditioning account under which the cost should
+persist at any width. Doubling the embedding width to 256 (698,634
+parameters, three seeds per arm, same budget) decides between them: the
+cost falls to $-0.3$, $+2.4$, $+0.8$ and $+2.7$ points on the four tiers
+(Welch's $t$, $p = 0.74$, $0.18$, $0.38$ and $0.026$), the all-four arm at
+the wider network ($90.1 \pm 0.9$, $41.2 \pm 0.4$, $11.4 \pm 1.2$,
+$29.6 \pm 0.5$) matches the $\eta$,stretch arm at either width, and the
+$\eta$,stretch arm itself gains little from the extra width ($-0.6$, $+1.7$,
+$+1.1$ and $+3.1$). The cost was capacity. Thus, an observation channel's
+value to a learner depends on whether it is new rather than on whether it is
+true, and at a network size where capacity is scarce a channel that does not
+change the policy costs capacity without buying anything, which is
+consistent with the view of a policy as a compression of its inputs
+\cite{lai2024,kaelbling1998}; at a size where capacity is not scarce the
+redundant channels are merely ignored, and the wider network spends its
+extra parameters on tolerating them rather than on the task.

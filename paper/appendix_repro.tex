@@ -5,6 +5,15 @@
 \section{Reproduction}
 \label{app:repro}
 
+The training hyperparameters of Section~\ref{sec:learning} are: 1024
+parallel environments by 128 steps, i.e. 131,072 transitions per update;
+four epochs of eight minibatches; learning rate $3 \times 10^{-4}$ annealed
+linearly to a tenth; $\gamma = 0.999$; generalized-advantage weight
+$\lambda_{\mathrm{GAE}} = 0.95$; clip $0.2$; entropy coefficient annealed
+from $0.01$ to $0.002$; value coefficient $0.5$; gradient norm clipped at
+$0.5$; embedding width 128 with four attention heads (285,322 parameters),
+or 256 (698,634) for the width experiment.
+
 Everything reported in this paper is produced by scripts in the repository,
 from a checkout with the \code{spacenav} package installed and the GPU build
 of JAX, in the order below; \code{data/} is not under version control, and the

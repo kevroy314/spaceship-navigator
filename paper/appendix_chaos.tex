@@ -1,0 +1,66 @@
+% Appendix. Fragment, \input by spacenav.tex inside \appendix.
+\section{Measuring chaos on episode timescales}
+\label{app:chaos}
+
+Section~\ref{sec:chaos} reports the measured Lyapunov exponent of the field
+and the conclusion that it is quasi-integrable on episode timescales; this
+appendix gives the procedure and the intermediate numbers. Wang, Herbert and Gao \cite{wang2023} show that the
+reinforcement-learning objective is $\alpha$-H\"older with
+$\alpha = \log(1/\gamma)/\lambda$ for a system with maximal Lyapunov
+exponent $\lambda$ and discount $\gamma$, becoming fractal, and losing any
+usable descent direction, when $\lambda$ exceeds $\log(1/\gamma)/\Delta t$;
+at the discount of $\gamma = 0.999$ and the $1/15$\,s control interval used
+here that threshold is $\lambda_{\mathrm{crit}} = 0.0150\,\mathrm{s}^{-1}$,
+corresponding to a Lyapunov time of 67\,s. The measured predictability
+horizon of the environment (the time at which one control tick's worth of
+thrust error grows past the 12\,u arrival tolerance) is 52--74\,s across
+eight families, close enough to that figure that bounding the exponent is
+not sufficient and it has to be measured.
+
+The divergence is ballistic, since $d\ln(\mathrm{sep})/dt$, which falls as
+$1/t$ for linear growth and stays flat for exponential growth
+\cite{benettin1980,ott2002}, decays in the measured separations in the
+manner of linear growth: pure linear growth predicts a 150\,s-to-75\,s slope
+ratio of exactly $0.50$, and the measured ratio is $0.33$--$0.64$ with a
+median near $0.56$ (16 levels in each of eight families, one tick of thrust
+as the perturbation). Fitting $\mathrm{sep} = a\,t\,e^{\lambda t}$ to divide
+out the ballistic factor gives $\lambda = 0.0045$--$0.0086\,\mathrm{s}^{-1}$
+(90th percentile near $0.010$), roughly a factor of two below
+$\lambda_{\mathrm{crit}}$, with only the tail of \code{star\_cluster}
+exceeding it. A Lyapunov time of about 140\,s against a 150\,s episode is one
+e-folding per episode, or about 2000 control steps per e-folding, whereas
+the reinforcement-learning results on chaotic systems in the literature sit
+at 10--100 steps per e-folding \cite{bucci2019,rabault2019,vignon2023}, and
+the classical chaos-control results treat that sensitivity as the thing that
+makes small control effective \cite{ott1990,shinbrot1990}; the environment
+is well inside the benign regime. The uncertainty exponent of the arrival
+basin \cite{grebogi1983,mcdonald1985,aguirre2009}, which is near one for a
+smooth boundary and near zero for a fractal one, measures $0.53$--$1.02$
+once enough perturbation samples are used to fit it (768 per level; with 96
+the flip counts are small integers and no exponent can be trusted),
+consistent with the Lyapunov result. Thus, the field is quasi-integrable on
+the timescale of an episode, in the sense in which a near-integrable
+Hamiltonian system retains most of its invariant tori under perturbation and
+drifts only over times exponentially longer than its orbital period
+\cite{kolmogorov1954,arnold1963,nekhoroshev1977}, and in the same sense in
+which the solar system is chaotic with a Lyapunov time of millions of orbits
+\cite{laskar1989,sussman1992}, and where chaos is wanted, as it is for the
+first picture of Section~\ref{sec:field}, it has to be built into a
+level, chiefly by episodes long relative to orbital periods (closer
+encounters and tighter binaries are expected to help less).
+
+The same measurement records a
+trap. The raw 20\,s finite-time exponent of Figure~\ref{fig:phase} crosses
+$\lambda_{\mathrm{crit}}$ on 7--25\% of the ticks of every flight examined,
+every crossing within a few hundred units of a star, because a twenty-second
+window cannot separate tidal shear beside a massive body from exponential
+divergence (along these flights its logarithm tracks the tidal closed form
+$\sqrt{\sum_b 2GM_b/r_b^3}$ at correlations of $0.86$--$1.00$), so that read
+with that exponent the near field of every star is chaotic, which is the
+ballistic-drift error in another guise; row (b) of Figure~\ref{fig:phase}
+should accordingly be read as a map of the field's steepness, and where the
+field is unpredictable is the separate question that the ballistic
+correction answers.
+The state fractions along the flights of Figure~\ref{fig:regimes} under both
+readings of the exponent are printed by \code{scripts/fig\_regimes.py --all}
+and recorded in decision record 0039 of the repository.
