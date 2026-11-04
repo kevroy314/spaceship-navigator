@@ -829,13 +829,13 @@ def main():
     panel_terminations(ax_g, D)
     panel_units(ax_u, D)
 
-    letter(fig, 0.02 / W, (top + 0.16) / H, "(a)  the level, and one flight")
+    letter(fig, 0.02 / W, (top + 0.16) / H, "(a)  the level with a sampled rollout")
     letter(fig, 3.85 / W, (top + 0.16) / H, "(b)  what the policy observes")
     letter(fig, 0.02 / W, 5.55 / H, "(c)  the nine actions")
     letter(fig, 1.95 / W, 5.55 / H, "(d)  goal kinds")
     letter(fig, 5.2 / W, 5.55 / H, "(e)  loadout")
     letter(fig, 0.02 / W, 3.1 / H, "(f)  the episode clock")
-    letter(fig, 3.95 / W, 3.1 / H, "(g)  how an episode ends, and units")
+    letter(fig, 3.95 / W, 3.1 / H, "(g)  endings and units")
 
     fig.savefig(OUT / "task.pdf")
     fig.savefig(OUT / "task.png")

@@ -9,7 +9,7 @@ behind it. It is a position more than a finding, since deadlines and launch
 windows are real constraints in the trajectory-design sources cited in
 Section~\ref{sec:field}.
 Fuel is a harder constraint, because it is consumed and cannot be recovered,
-and exposure is the most interesting, because radiation, debris and
+and exposure is the one with the most structure, because radiation, debris and
 atmosphere each have their own geometry and dynamics and because avoiding
 them shapes a route in ways the gravity alone would not. The clock, by
 contrast, mostly penalizes a craft that chooses an energy-efficient path over
@@ -19,7 +19,7 @@ judged on.
 The evidence that the 150\,s clock of this environment is binding in that
 way comes from the optimizer of Section~\ref{sec:optimizer} flown on 32
 two-target levels at four clocks, with control resolution held at 3.1\,s per
-segment so that a longer clock buys more segments rather than coarser ones
+segment so that a longer clock adds segments at the same resolution
 (Figure~\ref{fig:clock}). Arrivals rise from $5/32$ at 150\,s to $8/32$ at
 300\,s and $13/32$ at 600\,s, then fall back to $11/32$ at 900\,s; timeouts
 fall monotonically from 18 to 5; and crashes, destructions and escapes go
@@ -52,9 +52,8 @@ hard and blind suites, and its 150\,s timeouts (102, 146 and 147 of about
 600\,s rather than arrivals (medium suite: timeouts 102 to 17, escapes 53 to
 105, arrivals 206 to 197), an escape being the craft leaving the level past
 1.35 times its radius, which a pilot with an empty tank cannot avoid once it
-is on an unbound path. A longer clock, that is, gives a navigator the time to
-finish a path it could not otherwise finish, or the time to spend its fuel
-and drift out, and which of the two it gets depends on the navigator.
+is on an unbound path. A longer clock, that is, gives the optimizer time to finish paths it had
+started and gives the reflex pilot time to spend its fuel and drift out.
 
 The learned policy, trained at a 600\,s clock, is a third case, and the one
 that argues most strongly against treating the clock as a free parameter.
@@ -70,8 +69,8 @@ the easy suite and finished at 4\%, so that the mean over seeds is
 $48.9 \pm 38.6$, $19.8 \pm 16.1$, $3.9 \pm 3.6$ and $13.1 \pm 10.5$ on the
 four tiers. Note that the dominant ending for the policies that did learn
 was still the clock: 37--42\% of medium-suite tasks timed out at 600\,s,
-against roughly a third at 150\,s, so that four times the time produced
-more timeouts, not fewer. The likely explanation is the discount, since
+against roughly a third at 150\,s, so that four times the clock raised the
+timeout share. The likely explanation is the discount, since
 $\gamma = 0.999$ gives the value estimate a horizon of about 65\,s at
 15\,Hz, which is a reasonable fraction of a 150\,s episode and a ninth of a
 600\,s one, so that a policy trained at the longer clock is rewarded for
@@ -88,12 +87,11 @@ paired, and with the caveat that the 600\,s blind suite is seen-family) and
 somewhat below it on easy, with the medium-suite timeout share down from
 37--42\% to 26--35\%. Thus, the clock and the discount behave as a single
 setting, since a longer clock is available to a learner only together with a
-horizon that reaches a substantial fraction of it, and the sense in which
-150\,s was arbitrary (Section~\ref{sec:discussion}) does not make 600\,s
-correct so much as it makes the pair the quantity that has to be chosen.
+horizon that reaches a substantial fraction of it, and the arbitrariness of 150\,s (Section~\ref{sec:clock}) is not
+removed at 600\,s, since what has to be chosen is the pair.
 
-The clock cannot simply be set long enough to settle the question, for a
-reason that bears on what solvability means. Consider a navigator that does nothing at all. The bodies and a coasting
+Nor can the clock be set long enough to settle the question, because a
+coasting craft in a bounded field recurs. Consider a navigator that does nothing at all. The bodies and a coasting
 craft together form an autonomous Hamiltonian system, and on a bounded
 energy surface, i.e. one of finite phase-space volume, such a system is
 recurrent in the sense Poincar\'e established for exactly this problem
@@ -106,13 +104,13 @@ target permanently. Thus, for a flythrough tour, the zero-action policy
 succeeds with probability approaching one as the clock lengthens, and the
 only stopping criterion that is not a choice is divergence, i.e. the craft
 leaving the bounded region; inside it, there is always an improbable path
-that has not yet been given time to occur, and in the extreme of a system
-that collapses gravitationally toward a point, every path is that path. A
+that has not yet been given time to occur, and in a system collapsing toward a point every trajectory eventually
+passes through the collapse region. A
 finite clock therefore belongs to the definition of the task, and
 solvability is relative to a time budget in the same way that
 Section~\ref{sec:eta} makes it relative to a fuel budget, and the question
 becomes how much a given navigator's success depends on the allowance. The
-same fact is what makes the exhaustive check of Section~\ref{sec:hard}
+same fact is what makes the exhaustive check of Appendix~\ref{app:complexity}
 ill-posed even in principle, since without a horizon the question of whether
 a control sequence has failed has no finite answer for a sequence that stays
 in the system.
@@ -135,9 +133,8 @@ least that long)
 and the same measurement run on it: contact reaches 8.7\%, 9.8\%, 12.9\% and
 11.8\% by 9{,}000\,s and is flat over the last 300\,s, because the craft is
 dead, with 78--80\% of the non-easy tasks ended by then and destruction by
-accumulated damage the commonest ending. Thus, patience alone buys a
-coasting craft three to five points of contact between 150\,s and 900\,s and
-another three to six between 900\,s and 9{,}000\,s, while over the same
+accumulated damage the commonest ending. Thus, between 150\,s and 900\,s a coasting craft gains three to five points
+of contact, and another three to six between 900\,s and 9{,}000\,s, while over the same
 spans the hazard endings rise faster, so that in this environment the
 stopping criterion that recurrence fails to supply is supplied by exposure.
 
@@ -160,6 +157,6 @@ not survive normalization. On the 600\,s suites, a coasting craft first
 contacts a target after the 150\,s mark on 2.3\% of single-target and 4.7\%
 of multi-target tasks (Fisher's exact $p = 0.001$), but per target slot the
 rates are 2.3\% and 2.1\% ($p = 0.81$), and for the first target alone 2.3\%
-and 2.2\%; more targets are more chances, and the tour structure adds
-nothing. Note that this measurement is on different levels from the 150\,s
+and 2.2\%; so that the multi-target excess is what the extra chances alone
+predict. Note that this measurement is on different levels from the 150\,s
 suites and is not joined to the agent's per-instance success.

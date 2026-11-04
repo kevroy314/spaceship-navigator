@@ -33,31 +33,27 @@ the reinforcement-learning results on chaotic systems in the literature sit
 at 10--100 steps per e-folding \cite{bucci2019,rabault2019,vignon2023}, and
 the classical chaos-control results treat that sensitivity as the thing that
 makes small control effective \cite{ott1990,shinbrot1990}; the environment
-is well inside the benign regime. The uncertainty exponent of the arrival
+sits inside the benign regime by a factor of about two at the median, with
+only the \code{star\_cluster} tail outside it. The uncertainty exponent of the arrival
 basin \cite{grebogi1983,mcdonald1985,aguirre2009}, which is near one for a
 smooth boundary and near zero for a fractal one, measures $0.53$--$1.02$
 once enough perturbation samples are used to fit it (768 per level; with 96
 the flip counts are small integers and no exponent can be trusted),
-consistent with the Lyapunov result. Thus, the field is quasi-integrable on
-the timescale of an episode, in the sense in which a near-integrable
-Hamiltonian system retains most of its invariant tori under perturbation and
-drifts only over times exponentially longer than its orbital period
-\cite{kolmogorov1954,arnold1963,nekhoroshev1977}, and in the same sense in
-which the solar system is chaotic with a Lyapunov time of millions of orbits
-\cite{laskar1989,sussman1992}, and where chaos is wanted, as it is for the
-first picture of Section~\ref{sec:field}, it has to be built into a
-level, chiefly by episodes long relative to orbital periods (closer
-encounters and tighter binaries are expected to help less).
+consistent with the Lyapunov result. The conclusion drawn from these numbers in Section~\ref{sec:chaos}, that the
+field is quasi-integrable on the timescale of an episode, rests on the
+corrected exponent and the uncertainty exponent together; closer encounters
+and tighter binaries are expected to raise the exponent less than longer
+episodes would, since both act within an orbital period while divergence
+accumulates over many.
 
-The same measurement records a
-trap. The raw 20\,s finite-time exponent of Figure~\ref{fig:phase} crosses
+The same measurement shows why the raw 20\,s finite-time exponent cannot
+be read as chaos. The raw 20\,s finite-time exponent of Figure~\ref{fig:phase} crosses
 $\lambda_{\mathrm{crit}}$ on 7--25\% of the ticks of every flight examined,
 every crossing within a few hundred units of a star, because a twenty-second
 window cannot separate tidal shear beside a massive body from exponential
 divergence (along these flights its logarithm tracks the tidal closed form
 $\sqrt{\sum_b 2GM_b/r_b^3}$ at correlations of $0.86$--$1.00$), so that read
-with that exponent the near field of every star is chaotic, which is the
-ballistic-drift error in another guise; row (b) of Figure~\ref{fig:phase}
+with that exponent the near field of every star is chaotic, which is the same error as the ballistic-drift one; row (b) of Figure~\ref{fig:phase}
 should accordingly be read as a map of the field's steepness, and where the
 field is unpredictable is the separate question that the ballistic
 correction answers.

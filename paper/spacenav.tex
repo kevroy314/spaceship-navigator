@@ -57,29 +57,33 @@ fuel budget in units of the impulse gravity will deliver over the flight;
 $\dd$ requires no simulation, inverts so that a level can be built at a
 chosen difficulty, and predicts the per-instance success of a learned
 policy across 2,388 task instances ($\rho = -0.585$) and within every
-evaluation tier. The field is shown to be quasi-integrable on the timescale
-of an episode, so that chaos has to be built into a level deliberately, and
-the episode clock is shown to be a choice that confounds every other
-constraint when it binds. A deliberately ordinary reinforcement-learning
-agent trained across 20 runs is used both to evaluate the levels and to be
-evaluated by them: it exceeds a hand-written pilot on trained families and
-falls short on held-out ones; observation channels that are algebraic
-combinations of what it already sees cost it 3 to 10 points of success at
-a small network and nothing at a larger one; and tripling the training
-budget raises success by 5 to 15 points per tier, which is larger than
-most effects measured. The environment, levels and trained policies are
-released as an invitation to propose better definitions of difficulty and
-better navigators, and to test both on the same ground.
+evaluation tier, though at the present training budget the prediction is
+carried almost wholly by the budget term, since $\eta$ adds nothing to a
+model that already knows $A$. The field is shown to be quasi-integrable on
+the timescale of an episode, so that chaos, where it is wanted, has to be
+built into a level, and the episode clock, which the task does not
+determine, is argued to be a choice that confounds the measurement of every
+other constraint whenever it binds. An unremarkable reinforcement-learning
+agent, trained with five seeds per configuration, is read both as a subject
+of the levels and as an instrument on them. It exceeds a hand-written pilot
+on trained families and falls short on held-out ones; observation channels
+that are algebraic combinations of what it already sees cost it 3 to 10
+points of success at a small network and no measurable amount at one twice
+as wide; and a training budget three times larger raises success by about
+5 to 15 points per tier, which is larger than most of the effects measured.
+The environment, levels and trained policies are released so that other
+definitions of difficulty, and other navigators, can be tested against the
+same instances.
 \end{abstract}
 
 \section{Navigating an n-body field}
 \label{sec:field}
 
 The motion of a small body in the gravitational field of several larger ones
-is among the oldest problems in dynamics and among the least tractable, with
-closed-form solutions available for two bodies and, under restriction, for
-three, and with the general case known since Poincar\'e to admit no such
-solution at all \cite{poincare1890,szebehely1967,henon1964}. Spacecraft
+is among the oldest problems in dynamics and among the least tractable,
+with closed-form solutions for two bodies and, under restriction, for
+three, and none for the general case since Poincar\'e
+\cite{poincare1890,szebehely1967,henon1964}. Spacecraft
 guidance has nonetheless managed the problem for some sixty years without
 addressing the entire possibility space of trajectories, since a trajectory
 is usually designed as a sequence of two-body arcs, each dominated by the
@@ -227,11 +231,10 @@ for progress, and improves a policy by gradient steps on that reward
 can be added along more than one axis, but each point in it is a
 representation of the field, and a level is hard on this picture when the
 representation a navigator carries is the wrong one for it. The unstructured
-end has a difficulty of its own: where nearby trajectories diverge
-exponentially, the objective a policy gradient climbs becomes rough at every
-scale below the divergence length and carries no usable descent direction
-unless the discount and control interval sit on the right side of a
-threshold set by the field's Lyapunov exponent
+end has a difficulty of its own, since where nearby trajectories diverge
+exponentially the objective a policy gradient climbs carries no usable
+descent direction unless the discount and control interval sit on the right
+side of a threshold set by the field's Lyapunov exponent
 \cite{wang2023,metz2021,parmas2018}, which Section~\ref{sec:chaos}
 measures. Of the two pictures, this is the one that yields a closed-form
 difficulty measure (Section~\ref{sec:eta}).
@@ -248,20 +251,20 @@ possible configurations of gravitating bodies is, for practical purposes,
 unbounded, and configurations differ in kind as well as in degree, since
 each produces a phase-space portrait whose properties (where one body
 dominates, where trajectories diverge, where a hazard lies) bear on how hard
-a learner or a person finds the task. A formal scale on which configurations
-can be ranked would allow learning to be bootstrapped, for a person or an
-agent, through a pedagogical progression from levels that a simple
-representation handles to levels that defeat it
-\cite{bengio2009,narvekar2020}. This paper is the beginning of a wider
-exploration of control in a setting in which the field itself moves on the
-timescale of a flight, and it is written as an invitation to attempt the
-task alongside the attempt reported here.
+a learner or a person finds the task; a scale on which configurations can
+be ranked would allow learning to be bootstrapped, for a person or an agent,
+through a progression from levels that a simple representation handles to
+levels that defeat it \cite{bengio2009,narvekar2020}. This paper is the
+beginning of a wider exploration of control in a setting in which the field
+itself moves on the timescale of a flight, written as an invitation to
+attempt the task alongside the attempt reported here.
 % =====================================================================
 \section{Defining difficulty}
 \label{sec:hard}
 
-The reasons a level can be hard are better derived from the structure of
-the task than collected by example. A task instance asks a craft to carry
+A list of reasons a level can be hard, assembled from examples, has no way
+of saying when it is complete, so the reasons are taken here from the
+structure of the task. A task instance asks a craft to carry
 its state (position, velocity, time, remaining fuel, remaining health) from
 a start into a sequence of target sets, in order, and whether it can is a
 question of reachability under the dynamics and the available control
@@ -274,10 +277,9 @@ their budgets; a free-order tour adds a combinatorial choice of the order in
 which the target sets are visited. The ways a level can be hard are then,
 as far as this analysis reaches, the ways that path can fail to exist, fail
 to be found, or fail to be flown. A path can fail to exist because a budget
-is exceeded, since the fuel, the clock and the craft's tolerance for damage
-are each a cap on the path's accumulated cost, or because the geometry of
-the targets makes every path expensive, as when targets are spread so that
-every ordering is long or set in regions the dynamics make costly to reach.
+is exceeded (the fuel, the clock and the craft's tolerance for damage are
+each a cap on the path's accumulated cost) or because the geometry of the
+targets makes every path expensive.
 A path can exist and fail to be found because the navigator's
 representation of the edge set differs from the true one, which is what
 happens when a coarse model of the field is wrong (the second picture), or
@@ -286,11 +288,12 @@ what an encounter that scatters nearby trajectories does to the graph (the
 first picture). A path can also be found and fail to be flown because the
 window in which a decisive action must be taken is narrower than the
 controller can hold. A level that is hard for one of these reasons may be
-easy for every other, and the repair for one does nothing for another, so
-the quantities below are each aimed chiefly at one of these reasons and are
-never combined into a single number. They are heuristics, cheap proxies for
-properties that Appendix~\ref{app:complexity} argues cannot be computed
-exactly. Exposure, which the derivation names as a cap on the path, has no
+easy for every other, and a repair aimed at one (a larger budget, a longer
+clock, a different target placement) generally leaves the others where they
+were, so the quantities below are each aimed chiefly at one of these
+reasons and are never combined into a single number, and each is a
+heuristic for a property that Appendix~\ref{app:complexity} argues cannot
+be computed exactly. Exposure, which the derivation names as a cap on the path, has no
 quantity of its own here and is measured only through the endings it
 produces.
 
@@ -304,12 +307,11 @@ Table~\ref{tab:assumptions} lists the modelling assumptions and fixed
 parameters of the simulation. The simulation is planar with gravitational
 constant $G = 1$, in game units (u) and game seconds (s), with a typical
 level spanning 1000--3000\,u; bodies attract one another and are advanced by
-a symplectic leapfrog integrator of the family standard in n-body work
-\cite{wisdom1991,rein2015}, and the craft is a test particle (accelerated by
-every body and accelerating none), so that a level's body trajectories are
-fixed by its initial snapshot, which is what allows a level to be
-reproduced from a seed, replayed exactly, and integrated independently by a
-browser client from a snapshot of about 1.5\,KB. A task instance is a tour of
+a symplectic leapfrog integrator \cite{wisdom1991,rein2015}, and the craft
+is a test particle (accelerated by every body and accelerating none), so
+that a level's body trajectories are fixed by its initial snapshot and a
+level can be reproduced from a seed, replayed exactly, and integrated
+independently by a browser client from about 1.5\,KB of state. A task instance is a tour of
 one to six targets, each a point in free space, a station, or a point carried
 by a moving body, with an arrival radius and a velocity tolerance (any speed
 for a flythrough; a small relative speed for a rendezvous, which is harder
@@ -343,13 +345,12 @@ representation is nearly always adequate, and three (\code{binary\_star},
 which no single body dominates anywhere. The second is what, besides
 gravity, constrains the route, and the third is whether the dominant
 structure persists through an episode; the remaining families each
-introduce one feature along these lines. Testing on levels and families
-never trained on is the usual means of measuring whether a policy has
-learned a task or only a level \cite{cobbe2019,cobbe2020,justesen2018}. A
-generated level is accepted only if it remains well-behaved (no collisions,
-no ejections, bounded energy drift) for a validation horizon, and accepted
-levels are stored as snapshots at 20\,s intervals so that an episode may
-begin at any of several epochs. The pools are 18,000 training levels, 2,700
+introduce one feature along these lines. Testing on families never trained on is the usual means of measuring
+whether a policy has learned a task or only a level
+\cite{cobbe2019,cobbe2020,justesen2018}. A generated level is accepted only
+if it remains well-behaved (no collisions, no ejections, bounded energy
+drift) for a validation horizon, and is stored as snapshots at 20\,s
+intervals so that an episode may begin at any of several epochs. The pools are 18,000 training levels, 2,700
 validation levels from the same families and 1,200 holdout levels from
 families never trained on, each validated to 300\,s, plus 1,800
 long-horizon levels validated to 900\,s for Appendix~\ref{app:clock}.
@@ -426,10 +427,9 @@ no simulation and thousands of candidate levels can be scored at negligible
 cost, and it inverts, since solving for the budget gives
 $\Delta v_{\mathrm{budget}} = \eta \lVert g \rVert T / \dd$, so that a level
 can be placed at a chosen $\dd$ by solving for the budget. An ordinary
-hierarchical level has $\eta$ of order $0.003$ over its playable area
-(Table~\ref{tab:families}) and a median $A$ near $2.3$ over sampled task
-instances ($n = 4{,}096$ draws from the training pool), so that $\dd$ is of
-order $0.001$ and $\eta$ has to be raised by construction. That $\dd$
+hierarchical level has $\eta$ of order $0.003$ (Table~\ref{tab:families})
+and a median $A$ near $2.3$ ($n = 4{,}096$ sampled instances), so $\dd$ is
+of order $0.001$ and $\eta$ has to be raised by construction. That $\dd$
 measures what it is meant to was checked by comparing a planner restricted
 to the one-body representation against one with the true field on 48
 levels pooled into two groups by $\dd$: below $\dd = 0.1$ the two were
@@ -485,24 +485,22 @@ space of one task and should not be read as a property of its family. Computed b
 \label{fig:phase}
 \end{figure}
 
-$\dd$ is a first-order measure, and its construction implies a particular
-kind of navigator, one that spends fuel to cancel every departure of the
-true field from its one-body model. It prices the cost of flying a one-body
-model through a many-body field, and it credits nothing to a navigator that
-exploits the discarded part of the field instead, such as one that bets on
-the direction in which an encounter will throw it and spends fuel only to
-choose between outcomes, or one that lets an encounter or a long timescale
-supply the velocity change the budget could not pay for, which is what each
-design in Figure~\ref{fig:missions} does \cite{belbruno1993,koon2000}. A
+$\dd$ is a first-order measure, and its construction implies a navigator
+that spends fuel to cancel every departure of the true field from its
+one-body model. It credits nothing to a navigator that exploits the
+discarded part of the field instead, such as one that bets on the direction
+in which an encounter will throw it and spends fuel only to choose between
+outcomes, or one that lets an encounter or a long timescale supply the
+velocity change the budget could not pay for, which is what each design in
+Figure~\ref{fig:missions} does \cite{belbruno1993,koon2000}. A
 level that $\dd$ scores as expensive can be cheap for such a navigator, and
 a level it scores as cheap can hide a scattering encounter that $\dd$ does
 not see at all, since $\eta$ is an instantaneous force ratio. These are the
 points of the model space at which a strategy that adds priors the one-body
 model lacks renders a level tractable, and the quantities that follow are
-the beginnings of the higher-order terms such a navigator would need. What
-$\dd$ does is to locate, cheaply and in closed form, the levels on which the
-one-body representation is insufficient (Section~\ref{sec:correlations}
-qualifies this for a learner at the present training budget).
+the beginnings of the higher-order terms such a navigator would need. $\dd$ locates, cheaply and in closed form, the levels on which the one-body
+representation is insufficient (Section~\ref{sec:correlations} qualifies
+this for a learner at the present training budget).
 
 \subsection{Execution difficulty}
 \label{sec:trivial}
@@ -540,8 +538,8 @@ families (16 levels each), about a factor of two below
 $\lambda_{\mathrm{crit}}$, and the uncertainty exponent of the arrival basin
 \cite{grebogi1983,mcdonald1985} is $0.53$--$1.02$, i.e. the basin boundary
 is not fractal. A Lyapunov time of about 140\,s against a 150\,s episode is
-one e-folding per episode, where the reinforcement-learning results on
-chaotic systems sit at 10--100 control steps per e-folding
+one e-folding per episode, against 10--100 control steps per e-folding in
+the reinforcement-learning results on chaotic systems
 \cite{bucci2019,rabault2019,vignon2023}. Thus, the field is
 quasi-integrable on the timescale of an episode, in the sense in which a
 near-integrable Hamiltonian system retains most of its invariant tori
@@ -569,12 +567,13 @@ mass contests the whole disc. Thus, on the present levels the state machine
 has in effect two states per family, well-behaved or contested according
 to the mass hierarchy, with hazard entered from either, and the state that
 gives the picture its content, the encounter whose exit can only be
-bounded, is not entered on the timescale of an episode. The picture therefore does not pay off on the present levels,
-and its value is prospective: it specifies what a level must contain for a
-regimes-based account of difficulty to apply (an encounter at which the
-corrected exponent crosses $\lambda_{\mathrm{crit}}$ inside the episode),
-and it names the quantities a navigator in such a level would need, the
-entry set it can afford and the exit set it must plan beyond. The same
+bounded, is not entered on the timescale of an episode. On the present levels the picture therefore adds nothing to the mass
+hierarchy, and its value is prospective, in that it specifies what a level
+must contain for a regimes-based account of difficulty to apply (an
+encounter at which the corrected exponent crosses $\lambda_{\mathrm{crit}}$
+inside the episode) and names the quantities a navigator in such a level
+would need, the entry set it can afford and the exit set it must plan
+beyond. The same
 measurement records a trap (Appendix~\ref{app:chaos}): the raw 20\,s
 finite-time exponent of Figure~\ref{fig:phase} crosses
 $\lambda_{\mathrm{crit}}$ on 7--25\% of the ticks of every flight examined,
@@ -627,10 +626,9 @@ the nearest relative here of the observation that levels an agent always or
 never solves carry no curriculum information
 \cite{rutherford2024,dennis2020}. Two properties of this yardstick bear on
 every use of it. Its failure is weak evidence, since zero successes in
-twelve attempts is consistent with a rate of 16\% (the rate observed on the
-same family at $n = 32$) at probability $0.13$, so that a level class should
-be called infeasible only on a sample sized to the claim
-\cite{agarwal2021,colas2018}. More fundamentally, the true optimum for a
+twelve attempts is consistent with a rate of 16\% at probability $0.13$, so
+that a level class should be called infeasible only on a sample sized to
+the claim \cite{agarwal2021,colas2018}. More fundamentally, the true optimum for a
 level is never in hand, since the optimizer is a sampled search over a
 restricted control family, so that every difficulty label in this paper is
 relative to a navigator that is itself imperfect in ways that cannot be
@@ -641,39 +639,39 @@ graded.
 \subsection{The episode clock}
 \label{sec:clock}
 
-Of the constraints a level places on a craft (time, fuel, and exposure to
-damage), time is the least interesting and the one most easily mistaken for
-difficulty, and the 150\,s clock used throughout was inherited from an
-early version of the game rather than derived from the task. The evidence
-collected in Appendix~\ref{app:clock} says that it is short: for the
-trajectory optimizer on 32 two-target levels, arrivals rise from $5/32$ at
-150\,s to $13/32$ at 600\,s before hazard endings take over, and roughly a
-third of the learned policy's medium-suite failures at 150\,s are timeouts.
-A clock that binds in this way confounds the measurement of every other
-constraint, and the position taken here is that it should be set so that
-timing out is rarely the way an episode ends, with two caveats: lengthening
-it is not free for a learner, since the value horizon $1/(1-\gamma)$ has
-to reach a substantial fraction of the clock (at 600\,s, $\gamma = 0.999$
-and $0.9995$ fail and $0.9998$ recovers the 150\,s level of performance),
-and no finite clock settles solvability in principle, since a coasting
-craft in a bounded field recurs and eventually passes every target it can
-reach at all \cite{poincare1890}; the appendix measures that recurrence
-and finds that hazards supply the stopping criterion here. What the clock
+Of the constraints a level places on a craft (time, fuel and exposure to
+damage), time is the one most easily mistaken for difficulty, since a clock
+that ends an episode before a path completes scores as failure a path that
+was only slow, and the 150\,s clock used throughout is a fixed parameter of
+the environment that nothing in the task determines.
+Appendix~\ref{app:clock} collects the evidence that it is short, chiefly
+that for the trajectory optimizer on 32 two-target levels arrivals rise
+from $5/32$ at 150\,s to $13/32$ at 600\,s before hazard endings take over,
+and that roughly a third of the learned policy's medium-suite failures at
+150\,s are timeouts. A clock that binds in this way confounds the
+measurement of every other constraint, and the position taken here is that
+it should be set so that timing out is rarely the way an episode ends,
+though lengthening it has a cost for a learner, since the value horizon
+$1/(1-\gamma)$ has to reach a substantial fraction of the clock (at
+600\,s, $\gamma = 0.999$ and $0.9995$ fail and $0.9998$ recovers the 150\,s
+level of performance), and though no finite clock settles solvability in
+principle, since a coasting craft in a bounded field recurs and eventually
+passes every target it can reach at all \cite{poincare1890}; the appendix
+measures that recurrence and finds that hazards supply the stopping
+criterion here. What the clock
 should be relative to the orbital periods of a level is a separate choice,
 taken up in Section~\ref{sec:choices}.
 % =====================================================================
 \section{Navigators}
 \label{sec:navigators}
 
-Three navigators fly the levels: a hand-written pilot, a trajectory
-optimizer, and a learned policy. The first two are points near the
-structured end of the model space of Section~\ref{sec:field} and serve as
-yardsticks; the third is both a subject, evaluated on the levels as any
-agent would be, and an instrument, since where and how it fails is a
-measurement of the levels that no closed-form quantity provides. The second
-use requires that the training procedure be ordinary enough that its
-failures are attributable to the levels rather than to the procedure, which
-is the reason the agent below is deliberately unremarkable.
+The levels are flown by a hand-written pilot, a trajectory optimizer and a
+learned policy. The first two sit near the structured end of the model
+space of Section~\ref{sec:field} and are the yardsticks; the third is
+evaluated on the levels as any agent would be and is also read as an
+instrument, since where it fails is a measurement of the levels that no
+closed-form quantity provides, which requires a training procedure ordinary
+enough that a failure can be read as a property of the level.
 
 \subsection{The reference pilot}
 \label{sec:pilot}
@@ -688,11 +686,11 @@ velocity error in 0.8\,s, subtracts the local gravity, points the nose at
 that acceleration and burns only when aligned within 0.5\,rad. It uses the
 true local field but no model of where the field will take it, which places
 it one step above dead heading and below conic reasoning in the model
-space. On a comfortable-budget instance set it
-arrives 63.3\% of the time and its dominant failure is collision (21.6\% of
-instances) rather than escape (4.7\%) or timeout (7.8\%), so that every
-margin quoted against it is softened by an opponent that flies into bodies
-one time in five.
+space. On an instance set with a comfortable budget ($n = 384$) it arrives
+63.3\% of the time, and collision (21.6\% of instances) is its dominant
+failure, well ahead of escape (4.7\%) and timeout (7.8\%), so that the
+margins quoted against it in Section~\ref{sec:results} are measured
+against a pilot that collides on about one instance in five.
 
 \subsection{The trajectory optimizer}
 \label{sec:optimizer}
@@ -710,8 +708,8 @@ segments of 3.1\,s at the 150\,s clock), seeded from the reference pilot's
 flight and from an explicit zero-thrust candidate, refined over 96 samples
 and 7 iterations toward an arrival objective; the zero-thrust seed is
 included because throttle is parameterized through a sigmoid and an
-all-coast plan is otherwise never drawn, which caused the optimizer to fail
-on the levels where an all-coast plan is the best one found. A candidate is
+all-coast plan is otherwise never drawn, so that without the seed the
+optimizer fails every level on which coasting is the best plan found. A candidate is
 scored by the task's cost if it arrives and otherwise by a miss penalty plus
 its best arrival gap (the larger of distance over the arrival radius and
 relative speed over the velocity tolerance, so that a rendezvous plan
@@ -737,10 +735,10 @@ and the remaining hyperparameters listed in Appendix~\ref{app:repro}, for
 3000 updates or 393 million environment steps per run, about 67 minutes on
 the hardware used. A curriculum
 \cite{bengio2009,narvekar2020} ramps the share of rendezvous targets
-($0.1 \to 0.45$), the maximum tour length ($1 \to 3$) and, after the craft
-can fly at all, the share of levels whose targets are placed in the
-contested equal-pull shell ($0 \to 0.35$), while the budget and engine
-start generous and tighten to their full ranges. The observation may also
+($0.1 \to 0.45$), the maximum tour length ($1 \to 3$) and, once the craft
+can fly at all, the share of levels with targets in the contested
+equal-pull shell ($0 \to 0.35$), while the budget and engine tighten from
+generous to their full ranges. The observation may also
 carry up to four instrument channels that report the quantities of
 Section~\ref{sec:hard} to the policy ($\eta$, a log-compressed $A$, a
 log-compressed $\dd$, and the local tidal stretching rate), which can be
@@ -762,10 +760,11 @@ families with rising tour length, rendezvous share and contested share, and
 so that it measures transfer to regimes of the field the policy has not
 seen. Six hundred instances give roughly two percentage points of binomial
 noise on a suite success rate, which is small against the differences
-reported below; the larger source of variance is the training seed, and
-every comparison between configurations is therefore made on seed means
-over five independent runs per configuration, following the statistical
-practice recommended for deep reinforcement learning
+reported below; the larger source of variance is the training seed, so every comparison
+between configurations is made on seed means over independent runs, five
+per configuration in the channel comparisons and two or three (stated where
+they occur) in the budget, width and clock experiments, following the
+statistical practice recommended for deep reinforcement learning
 \cite{agarwal2021,henderson2018,colas2018}.
 
 \begin{table}[t]
@@ -821,8 +820,8 @@ deviation over five training seeds for the policy told $\eta$ and the
 stretching rate (the \code{eta,stretch} configuration), against the
 reference pilot on the identical instances. The no-channel configuration is
 statistically indistinguishable from this one at this budget
-(Table~\ref{tab:instr}); the figures of Sections~\ref{sec:field}
-and~\ref{sec:ghosts} fly policies from each.}
+(Table~\ref{tab:instr}); Figures~\ref{fig:task} and~\ref{fig:regimes} fly
+a no-channel policy and Figure~\ref{fig:ghosts} one of this configuration.}
 \label{tab:main}
 \end{table}
 
@@ -871,27 +870,28 @@ and kept rising.}
 \label{sec:instruments}
 
 The natural expectation is that an agent told $\eta$, $A$ and $\dd$ learns
-better, and the four instrument channels of Section~\ref{sec:learning} were
-added on that expectation. Supplying all four costs the agent between 3.1
-and 10.1 percentage points of final success depending on the tier
+better, and the four instrument channels of Section~\ref{sec:learning}
+exist to test it. Supplying all four costs the agent between 3.1 and 10.1
+percentage points of final success depending on the tier
 (Table~\ref{tab:instr}; Figure~\ref{fig:ablation}; Welch's $t$-test on seed
 means, $n = 5$ per arm, $p = 0.021$, $0.0088$, $0.029$ and $0.0017$ on the
-four suites). The cost splits exactly along the line of redundancy: $A$ and
-$\dd$ are algebraic combinations of quantities the observation already
-carries (the local gravity, the product of fuel and engine acceleration, and
-the fraction of the episode remaining), whereas $\eta$ requires the
-dominant-body decomposition and the stretching rate is not present in any
-form, and supplying only $\eta$ and the stretching rate is statistically
-indistinguishable from supplying nothing ($p = 0.40$ to $0.90$), supplying
-only $A$ and $\dd$ is indistinguishable from supplying all four
-($p = 0.59$ to $0.81$), and the two halves differ on every suite
-($p \le 0.0064$). There is no evidence that the informative channels help.
-Doubling the embedding width to 256 (698,634 parameters, three seeds per
-arm) removes the cost ($-0.3$, $+2.4$, $+0.8$ and $+2.7$ points,
-$p = 0.74$, $0.18$, $0.38$ and $0.026$) while gaining the wider network
-little on good inputs ($-0.6$, $+1.7$, $+1.1$ and $+3.1$), so the cost was
-capacity: at a network size where capacity is scarce, a channel that does
-not change the policy costs capacity without buying anything, which is
+four suites). The cost follows the line of redundancy. $A$ and $\dd$ are
+algebraic combinations of quantities the observation already carries,
+whereas $\eta$ requires the dominant-body decomposition and the stretching
+rate is not present in any form; supplying
+only $\eta$ and the stretching rate is statistically indistinguishable from
+supplying nothing ($p = 0.40$ to $0.90$), supplying only $A$ and $\dd$ is
+indistinguishable from supplying all four ($p = 0.59$ to $0.81$), and the
+two halves differ on every suite ($p \le 0.0064$), while the informative
+half is nowhere significantly above the no-channel arm. Doubling the
+embedding width to 256 (698,634 parameters, three seeds per arm) leaves no
+measurable cost (the all-four arm sits $-0.3$, $+2.4$, $+0.8$ and $+2.7$
+points below the $\eta$,stretch arm on the four tiers, $p = 0.74$, $0.18$,
+$0.38$ and $0.026$), while the wider network gains little on the
+informative inputs alone ($-0.6$, $+1.7$, $+1.1$ and $+3.1$), which is the
+pattern a capacity account predicts and a conditioning account does not,
+so that at a network size where capacity is scarce a channel that does not
+change the policy is paid for in capacity and returns nothing, which is
 consistent with the view of a policy as a compression of its inputs
 \cite{lai2024,kaelbling1998}. Appendix~\ref{app:channels} gives the
 argument and the width experiment in full.
@@ -948,9 +948,9 @@ within a suite (60\%, 52\%, 8\% and 0\% on the four shown) is larger than
 any effect measured between training configurations here, so that any
 claim about this environment that rests on a handful of instances is
 fragile by construction. The learning curves of
-Figure~\ref{fig:curves} show that mid-run checkpoints are noisy enough that
-a difference between two configurations read a third of the way through
-training can have the opposite sign from the difference at the end.
+Figure~\ref{fig:curves} show that a difference between two configurations
+read a third of the way through training can have the opposite sign from
+the difference at the end.
 
 \begin{figure}[p]
 \centering
@@ -990,12 +990,12 @@ their final checkpoint, success falls monotonically with $\dd$
 84\% in the lowest decile to 0.2\% in the highest, and the reference pilot
 follows the same curve ($\rho = -0.547$; the two navigators' per-instance
 successes correlate at $\rho = 0.787$). A logistic model of agent success on
-family alone reaches a held-out area under the curve of $0.745$; $\dd$ alone
-reaches $0.811$ and family with $\dd$ reaches $0.871$, and adding $\dd$ to a
-model that already knows the suite, the family, the number of targets and
-whether a rendezvous is required still drops the held-out deviance by 1042
-on one degree of freedom ($p = 10^{-228}$; ten-fold cross-validation
-repeated five times). Figure~\ref{fig:portrait} draws the difficulty space
+family alone reaches a held-out area under the curve of $0.745$, $\dd$
+alone $0.811$ and family with $\dd$ $0.871$, and adding $\dd$ to a model
+that already knows the suite, the family, the number of targets and whether
+a rendezvous is required still drops the held-out deviance by 1042 on one
+degree of freedom ($p = 10^{-228}$; ten-fold cross-validation repeated five
+times). Figure~\ref{fig:portrait} draws the difficulty space
 these numbers summarize, with $\dd$ against success and the families and
 suites overlaid: the suites tile the $\dd$ axis in the intended order
 (median $\dd$ of $0.0005$, $0.0091$, $0.023$ and $0.044$) and success falls
@@ -1043,9 +1043,9 @@ non-monotone (Figure~\ref{fig:corr}(b)), peaking near $\eta \approx 0.005$
 and falling on both sides, and the low-$\eta$ failures are the hazard
 families (\code{debris\_maze} 25\%, \code{asteroid\_field} 28\%,
 \code{compact\_system} 31\%, \code{pulsar} 39\%), where the field is simple
-and the route is not. What the learned policy's success tracks at this
-training budget is the fuel budget against the tour, i.e. whether a direct
-flight is affordable, and the representational component of difficulty
+and the route is not. At this training budget the learned policy's success tracks the fuel
+budget against the tour, i.e. whether a direct flight is affordable, and
+the representational component of difficulty
 that $\dd$ was built to capture is not yet the component that limits the
 learner, which is consistent with the budget result of
 Section~\ref{sec:budget}: a policy that has not yet learned to spend its
@@ -1089,24 +1089,23 @@ does not reach.
 The pedagogical question that follows is how an agent should be brought
 through the model space of Section~\ref{sec:field}, from the simplest
 representation toward the richest, so that what it learns on one level is
-the representation it needs on the next rather than a policy fitted to that
-level's geometry, which is the question the literature on generalization
-across procedurally generated levels and on learning to learn across task
-distributions addresses from two directions
+the representation it needs on the next, which the literature on
+generalization across procedurally generated levels and on learning to
+learn across task distributions addresses from two directions
 \cite{cobbe2019,kirk2023,finn2017,duan2016,beck2025}. The curriculum used
 here is a crude version of this, since the agent learned a one-body
 representation first and was then asked to extend it, and whether that
-order helps or hinders is a question the present data cannot answer. The
+order helps or hinders the present data cannot say. The
 literature on choosing which instances to train on next
 \cite{portelas2020,florensa2018,matiisen2020,dennis2020,jiang2021,jiang2021a,parkerholder2022,jiang2022}
 offers tools, with the caveat that several of its curriculum signals
 correlate with an agent's success rate rather than with its regret, and so
 miss the instances an agent can sometimes solve but not reliably
-\cite{rutherford2024}. What the closed-form $\dd$ offers is a curriculum
-axis a generator can set directly, placing an instance at a chosen
-share-of-budget cost of a wrong representation, so that an agent can be
-walked up that axis instead of being shown harder levels in the hope that
-they are hard in the right way.
+\cite{rutherford2024}. The closed-form $\dd$ gives a generator a curriculum axis it can set
+directly, placing an instance at a chosen share-of-budget cost of a wrong
+representation, so that an agent can be walked up that axis instead of
+being shown harder levels in the hope that they are hard in the right
+way.
 
 \subsection{Learning over a chaotic simulation}
 
@@ -1118,56 +1117,58 @@ limitation of the environment more than of the picture. Once they exist, the rel
 bounding behavior at the region's entrance and the adaptive behavior at its
 exit while treating the interior as noise, which is closer to robust and
 tube-based control \cite{mayne2005,mitchell2005} than to standard
-reinforcement learning, since the gradient through a chaotic system is
-correct and useless at once \cite{metz2021,parmas2018,suh2022}; whether
+reinforcement learning, since the gradient through a chaotic system, though
+exact, carries no usable descent direction
+\cite{metz2021,parmas2018,suh2022}; whether
 the learned representation survives passage through such a region would
 decide between a model-free and a model-based approach.
 
 \subsection{Choices in the definitions}
 \label{sec:choices}
 
-Several of the definitions in this paper are choices: the reference
-optimizer is one configuration of one method, and every solvability label
-is relative to it; the banding of execution difficulty against human motor
-limits is a scale for a game; and the twelve families were chosen to span
-the regimes the author could think of. The choice that bears most on what
+Several of the definitions in this paper are choices. The reference
+optimizer is one configuration of one method, so every solvability label is
+relative to it; the banding of execution difficulty against human motor
+limits is a scale suited to a game; and the twelve families span the
+regimes that seemed worth representing, with no taxonomy of the field
+behind them (Section~\ref{sec:env}). The choice that bears most on what
 the task is, however, is the relation between the clock and the orbital
-periods of a level, and it should be stated with care because the evidence
-pulls in two directions. On one side, the 150\,s clock is short in the plain sense
-that timing out is a common ending (Section~\ref{sec:clock}), and nothing in
-the task calls for episodes of that length; on the other, an episode shorter
-than an orbit is the regime in which the equal-pull surface is the right
-length scale for a coarse representation to break (Section~\ref{sec:eta}),
-in which the field is quasi-integrable and the learning objective is smooth
+periods of a level, which two measurements bound from opposite sides. From
+below, the clock must exceed the time a path needs, and the 150\,s clock
+does not reliably do so, since timing out is a common ending
+(Section~\ref{sec:clock}). From above, an episode short against the
+orbital period of the dominant pair at a target's radius is the regime in
+which the equal-pull surface is the right length scale for a coarse
+representation to break (Section~\ref{sec:eta}), in which the field is
+quasi-integrable and the learning objective is smooth
 (Section~\ref{sec:chaos}), and in which the measures of this paper were
-validated. Over episodes of many orbits, resonance overlap reasserts itself
-as the scale at which a coarse representation fails
-\cite{chirikov1979,wisdom1980}, the chaotic regions that the first picture
-needs appear, and the quantities here would have to be re-derived. The line
-drawn here is therefore between two different tasks rather than between a
-short clock and a long one: a task on the timescale of an orbit, in which
-difficulty is representational and the clock should be set long enough
-that timing out is rare within that timescale; and a task over many orbits,
-in which difficulty becomes dynamical and the present measures are starting
-points at best. This paper studies the first and argues that it is the
-right first step, because its difficulty can be defined in closed form and
-checked, and it leaves the second as the natural continuation. These
-choices do not make the measurements wrong; they mean that the paper offers
-definitions that make a set of intuitions checkable, which is also the
-condition of the task-difficulty measures in the literature, where the
-measure chosen changes what a curriculum does
-\cite{furuta2021,narvekar2020,rutherford2024}.
+validated; over many such periods, resonance overlap becomes the scale at
+which a coarse representation fails \cite{chirikov1979,wisdom1980}, the
+chaotic regions that the first picture needs appear, and the quantities
+here would have to be re-derived. The window between the two bounds belongs to a target's placement, since
+the inner bodies of a compact system and the moons of a giant already
+complete several periods in 150\,s while a planet of a sol-like level
+completes a fraction of one, and the present levels sit inside it for most
+targets and outside it for some. The distinction that matters is therefore between two
+tasks. In the first, on the timescale of the relevant period, difficulty is
+representational and the clock should be set long enough within that
+timescale that timing out is rare; in the second, over many periods,
+difficulty becomes dynamical and the present measures are at best starting
+points. This paper studies the first, whose difficulty can be defined in
+closed form and checked, and leaves the second, for which the measures here
+would have to be re-derived, to later work. Each of these choices fixes what its measurement is a measurement of, as
+the measure chosen fixes what a curriculum does in the literature on task
+difficulty \cite{furuta2021,narvekar2020,rutherford2024}.
 
 % =====================================================================
 \section{Future directions}
 \label{sec:future}
 
 The definitions in this paper are starting points, and the environment is
-released so that better ones can be tried against the same levels. The most
-immediate extensions are the ones the measurements call for. The clock
-should be set from the tour and the orbital periods of a level rather than
-inherited, with the discount matched to it, so that the timeout ending is
-rare and every other constraint can be measured without it. Levels with
+released so that better ones can be tried against the same levels. The
+clock should be set from the tour and from the orbital periods of a level,
+with the discount matched to it, so that the timeout ending is rare and
+every other constraint can be measured without it. Levels with
 constructed chaotic regions, which by Section~\ref{sec:chaos} means episodes
 long relative to orbital periods, would give the first picture something to
 describe and would let the question of whether a learned policy can bound
@@ -1187,11 +1188,11 @@ permits has not been made. Beyond navigation itself, the same
 field and the same representational questions arise in adversarial
 situations, such as in a video game in which one craft may be attempting to
 catch, target, or otherwise react to another, where the moving target is
-itself a navigator \cite{mitchell2005,reif1994,dennis2020}. Above all, the
-difficulty measures here are an invitation: a better definition is one that
-predicts success for a stronger navigator than the ones tried, and the
-levels, the pools and the trained policies are provided so that such a
-definition, or such a navigator, can be tested on the same ground.
+itself a navigator \cite{mitchell2005,reif1994,dennis2020}. The difficulty measures here will have earned their place if a definition
+that predicts success for a stronger navigator than the three tried can be
+found, and the levels, the pools and the trained policies are provided so
+that such a definition, or such a navigator, can be tested against the same
+instances.
 
 \section*{Acknowledgements}
 
@@ -1266,7 +1267,7 @@ case. The alternatives are a continuous thrust vector (a heading and a
 magnitude at every tick), impulsive burns in which the decision is when and
 how hard to fire and the craft coasts between them, which is the
 parameterization of classical trajectory design and of the reference
-optimizer of Section~\ref{sec:solvable}, and a set of maneuver primitives
+optimizer of Section~\ref{sec:optimizer}, and a set of maneuver primitives
 (a transfer, a plane change, an assist) from which a policy selects, which
 is the options construction \cite{sutton1999}. Each changes what a learner
 can express: a continuous optimum that lies between two discrete throttle

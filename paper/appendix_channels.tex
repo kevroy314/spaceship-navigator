@@ -15,7 +15,7 @@ Supplying all four channels costs the agent between 3.1 and 10.1 percentage
 points of final success depending on the tier (Table~\ref{tab:instr};
 Figure~\ref{fig:ablation}(a); Welch's $t$-test on seed means, $n = 5$ per
 arm, $p = 0.021$, $0.0088$, $0.029$ and $0.0017$ on the easy, medium, hard
-and blind suites, with effect sizes between $1.8$ and $3.0$). The quoted
+and blind suites, with Cohen's $d$ between $1.8$ and $3.0$). The quoted
 uncertainties are training-seed standard deviations, which are the relevant
 ones; the episode-level binomial intervals are far narrower and would
 overstate the confidence.
@@ -29,10 +29,10 @@ duplicating an existing ratio of remaining to required $\Delta v$, and
 $\dd = \eta / A$ is redundant given $\eta$ and $A$; by contrast $\eta$
 requires the dominant-body decomposition, which is not otherwise computable
 from the observation, and the stretching rate is not present in any form
-(it is also a good proxy for the quantity one would actually want, since on
+(it is also a good proxy for the Lyapunov exponent itself, since on
 the four levels of Figure~\ref{fig:phase} its log–log correlation with the
 measured 20\,s Lyapunov exponent is $0.96$--$0.98$).
-Splitting the panel along that line puts the entire cost on the redundant
+Splitting the panel along that line puts the cost on the redundant
 half (Table~\ref{tab:instr}; Figure~\ref{fig:ablation}(b)). Supplying only
 $\eta$ and the stretching rate is statistically indistinguishable from
 supplying nothing ($p = 0.40$ to $0.90$ across suites), supplying only $A$
@@ -60,11 +60,12 @@ cost falls to $-0.3$, $+2.4$, $+0.8$ and $+2.7$ points on the four tiers
 the wider network ($90.1 \pm 0.9$, $41.2 \pm 0.4$, $11.4 \pm 1.2$,
 $29.6 \pm 0.5$) matches the $\eta$,stretch arm at either width, and the
 $\eta$,stretch arm itself gains little from the extra width ($-0.6$, $+1.7$,
-$+1.1$ and $+3.1$). The cost was capacity. Thus, an observation channel's
-value to a learner depends on whether it is new rather than on whether it is
-true, and at a network size where capacity is scarce a channel that does not
-change the policy costs capacity without buying anything, which is
+$+1.1$ and $+3.1$). The cost was therefore capacity, and an observation channel's value to a
+learner depends on whether it carries information the observation does not
+already contain, since a true quantity that is already computable from it
+is not information to the learner; at a network size where capacity is scarce a channel that does not
+change the policy is paid for in capacity and returns nothing, which is
 consistent with the view of a policy as a compression of its inputs
-\cite{lai2024,kaelbling1998}; at a size where capacity is not scarce the
-redundant channels are merely ignored, and the wider network spends its
-extra parameters on tolerating them rather than on the task.
+\cite{lai2024,kaelbling1998}; at a size where capacity is not scarce the redundant channels are ignored
+at no measurable cost, and at this training budget the extra width changes
+little on either input.

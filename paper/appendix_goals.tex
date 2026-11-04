@@ -1,4 +1,4 @@
-% Appendix C. Fragment, \input by spacenav.tex inside \appendix.
+% Appendix H. Fragment, \input by spacenav.tex inside \appendix.
 % Transcribed from spacenav/env.py: _sample_waypoint, sample_tour, current_leg,
 % waypoint_states, deltav_estimate, _substep, step; spacenav/physics.py
 % hazard_terms; spacenav/constants.py.
@@ -90,14 +90,14 @@ $[0.6, 3]$\,u/s$^2$ (\code{SHIP\_ACCEL\_RANGE}, overridden per suite, to $[1.5, 
 easy suite and $[0.8, 2]$ on the hard suite, and started generous by the
 training curriculum), the budget multiple $\beta$ is drawn uniformly from
 $[0.55, 1.35]$ (\code{DELTAV\_BUDGET\_RANGE}, overridden per suite as
-Table~\ref{tab:suites} lists), and the tank, in seconds of full-throttle burn,
+Table~\ref{tab:suites} lists), and the fuel, in seconds of full-throttle burn,
 is $\beta\,\Delta v_{\mathrm{req}} / a_{\mathrm{eng}}$ clipped to
 $[3, 60]$\,s (\code{SHIP\_FUEL\_LIMITS}), so that the tank actually carried can
 be a larger multiple of the estimate than $\beta$ on a very short tour and a
 smaller one on a very long tour. The reference scales that normalize the four
 cost terms are set from the same quantities, with the time and exposure
 references equal to $\sum_k 2\sqrt{d_k/a_{\mathrm{eng}}}$, the path reference
-equal to $\sum_k d_k$ and the fuel reference equal to half the tank, and the
+equal to $\sum_k d_k$ and the fuel reference equal to half the fuel carried, and the
 objective weights are either a single objective (with probability 0.5, drawn
 with probabilities 0.4, 0.2, 0.3 and 0.1 over time, path, fuel and exposure)
 or a Dirichlet mixture of them, with exposure available only on a level that
